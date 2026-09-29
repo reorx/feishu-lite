@@ -12,6 +12,39 @@ tags:
 
 背景和选型依据见 [调研笔记](../notes/2026-09-29-feishu-chat-access-research.md)。一句话总结：公司租户是免费版，官方 API 额度撑不起单聊的实时通知，所以走逆向网页版协议，协议层用 LarkAgentX 的 `larkx` 包。
 
+## 0. 执行说明
+
+- **执行者**：在 herdr 新 tab 里启动的 Claude agent。直接在 `~/Code/feishu-lite` 的 master 分支上工作，不开 worktree。
+- **开始前先读**：本计划、调研笔记、`AGENTS.md`、`~/.claude/skills/macos-app-bootstrap/SKILL.md`。larkx 源码 clone 到 `tmp/refs/` 里读，**不要** clone 到 `~/Documents`（那里是 iCloud 同步目录）。
+- **本计划的作者**：上一个 session 的 Claude，和用户讨论后写的。下表"已定决策"里标了"用户"的项不要重新讨论。标了"计划作者"的项，如果你有更好的理由可以改，但要写进最后的 session 总结里说明。
+- **完成标准**（全部满足才算完成）：
+  1. `cd backend && uv run pytest` 全部通过；`cd mac && make test && make build` 全部通过。
+  2. 第 8 节验收清单的第 1 到第 8 项都用真实账号跑过，每项都有截图或命令输出作证据。第 9 项写进 `kb/next-up.md`。没通过的项写进 `kb/known-issues.md`，并在总结里说明。
+  3. 写好 session 总结（`/kb ss`），AGENTS.md 已更新，代码已提交。
+- **不要等人确认，一路做下去。** 只有需要用户扫码、需要用户在手机上发消息、或者遇到必须由用户做的决定时才停下来问。
+- **范围外的问题**（larkx 上游的 bug、协议限制、想到的改进点）：写进 `kb/known-issues.md`（本项目有缺陷时）或总结的"后续建议"一节，不要顺手去改范围外的东西。
+
+### 已定决策
+
+| 问题 | 决定 | 谁定的 |
+|---|---|---|
+| 官方 API 还是逆向协议 | 逆向网页版协议（larkx） | 用户 |
+| 界面形态 | 原生 SwiftUI App | 用户 |
+| 项目位置 | `~/Code/feishu-lite` | 用户 |
+| 测试粒度 | 粗粒度行为测试，不追求细 | 用户 |
+| 通知 | 只要 Mac 本地通知，延迟 1 分钟内可接受（目标几秒内） | 用户 |
+| 后端守护方式 | 由 App 拉起子进程，不用 launchd | 计划作者 |
+| 本地通信 | 127.0.0.1 上的 HTTP + SSE，Bearer token 鉴权 | 计划作者 |
+| App 命名 | `FeishuChat` / `com.reorx.FeishuChat` | 计划作者 |
+| 已读策略 | 打开会话时才标已读 | 计划作者 |
+
+### 约束
+
+- 只改 `~/Code/feishu-lite` 下的文件。不要改全局配置，也不要改 `~/Documents/pake-apps`。
+- 每个阶段结束时提交一次；只 `git add` 自己改过的文件。**不要 push**（还没有 remote）。
+- 按用户的全局规则：Python 用 uv，依赖用 `uv add` 加；scratch 脚本放 `tmp/`；验收截图存到 `tmp/<date>-<task>/`，并在总结里写出路径。
+- 用完 agent-browser 或模拟器后，跑 `mac-dev-cleanup` 释放资源；App 和后端的测试进程不要留在后台。
+
 ## 1. 目标与范围
 
 **要做（MVP）**
