@@ -258,3 +258,50 @@ feishu-lite-backend（Python，asyncio）
 - 第 0 阶段的第 2 步和第 5 步：扫码登录（手机飞书）。
 - 第 0 阶段的第 3 步和第 8 节的验收：在测试会话里发消息，确认手机上的状态。
 - 提供测试会话：不要往真实工作群发测试消息。
+
+## 11. 执行进展与交接（2026-09-29）
+
+上一个执行 session 做完了第 0、1 阶段和第 2 阶段第 1 步，因为上下文太大，按用户要求换新会话继续。**新会话从第 2 阶段第 2 步（Core 包）开始。**
+
+### 已完成
+
+| 阶段 | 提交 | 说明 |
+|---|---|---|
+| 第 0 阶段 | `f7d66d7` | 五项都跑通，结论见 [协议探路笔记](../notes/2026-09-29-protocol-spike.md)；脱敏样本在 `backend/tests/fixtures/render_cases.json` |
+| 第 1 阶段 | `ac4a9c6` | 后端完成，`cd backend && uv run pytest` 21 个测试全过；已用真实账号手动检查过 `/status`、`/chats`、`/chats/{id}/messages`、发送和 SSE |
+| 第 2 阶段第 1 步 | 本节所在提交 | `mac/` 脚手架、签名（Team `QFW98B7VB4`，写在 gitignore 的 `mac/Config/Local.xcconfig`），`make test`/`make build`/`make run` 都通过 |
+
+### 执行中改动的决定（计划作者项，理由已核实）
+
+- **保活**：扫码登录拿到的 `session` 是不透明串，没有 `sl_session` JWT，csrf 接口也不刷新它。改成每 4 小时 csrf（合并全部 Set-Cookie）加 ticket 探活，能否撑过 24 小时靠 next-up 检查验证。
+- **推送循环**：没用 larkx 的 `connect_websocket`（在协程里同步阻塞、回调扔到它自己的线程、丢掉原始 content 和 `isBadged`），在 `source.py` 里用 larkx 的零件自己写了接收循环，全程在主事件循环里，不需要跨线程。
+- **Source 接口**：`send_text` 返回发出去的 `Message`（有 id，供去重）；`pull_history` 直接收 positions 列表。
+- **测试方式**：SSE 用 FastAPI TestClient 测不了流式响应，改成在测试里起真实的 uvicorn（同一个事件循环）加 httpx。
+- **加了每 5 分钟一次 feed 对账**：别的端读了消息不会推送过来，只能靠重新拉 feed 让未读数和手机一致。
+- **未读计数规则**：只有"非本人发送、`isBadged`、position 大于本地已知最大值"的推送才加 1，其余以服务端 feed 的数字为准。
+- **后端跟随 App 退出**：App 通过 `FEISHU_LITE_PARENT_PID` 传自己的 pid，后端每 2 秒检查一次，App 不在了就退出（中间隔着 `uv run`，后端看不到真正的父进程）。
+- 删掉了脚手架生成的 `mac/.github`（放在子目录里 GitHub 不会执行）。
+
+### 给第 2 阶段的实现要点
+
+- **接口约定**以 `backend/src/feishu_lite/api.py` 和 `types.py` 为准。相对第 4.4 节多出的字段：`Chat.last_position`、`Chat.rank_time`；`Message.badged`、`Message.at_me`。业务接口遇到凭证失效返回 409（`{"detail": "logged_out"}`），同时服务端状态切到 `logged_out`。
+- **SSE**：连上后第一条一定是 `status` 事件；每 15 秒发一行 `: ping` 注释。`URLSession.AsyncBytes.lines` 会**丢掉空行**，而 SSE 靠空行分隔事件，所以要自己按字节切行，再交给 Core 里的解析器（解析器的测试要覆盖空行分隔和多行 data）。请求空闲超时设 60 秒以上。
+- **去重**：同一条消息可能既出现在 `POST /chats/{id}/messages` 的响应里，又出现在 SSE 的 `message.new` 里，App 这边也按 message id 合并。
+- **断线补拉不发 `message.new`**，只发 `chat.updated`。如果当前打开的会话收到的 `chat.updated` 里 `last_position` 比已加载的最新消息大，就重新拉最新一页。
+- **标已读**：打开会话时调一次；当前会话在前台打开时收到新消息，也要调一次。
+- **"登录已失效"通知**：状态变成 `logged_out` 且 `last_error` 不为空时弹。首次启动、本来就没有凭证时 `last_error` 为 null，不弹。
+- **输入框**：用 NSTextView 包一层，回车发送、Shift+回车换行；按回车前先检查 `hasMarkedText()`，中文输入法候选词还没上屏时，回车只用来上屏，不能发送。
+- **窗口**：关掉窗口 App 不退出（`applicationShouldTerminateAfterLastWindowClosed` 返回 false）；点通知时如果窗口已经关了，要重新打开。
+- **系统消息**：`type == "system"`，发送者 id 是 `1`，名字是"系统消息"，居中灰字显示，不显示发送者。
+- **BackendSupervisor**：`uv run --project <BACKEND_DIR> feishu-lite-backend --port P`，环境变量传 `FEISHU_LITE_TOKEN`、`FEISHU_LITE_PARENT_PID`；如果 App 自己的环境里有 `FEISHU_LITE_HOME` 就透传。轮询 `/status` 返回 200 即就绪。`uv` 路径（本机是 `~/.local/bin/uv`）和 backend 目录写进 xcconfig，再通过 Info.plist 传给 App。后端日志建议写到 `~/Library/Logs/FeishuChat/backend.log`。
+
+### 开发环境
+
+- **测试会话**：用户自建的群 **litetest**，只有用户本人。chat_id 用 `/chats` 按名字查。只能往这个群发测试消息。
+- **开发用后端**：`source tmp/dev-env.sh && cd backend && uv run feishu-lite-backend --port 18765`（token 是 `devtoken`）。`tmp/dev-home/` 里是探路时扫码拿到的凭证副本（`tmp/` 已 gitignore），开发时不用重新扫码。App 调试时可以设 `FEISHU_LITE_BACKEND_URL` 和 `FEISHU_LITE_TOKEN` 直连这个后端，或者设 `FEISHU_LITE_HOME=<repo>/tmp/dev-home` 让 supervisor 拉起的后端用这份凭证。
+- **正式数据目录** `~/Library/Application Support/FeishuChat/` 目前是空的，所以验收第 1 项"全新启动 App，扫码登录"会从扫码开始。
+- 用完后端和 App 进程要关掉：`pgrep -fl feishu-lite-backend`、`pgrep -lx FeishuChat`。
+
+### 剩下的工作
+
+第 2 阶段第 2 到 5 步，第 3 阶段全部，第 8 节验收第 1 到 8 项（截图存到 `tmp/2026-09-29-feishu-chat-mvp/`，日期按实际完成那天），next-up 的 24 小时检查，session 总结，AGENTS.md 更新。`kb/known-issues.md` 里已经登记了后端层面的已知问题，第 3 阶段再补 App 层面和验收发现的问题。

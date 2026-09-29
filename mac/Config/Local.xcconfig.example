@@ -1,0 +1,6 @@
+// 复制为 Local.xcconfig（已 gitignore），填入你的 Team ID。
+// 仅影响 Debug 构建（Debug.xcconfig 末尾 include），Release 用 Developer ID。
+// Team ID 提取：security find-certificate -c "Apple Development" -p | openssl x509 -noout -subject（取 OU 字段）
+DEVELOPMENT_TEAM = XXXXXXXXXX
+CODE_SIGN_STYLE = Automatic
+CODE_SIGN_IDENTITY = Apple Development

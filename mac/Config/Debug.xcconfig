@@ -1,0 +1,8 @@
+// Debug 默认 ad-hoc 签名，保证无证书机器也能构建。
+// 装好 Apple Development 证书后，运行 setup-signing.sh（或手动复制
+// Local.xcconfig.example 为 Local.xcconfig 填入 Team ID）——
+// 固定签名身份可避免每次重新构建后 TCC 权限（麦克风/辅助功能）失效。
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = -
+
+#include? "Local.xcconfig"

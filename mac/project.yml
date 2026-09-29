@@ -1,0 +1,42 @@
+name: FeishuChat
+options:
+  bundleIdPrefix: com.reorx
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+# 第三方依赖统一在 FeishuChatCore/Package.swift 声明，app target 传递依赖
+packages:
+  FeishuChatCore:
+    path: FeishuChatCore
+
+configFiles:
+  Debug: Config/Debug.xcconfig
+  Release: Config/Release.xcconfig
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    ENABLE_HARDENED_RUNTIME: YES
+
+targets:
+  FeishuChat:
+    type: application
+    platform: macOS
+    sources:
+      - FeishuChat
+    dependencies:
+      - package: FeishuChatCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.reorx.FeishuChat
+    info:
+      path: FeishuChat/Info.plist
+      properties:
+        CFBundleDisplayName: FeishuChat
+    entitlements:
+      path: FeishuChat/FeishuChat.entitlements
+      properties:
+        # 非沙箱：CGEventTap / AX 注入等系统级能力与沙箱不兼容；
+        # 若 app 不需要这些能力且计划上 App Store，改为 true
+        com.apple.security.app-sandbox: false
