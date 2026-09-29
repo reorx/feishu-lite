@@ -59,3 +59,25 @@ private func msg(_ position: Int, id: String? = nil, text: String = "hi") -> Mes
     #expect(!HistoryCursor(lastPosition: 12, pageSize: 30).hasMore)
     #expect(!HistoryCursor(lastPosition: -1, pageSize: 30).hasMore)
 }
+
+@Test func latestPageThatConnectsToLoadedMessagesIsMerged() {
+    var timeline = MessageTimeline()
+    timeline.merge((1...10).map { msg($0) })
+    timeline.mergeLatestPage((8...14).map { msg($0) })
+    #expect(timeline.messages.map(\.position) == Array(1...14))
+}
+
+@Test func latestPageAfterAGapReplacesLoadedMessages() {
+    // 断线很久之后回来：最新一页和已加载的接不上，留着旧的会在中间留一个洞
+    var timeline = MessageTimeline()
+    timeline.merge((1...10).map { msg($0) })
+    timeline.mergeLatestPage((50...60).map { msg($0) })
+    #expect(timeline.messages.map(\.position) == Array(50...60))
+}
+
+@Test func emptyLatestPageKeepsLoadedMessages() {
+    var timeline = MessageTimeline()
+    timeline.merge([msg(1)])
+    timeline.mergeLatestPage([])
+    #expect(timeline.messages.map(\.position) == [1])
+}

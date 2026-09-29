@@ -1,0 +1,4 @@
+// 后端子进程的位置，经 Info.plist 传给 App（见 Services/BackendConfig.swift）。
+// 路径不同的机器在 Local.xcconfig 里覆盖这两项。
+FEISHU_BACKEND_DIR = $(SRCROOT)/../backend
+FEISHU_UV_PATH = $(HOME)/.local/bin/uv

@@ -1,3 +1,5 @@
+#include "Backend.xcconfig"
+
 // Release 必须 Developer ID 签名 + notarytool 公证。
 // DEVELOPMENT_TEAM 由 Local.xcconfig 提供，或由发布脚本通过 xcodebuild 参数覆盖。
 CODE_SIGN_STYLE = Manual

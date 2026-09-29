@@ -34,9 +34,12 @@ targets:
       path: FeishuChat/Info.plist
       properties:
         CFBundleDisplayName: FeishuChat
+        LSApplicationCategoryType: public.app-category.social-networking
+        # 后端子进程的位置，值来自 Config/Backend.xcconfig
+        FeishuBackendDir: $(FEISHU_BACKEND_DIR)
+        FeishuUVPath: $(FEISHU_UV_PATH)
     entitlements:
       path: FeishuChat/FeishuChat.entitlements
       properties:
-        # 非沙箱：CGEventTap / AX 注入等系统级能力与沙箱不兼容；
-        # 若 app 不需要这些能力且计划上 App Store，改为 true
+        # 非沙箱：要拉起 uv 子进程（后端），沙箱里做不到
         com.apple.security.app-sandbox: false

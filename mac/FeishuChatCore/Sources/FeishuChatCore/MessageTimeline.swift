@@ -45,3 +45,41 @@ public struct HistoryCursor: Equatable, Sendable {
         before = max(0, before - pageSize)
     }
 }
+
+extension MessageTimeline {
+    /// 合并重新拉到的最新一页。和已加载的消息接不上时（中间隔着没加载的消息），丢掉旧的只留这一页，
+    /// 保证时间线里没有洞，往上翻还能从这一页接着翻。
+    public mutating func mergeLatestPage(_ page: [Message]) {
+        guard let pageOldest = page.map(\.position).min() else { return }
+        if let latest = latestPosition, pageOldest > latest + 1 {
+            messages = []
+        }
+        merge(page)
+    }
+}
+
+/// 消息列表里的一行：同一个人连续发的消息只在第一条显示名字，隔了一段时间才再显示时间
+public struct MessageRow: Identifiable, Equatable, Sendable {
+    public static let timestampGap = 5 * 60
+
+    public var message: Message
+    public var showsTimestamp: Bool
+    public var showsSender: Bool
+
+    public var id: String { message.id }
+
+    public static func rows(for messages: [Message], chatType: ChatType) -> [MessageRow] {
+        var rows: [MessageRow] = []
+        rows.reserveCapacity(messages.count)
+        var previous: Message?
+        for message in messages {
+            let showsTimestamp = previous.map { message.createTime - $0.createTime > timestampGap } ?? true
+            let startsGroup = showsTimestamp || previous?.senderID != message.senderID || previous?.isSystem == true
+            let namedSender = chatType == .group && !message.isSelf && !message.isSystem
+            rows.append(MessageRow(message: message, showsTimestamp: showsTimestamp,
+                                   showsSender: namedSender && startsGroup))
+            previous = message
+        }
+        return rows
+    }
+}

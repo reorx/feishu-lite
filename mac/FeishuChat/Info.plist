@@ -20,5 +20,11 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>FeishuBackendDir</key>
+	<string>$(FEISHU_BACKEND_DIR)</string>
+	<key>FeishuUVPath</key>
+	<string>$(FEISHU_UV_PATH)</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.social-networking</string>
 </dict>
 </plist>
