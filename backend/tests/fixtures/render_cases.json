@@ -54,6 +54,12 @@
     "expected": "张三 updated the group name from \"张三\" to \"测试群\"."
   },
   {
+    "name": "system_blank_template",
+    "type": 6,
+    "content_hex": "0a0120120c0a066e756d4d696e12023132120c0a066e756d53656312023330120c0a076e756d486f7572120130188607308607",
+    "expected": "[系统消息]"
+  },
+  {
     "name": "unknown_type",
     "type": 99,
     "content_hex": "",

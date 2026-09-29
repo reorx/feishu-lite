@@ -8,7 +8,10 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi>=0.141.1",
     "larkx",
+    "qrcode>=8.2",
+    "uvicorn>=0.54.0",
 ]
 
 [project.scripts]
@@ -23,3 +26,15 @@ module-name = "feishu_lite"
 
 [tool.uv.sources]
 larkx = { git = "https://github.com/cv-cat/LarkAgentX", rev = "2cb4f90fcfd5d7608800291ebb5e912ba6383901" }
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
