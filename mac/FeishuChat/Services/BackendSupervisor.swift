@@ -39,7 +39,7 @@ final class BackendSupervisor {
     func start() {
         guard loop == nil else { return }
         if let external = config.externalEndpoint {
-            log.info("using external backend at \(external.baseURL.absoluteString, privacy: .public)")
+            log.notice("using external backend at \(external.baseURL.absoluteString, privacy: .public)")
             state = .ready(external)
             return
         }
@@ -122,7 +122,7 @@ final class BackendSupervisor {
         }
         try process.run()
         try? logHandle.close()
-        log.info("backend started, pid \(process.processIdentifier), port \(port)")
+        log.notice("backend started, pid \(process.processIdentifier), port \(port)")
 
         let exit = Task.detached { () -> Int32 in
             for await code in exitCodes { return code }

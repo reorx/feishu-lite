@@ -3,11 +3,20 @@ import SwiftUI
 
 struct LoginView: View {
     let login: LoginModel
+    /// 之前登录过但凭证失效了
+    let sessionExpired: Bool
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("登录飞书")
-                .font(.title2.weight(.semibold))
+            VStack(spacing: 6) {
+                Text("登录飞书")
+                    .font(.title2.weight(.semibold))
+                if sessionExpired {
+                    Label("登录已失效，请重新扫码", systemImage: "exclamationmark.circle")
+                        .font(.callout)
+                        .foregroundStyle(.orange)
+                }
+            }
             qrArea
                 .frame(width: 240, height: 240)
             caption

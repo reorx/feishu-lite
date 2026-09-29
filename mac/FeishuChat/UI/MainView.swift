@@ -10,6 +10,9 @@ struct MainView: View {
                 .safeAreaInset(edge: .top, spacing: 0) {
                     ConnectionStatusBar(appState: appState)
                 }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    NotificationPermissionBar(notifications: appState.notifications)
+                }
                 .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 420)
         } detail: {
             if let conversation = appState.conversation {
@@ -42,6 +45,30 @@ private struct ConnectionStatusBar: View {
         .padding(.vertical, 6)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("连接状态：\(display.text)")
+    }
+}
+
+/// 通知被关掉时的提示。系统不会再弹授权，只能引导用户去系统设置里打开。
+private struct NotificationPermissionBar: View {
+    let notifications: NotificationService
+
+    var body: some View {
+        if notifications.isDenied {
+            HStack(spacing: 8) {
+                Label("通知未开启，收不到新消息提醒", systemImage: "bell.slash")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                Spacer(minLength: 0)
+                Button("去开启") {
+                    notifications.openSystemSettings()
+                }
+                .controlSize(.small)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(.bar)
+        }
     }
 }
 

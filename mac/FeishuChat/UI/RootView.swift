@@ -18,7 +18,7 @@ struct RootView: View {
     private var content: some View {
         if let status = appState.status {
             if status.state == .loggedOut {
-                LoginView(login: appState.login)
+                LoginView(login: appState.login, sessionExpired: status.lastError != nil)
             } else {
                 MainView(appState: appState)
             }

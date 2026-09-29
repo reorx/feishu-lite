@@ -24,6 +24,7 @@ final class AppState {
     var isConfirmingLogout = false
 
     let login: LoginModel
+    let notifications: NotificationService
 
     var isLoggedIn: Bool {
         guard let status else { return false }
@@ -41,7 +42,6 @@ final class AppState {
     @ObservationIgnored private var observers: [any NSObjectProtocol] = []
     @ObservationIgnored private let connection = BackendConnection()
     @ObservationIgnored private let supervisor: BackendSupervisor
-    @ObservationIgnored private let notifications: NotificationService
     @ObservationIgnored private let windows: WindowManager
     @ObservationIgnored private let log = Logger(subsystem: "com.reorx.FeishuChat", category: "app")
 
@@ -92,6 +92,10 @@ final class AppState {
                 }
             })
         }
+        observers.append(center.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil,
+                                            queue: .main) { [weak self] _ in
+            Task { await self?.notifications.refreshAuthorization() }
+        })
     }
 
     // MARK: - 事件流

@@ -5,28 +5,46 @@ import os
 
 /// 本地通知和 Dock 角标
 @MainActor
+@Observable
 final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
     private nonisolated static let chatIDKey = "chat_id"
     private static let sessionExpiredID = "session-expired"
+    static let settingsURL = URL(
+        string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension?id=com.reorx.FeishuChat")!
+
+    /// 用户在系统设置里关掉了通知（或者拒绝了授权弹窗）。这种情况下系统不会再弹授权，只能去系统设置里打开。
+    private(set) var isDenied = false
 
     /// 用户点了某个会话的通知
-    var onOpenChat: ((String) -> Void)?
+    @ObservationIgnored var onOpenChat: ((String) -> Void)?
     /// 用户点了"登录已失效"的通知
-    var onOpenApp: (() -> Void)?
+    @ObservationIgnored var onOpenApp: (() -> Void)?
 
-    private let center = UNUserNotificationCenter.current()
-    private let log = Logger(subsystem: "com.reorx.FeishuChat", category: "notification")
+    @ObservationIgnored private let center = UNUserNotificationCenter.current()
+    @ObservationIgnored private let log = Logger(subsystem: "com.reorx.FeishuChat", category: "notification")
 
     func activate() {
         center.delegate = self
         Task {
             do {
                 let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
-                log.info("notification authorization granted: \(granted)")
+                log.notice("notification authorization granted: \(granted)")
             } catch {
                 log.error("notification authorization failed: \(error.localizedDescription, privacy: .public)")
             }
+            await refreshAuthorization()
         }
+    }
+
+    /// 用户可能刚从系统设置回来，重新读一次授权状态
+    func refreshAuthorization() async {
+        let status = await center.notificationSettings().authorizationStatus
+        isDenied = status == .denied
+        log.notice("notification authorization status: \(status.rawValue)")
+    }
+
+    func openSystemSettings() {
+        NSWorkspace.shared.open(Self.settingsURL)
     }
 
     func notify(message: Message, chat: Chat) {
@@ -75,6 +93,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         Task {
             do {
                 try await center.add(request)
+                log.notice("posted notification \(id, privacy: .public)")
             } catch {
                 log.error("failed to post notification: \(error.localizedDescription, privacy: .public)")
             }
