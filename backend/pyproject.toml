@@ -1,0 +1,25 @@
+[project]
+name = "feishu-lite-backend"
+version = "0.1.0"
+description = "FeishuChat backend: wraps larkx (reverse-engineered Feishu web protocol) behind a local REST + SSE API"
+readme = "README.md"
+authors = [
+    { name = "Reorx", email = "novoreorx@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "larkx",
+]
+
+[project.scripts]
+feishu-lite-backend = "feishu_lite.main:main"
+
+[build-system]
+requires = ["uv_build>=0.9.17,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "feishu_lite"
+
+[tool.uv.sources]
+larkx = { git = "https://github.com/cv-cat/LarkAgentX", rev = "2cb4f90fcfd5d7608800291ebb5e912ba6383901" }
