@@ -60,8 +60,13 @@ private struct MessageScrollView: View {
                 }
             }
             .onChange(of: conversation.prependAnchor) { _, anchor in
-                // 上面插入了更早的一页：回到翻页之前最上面的那条消息
-                if let anchor {
+                guard let anchor else { return }
+                // 刚打开会话时，首次布局会短暂渲染出顶部的加载行，触发一次翻页；这时用户还停在底部，
+                // 要留在最新消息那里，不能跳到翻页前的第一条
+                if isAtBottom {
+                    proxy.scrollTo(Self.bottomID, anchor: .bottom)
+                } else {
+                    // 用户往上翻出了更早的一页：回到翻页之前最上面的那条消息
                     proxy.scrollTo(anchor.messageID, anchor: .top)
                 }
             }
