@@ -22,6 +22,8 @@ final class AppState {
         }
     }
     var isConfirmingLogout = false
+    /// 今天零点。时间标签里的"今天/昨天"按它算，跨天后换掉它，视图才会重新算
+    private(set) var today = Calendar.current.startOfDay(for: Date())
 
     let login: LoginModel
     let notifications: NotificationService
@@ -60,6 +62,7 @@ final class AppState {
         notifications.onOpenApp = { [weak self] in self?.windows.show() }
         notifications.activate()
         observeUserReturning()
+        observeDayChange()
         supervisor.start()
     }
 
@@ -96,6 +99,29 @@ final class AppState {
                                             queue: .main) { [weak self] _ in
             Task { await self?.notifications.refreshAuthorization() }
         })
+    }
+
+    /// 跨天、改时区、睡眠唤醒之后更新 `today`
+    private func observeDayChange() {
+        let sources: [(NotificationCenter, Notification.Name)] = [
+            (.default, .NSCalendarDayChanged),
+            (.default, .NSSystemTimeZoneDidChange),
+            (NSWorkspace.shared.notificationCenter, NSWorkspace.didWakeNotification),
+        ]
+        for (center, name) in sources {
+            observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.refreshToday()
+                }
+            })
+        }
+    }
+
+    private func refreshToday() {
+        let start = Calendar.current.startOfDay(for: Date())
+        if start != today {
+            today = start
+        }
     }
 
     // MARK: - 事件流

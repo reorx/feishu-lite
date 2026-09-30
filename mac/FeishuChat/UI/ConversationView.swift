@@ -110,10 +110,12 @@ private struct EmptyStateView: View {
 private struct MessageRowView: View {
     let row: MessageRow
 
+    @Environment(\.today) private var today
+
     var body: some View {
         VStack(spacing: 0) {
             if row.showsTimestamp {
-                Text(ChatTimeFormat.messageLabel(row.message.createTime))
+                Text(ChatTimeFormat.messageLabel(row.message.createTime, now: today))
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .padding(.top, 14)
@@ -138,6 +140,8 @@ private struct MessageBubbleView: View {
     let message: Message
     let showsSender: Bool
 
+    @Environment(\.today) private var today
+
     var body: some View {
         HStack(spacing: 0) {
             if message.isSelf {
@@ -158,7 +162,7 @@ private struct MessageBubbleView: View {
                     .padding(.vertical, 7)
                     .background(message.isSelf ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary),
                                 in: .rect(cornerRadius: 12))
-                    .help(ChatTimeFormat.messageLabel(message.createTime))
+                    .help(ChatTimeFormat.messageLabel(message.createTime, now: today))
             }
             if !message.isSelf {
                 Spacer(minLength: 80)

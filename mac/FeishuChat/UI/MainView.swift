@@ -22,6 +22,7 @@ struct MainView: View {
                 ContentUnavailableView("选择一个会话", systemImage: "bubble.left.and.bubble.right")
             }
         }
+        .environment(\.today, appState.today)
     }
 }
 
@@ -99,6 +100,11 @@ extension AppState {
             return ConnectionDisplay(text: "未登录", isHealthy: false)
         }
     }
+}
+
+extension EnvironmentValues {
+    /// 今天零点，跨天时由 AppState 更新。显示时间标签的视图从这里取"现在"，跨天后才会重新算
+    @Entry var today = Calendar.current.startOfDay(for: Date())
 }
 
 extension Chat {

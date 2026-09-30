@@ -21,6 +21,8 @@ struct ChatListView: View {
 private struct ChatRowView: View {
     let chat: Chat
 
+    @Environment(\.today) private var today
+
     var body: some View {
         HStack(spacing: 10) {
             AvatarView(name: chat.displayName, seed: chat.id, isGroup: chat.type == .group)
@@ -37,7 +39,7 @@ private struct ChatRowView: View {
                             .accessibilityLabel("免打扰")
                     }
                     Spacer(minLength: 4)
-                    Text(ChatTimeFormat.listLabel(chat.lastMessageTime))
+                    Text(ChatTimeFormat.listLabel(chat.lastMessageTime, now: today))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
