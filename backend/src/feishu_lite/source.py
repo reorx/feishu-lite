@@ -282,7 +282,11 @@ class LarkxSource:
 
     def _to_chat(self, raw: dict, names: dict[str, str], rank_time=None) -> Chat:
         is_p2p = raw.get('type') == 1
-        name = names.get(self._partner_id(raw), '') if is_p2p else ''
+        if is_p2p:
+            name = names.get(self._partner_id(raw), '')
+        else:
+            # `name` can be the English one (e.g. the Feishu Assistant group); the official client shows zh_cn
+            name = ((raw.get('i18nInf') or {}).get('i18nNames') or {}).get('zh_cn', '')
         return Chat(
             id=str(raw['id']),
             name=name or raw.get('name') or '',
