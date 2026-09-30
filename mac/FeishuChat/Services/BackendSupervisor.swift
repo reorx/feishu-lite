@@ -175,12 +175,10 @@ final class BackendSupervisor {
             try? manager.removeItem(at: rotated)
             try? manager.moveItem(at: url, to: rotated)
         }
-        if !manager.fileExists(atPath: url.path) {
-            manager.createFile(atPath: url.path, contents: nil, attributes: [.posixPermissions: 0o600])
-        }
-        let handle = try FileHandle(forWritingTo: url)
-        try handle.seekToEnd()
-        return handle
+        // 必须用 O_APPEND：重启时旧后端还在写收尾日志，普通写句柄各记各的偏移量，会互相覆盖
+        let descriptor = open(url.path, O_WRONLY | O_APPEND | O_CREAT, 0o600)
+        guard descriptor >= 0 else { throw CocoaError(.fileWriteUnknown, userInfo: [NSFilePathErrorKey: url.path]) }
+        return FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
     }
 
     /// 让系统在回环地址上分配一个空闲端口
