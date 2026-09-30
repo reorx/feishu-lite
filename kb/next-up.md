@@ -2,8 +2,7 @@
 
 > 接下来要做的事，按时间排。做完一项就删掉，结果记到条目指定的 kb 文档，这里不留记录。
 
-## 2026-09-30 22:30 CST 之后
+## 2026-10-06 22:30 CST 之后
 
-- **登录 24 小时后仍在线**（验收第 9 项）：正式凭证是 2026-09-29 22:27 扫码拿到的，App 从 22:33 起不经代理运行。检查 `pgrep -lx FeishuChat` 有进程；App 侧栏顶部显示"在线"；`grep -c 'keepalive ok' ~/Library/Logs/FeishuChat/backend.log` 大约每 4 小时加 1；`grep -n 'logged out' ~/Library/Logs/FeishuChat/backend.log` 在 22:27 之后没有新记录。再往测试群 litetest 发一条消息，确认 App 里几秒内出现。
-  中途如果 App 被重启过（做剩下的验收时会重启），不影响这项检查：要验证的是扫码拿到的凭证能不能撑过 24 小时。
-  → 通过：删掉 `kb/known-issues.md` 里「保活：扫码会话的有效期和续期方式没有验证」一条，结果记到当次 session 总结。没通过：把掉线时间和 `backend.log` 里的报错补进那一条。
+- **登录 7 天后仍在线**：正式凭证是 2026-09-29 22:27 扫码拿到的，25.5 小时的检查已通过（每 4 小时一次 `keepalive ok`），更长的有效期没有验证过。检查 App 侧栏顶部显示"在线"；`grep -n 'logged out' ~/Library/Logs/FeishuChat/backend.log` 在 2026-09-30 11:53 之后没有新记录（11:53 那条是验收时用凭证副本做的失效测试）；`tmp/bot_send.sh "测试"` 往 litetest 发一条，App 里几秒内出现（机器人被移除的话改用手机发）。
+  → 通过：结果记到当次 session 总结，这一项删掉即可。没通过：在 `kb/known-issues.md` 登记"保活：扫码会话撑不过 N 天"，写上掉线时间和 `backend.log` 里的报错。

@@ -26,6 +26,7 @@ FeishuChat 的 SwiftUI 客户端：拉起并守护 `../backend` 的 Python 后�
 - `Model/AppState` 是唯一的状态入口：订阅后端的 SSE 事件流，维护登录状态、会话列表和当前会话（`Model/Conversation`）。事件流每次（重新）连上都会把会话列表和当前会话重新拉一遍，因为断开期间的变化不会补发。
 - 接口模型、SSE 解析、通知策略、消息合并和排序都在 `FeishuChatCore`，改这些行为先改那里的测试。
 - **`@Observable` 类里标了 `@ObservationIgnored` 的属性，视图不能直接或间接依赖**（包括由它算出来的计算属性），否则视图收不到变化。给视图用的派生值要存成被观察的属性，参考 `Conversation.rows`。
+- 显示"今天/昨天"这类相对时间的视图，"现在"要从环境值 `\.today` 取（`AppState.today`，跨天、改时区、唤醒时更新），不要在视图里直接用 `Date()`，否则过了零点标签不会变。
 - 输入框是包了一层的 `NSTextView`（`UI/ComposerView`），为的是拿到输入法的组字状态：候选词没上屏时回车不能发送。不要换回 `TextField` / `TextEditor`。
 - 主窗口是单例 `Window`，关掉窗口 App 不退出；窗口关掉之后要用 `WindowManager.show()` 重新打开。
 
