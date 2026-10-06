@@ -2,7 +2,10 @@
 
 import asyncio
 import logging
+from io import BytesIO
 from typing import TYPE_CHECKING
+
+from PIL import Image
 
 from .store import Store
 from .types import AuthExpired, Chat, Message, QrStatus, State, Status, User
@@ -314,6 +317,23 @@ class Service:
         sent = await self.source.send_text(chat_id, text)
         await self._ingest(sent)
         return self.store.get_message(sent.id)
+
+    async def get_image(self, message_id: str) -> tuple[bytes, str]:
+        if self.user is None:
+            raise AuthExpired('not logged in')
+        message = self.store.get_message(message_id)
+        if message is None or message.type != 'image' or message.text == '[消息已撤回]':
+            raise LookupError('image message unavailable')
+        data = await self.source.fetch_image(message)
+        # The file service may return application/octet-stream, or a login HTML page.
+        with Image.open(BytesIO(data)) as image:
+            if image.width * image.height > 40_000_000:
+                raise ValueError('image dimensions too large')
+            media_type = Image.MIME.get(image.format)
+            if not media_type or not media_type.startswith('image/'):
+                raise ValueError('unsupported image format')
+            image.verify()
+        return data, media_type
 
     async def mark_read(self, chat_id: str):
         chat = self._require_chat(chat_id)

@@ -71,6 +71,10 @@ struct BackendClient {
         _ = try await data(for: request("POST", "chats/\(chatID)/read"))
     }
 
+    func image(messageID: String) async throws -> Data {
+        try await data(for: request("GET", "messages/\(messageID)/image"))
+    }
+
     /// 订阅事件流。连接断开或空闲超时时以错误结束，由调用方重连。
     func events() -> AsyncThrowingStream<BackendEvent, Error> {
         var request = request("GET", "events")

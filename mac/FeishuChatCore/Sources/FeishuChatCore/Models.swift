@@ -93,6 +93,7 @@ public struct Message: Codable, Identifiable, Equatable, Sendable {
     public var atMe: Bool
 
     public var isSystem: Bool { type == "system" }
+    public var isViewableImage: Bool { type == "image" && text != "[消息已撤回]" }
 
     enum CodingKeys: String, CodingKey {
         case id, position, type, text, badged

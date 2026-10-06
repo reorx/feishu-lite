@@ -214,6 +214,7 @@ source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "larkx" },
+    { name = "pillow" },
     { name = "qrcode" },
     { name = "uvicorn" },
 ]
@@ -229,6 +230,7 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.141.1" },
     { name = "larkx", git = "https://github.com/cv-cat/LarkAgentX?rev=2cb4f90fcfd5d7608800291ebb5e912ba6383901" },
+    { name = "pillow", specifier = ">=12.3.0" },
     { name = "qrcode", specifier = ">=8.2" },
     { name = "uvicorn", specifier = ">=0.54.0" },
 ]

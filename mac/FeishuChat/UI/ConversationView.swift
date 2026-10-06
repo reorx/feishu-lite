@@ -41,7 +41,7 @@ private struct MessageScrollView: View {
                 LazyVStack(spacing: 0) {
                     HistoryHeader(conversation: conversation)
                     ForEach(conversation.rows) { row in
-                        MessageRowView(row: row)
+                        MessageRowView(row: row, conversation: conversation)
                             .id(row.id)
                     }
                     Color.clear
@@ -114,6 +114,7 @@ private struct EmptyStateView: View {
 
 private struct MessageRowView: View {
     let row: MessageRow
+    let conversation: Conversation
 
     @Environment(\.today) private var today
 
@@ -134,7 +135,7 @@ private struct MessageRowView: View {
                     .padding(.vertical, 6)
                     .frame(maxWidth: .infinity)
             } else {
-                MessageBubbleView(message: row.message, showsSender: row.showsSender)
+                MessageBubbleView(message: row.message, showsSender: row.showsSender, conversation: conversation)
                     .padding(.top, row.showsSender ? 10 : 3)
             }
         }
@@ -144,6 +145,7 @@ private struct MessageRowView: View {
 private struct MessageBubbleView: View {
     let message: Message
     let showsSender: Bool
+    let conversation: Conversation
 
     @Environment(\.today) private var today
 
@@ -159,15 +161,19 @@ private struct MessageBubbleView: View {
                         .foregroundStyle(.secondary)
                         .padding(.leading, 4)
                 }
-                Text(MessageText.attributed(message.text))
-                    .textSelection(.enabled)
-                    .foregroundStyle(message.isSelf ? Color.white : Color.primary)
-                    .tint(message.isSelf ? Color.white : Color.accentColor)
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 7)
-                    .background(message.isSelf ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary),
-                                in: .rect(cornerRadius: 12))
-                    .help(ChatTimeFormat.messageLabel(message.createTime, now: today))
+                if message.isViewableImage {
+                    ImageMessageView(messageID: message.id, conversation: conversation)
+                } else {
+                    Text(MessageText.attributed(message.text))
+                        .textSelection(.enabled)
+                        .foregroundStyle(message.isSelf ? Color.white : Color.primary)
+                        .tint(message.isSelf ? Color.white : Color.accentColor)
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 7)
+                        .background(message.isSelf ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary),
+                                    in: .rect(cornerRadius: 12))
+                        .help(ChatTimeFormat.messageLabel(message.createTime, now: today))
+                }
             }
             if !message.isSelf {
                 Spacer(minLength: 80)

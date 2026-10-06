@@ -13,6 +13,7 @@ from typing import Protocol
 
 import requests
 import websockets
+from larkx import media
 from google.protobuf.message import DecodeError
 from larkx.auth import CSRF_URL, QR_POLLING_URL, LarkAuth, QrLogin
 from larkx.auth import AuthExpired as LarkxAuthExpired
@@ -52,6 +53,8 @@ class Source(Protocol):
     async def pull_history(self, chat_id: str, positions: list[int]) -> list[Message]: ...
 
     async def send_text(self, chat_id: str, text: str) -> Message: ...
+
+    async def fetch_image(self, message: Message) -> bytes: ...
 
     async def mark_read(self, chat_id: str, max_position: int) -> None: ...
 
@@ -209,6 +212,29 @@ class LarkxSource:
 
     async def send_text(self, chat_id, text):
         return await self._call(self._send_text, chat_id, text)
+
+    async def fetch_image(self, message: Message) -> bytes:
+        return await self._call(self._fetch_image, message)
+
+    def _fetch_image(self, message: Message) -> bytes:
+        # Resolve again so old text-only caches work and revoked resources aren't displayed.
+        response = self.client.api(
+            'messages.PullMessagesByPositionsRequest',
+            {'chatId': message.chat_id, 'positions': [message.position]},
+        )
+        raw = (response.get('messages') or {}).get(message.id)
+        if not raw or decoders.enum_to_int(raw.get('type', 0)) != 5:
+            raise LookupError('image message unavailable')
+        if raw.get('isRemoved') or raw.get('status') == MESSAGE_DELETED:
+            raise LookupError('image message revoked')
+        content = P.ImageContent()
+        content.ParseFromString(raw.get('content') or b'')
+        key = media.extract_resource_key(5, protobuf_to_dict(content))
+        if not key:
+            raise LookupError('image resource unavailable')
+        url = media.message_resource_url(message.id, key, message.chat_id)
+        data, _ = media.download(self.auth, url, max_bytes=25 * 1024 * 1024)
+        return data
 
     def _send_text(self, chat_id, text) -> Message:
         packet = builders.build_send_message_packet(text, chat_id, generate_long_request_id())

@@ -6,7 +6,7 @@ import secrets
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 from .service import ChatNotFound, Service
@@ -77,6 +77,18 @@ def create_app(service: Service, token: str) -> FastAPI:
     @app.post('/chats/{chat_id}/messages')
     async def send_message(chat_id: str, body: SendBody) -> Message:
         return await service.send_text(chat_id, body.text)
+
+    @app.get('/messages/{message_id}/image')
+    async def get_image(message_id: str):
+        try:
+            data, media_type = await service.get_image(message_id)
+        except AuthExpired:
+            raise
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail='图片已撤回或不可用') from exc
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail='图片加载失败，请重试') from exc
+        return Response(data, media_type=media_type, headers={'Cache-Control': 'no-store'})
 
     @app.post('/chats/{chat_id}/read')
     async def mark_read(chat_id: str):

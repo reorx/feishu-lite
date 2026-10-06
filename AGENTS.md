@@ -13,6 +13,8 @@ FeishuChat：不依赖飞书官方客户端的轻量飞书聊天客户端（macO
 
 MVP 功能已经做完并通过验收：扫码登录、会话列表、历史消息和翻页、发文本、实时消息、本地通知、Dock 角标、开机启动。计划和验收清单在 `kb/plans/2026-09-29-feishu-chat-mvp-plan.md`，逐项的验收结果和证据在 `kb/sessions/2026-10-01-feishu-chat-app-and-acceptance.md`。
 
+独立图片消息已实现缩略图、点击预览/缩放和失败重试；通过鉴权接口 `GET /messages/{message_id}/image` 按需下载，兼容旧缓存，不支持发送图片或富文本内嵌图片。自动测试和隔离界面验收通过，真实飞书下载待验证，详见 `kb/sessions/2026-10-06-image-messages.md`。
+
 ## 运行和测试
 
 - 后端测试：`cd backend && uv run pytest`。App：`cd mac && make test && make build && make run`。

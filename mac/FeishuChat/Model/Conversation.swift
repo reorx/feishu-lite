@@ -126,6 +126,10 @@ final class Conversation {
         sendError = nil
     }
 
+    func imageData(messageID: String) async throws -> Data {
+        try await connection.requireClient().image(messageID: messageID)
+    }
+
     private func report(_ error: any Error, as keyPath: ReferenceWritableKeyPath<Conversation, String?>, prefix: String) {
         // 凭证失效时后端会推 logged_out，界面整个切到登录页，这里不用再报
         if case BackendError.loggedOut = error { return }
