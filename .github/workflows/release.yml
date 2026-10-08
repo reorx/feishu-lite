@@ -75,7 +75,7 @@ jobs:
           xcrun notarytool submit mac/dist/*.dmg --key "$RUNNER_TEMP/notary-key.p8" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID" --wait --timeout 20m
           xcrun stapler staple mac/dist/*.dmg
           xcrun stapler validate mac/dist/*.dmg
-          shasum -a 256 mac/dist/*.dmg > mac/dist/SHA256SUMS
+          (cd mac/dist && shasum -a 256 *.dmg > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
           name: FeishuChat-release

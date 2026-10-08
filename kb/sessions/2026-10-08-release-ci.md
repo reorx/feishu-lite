@@ -26,8 +26,11 @@ tags:
 - 行为测试先失败后实现；55 项 Swift 测试、39 项 Python 测试通过。
 - Debug、Universal Release 构建通过；`lipo` 确认 arm64 和 x86_64；DMG 打包通过。
 - wheel 在独立 uv tool 目录安装成功，包含固定 commit 的 larkx；隔离 App 使用该工具启动成功。
+- 从 GitHub 的 `c072ffa` commit 执行完整 `uv tool install` 命令也通过，确认远端 Git 安装链路可用。
 - 独立 bundle ID 和数据目录验收：缺少依赖显示引导，安装后按「已安装，重新检测」进入登录页，未扫码、未访问真实账号。
 - 截图与 AX 证据：`tmp/2026-10-08-release-ci/`。测试 App 已退出。
+- [GitHub CI 37765084270](https://github.com/reorx/feishu-lite/actions/runs/37765084270) 全部通过：Linux 后端测试和独立安装、macOS Swift 测试、Debug 与 Universal Release 构建。
+- [GitHub Release 37765079451](https://github.com/reorx/feishu-lite/actions/runs/37765079451) 测试、证书导入、Universal 构建、Developer ID 签名验证和 DMG 打包通过；Apple 公证因账号协议阻塞（见下）。
 
 ## 注意事项
 
@@ -38,4 +41,5 @@ tags:
 
 ## 遗留问题
 
-- GitHub Actions 首次云端构建、Apple 公证与正式 Release 结果待本次运行完成后补记。
+- Apple notarytool 返回 HTTP 403：`A required agreement is missing or has expired`。账号持有人需在 Apple Developer / App Store Connect 接受待处理协议，再手动运行 Release 工作流验证公证。不能通过代码解决，也不退回未公证发布。
+- 尚未创建 `v0.1.0` 标签或正式 Release；公证成功后创建标签即可触发当前仓库发布。跟进条件记在 `kb/next-up.md`。
