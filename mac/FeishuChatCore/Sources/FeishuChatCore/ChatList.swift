@@ -4,7 +4,14 @@ import Foundation
 public struct ChatList: Equatable, Sendable {
     public private(set) var chats: [Chat] = []
 
-    public init() {}
+    public var hiddenIDs: Set<String>
+
+    public init(hiddenIDs: Set<String> = []) {
+        self.hiddenIDs = hiddenIDs
+    }
+
+    public var visibleChats: [Chat] { chats.filter { !hiddenIDs.contains($0.id) } }
+    public var hiddenChats: [Chat] { chats.filter { hiddenIDs.contains($0.id) } }
 
     public subscript(id: String) -> Chat? {
         chats.first { $0.id == id }

@@ -2,19 +2,114 @@ import FeishuChatCore
 import SwiftUI
 
 struct ChatListView: View {
-    let chats: [Chat]
-    @Binding var selection: String?
+    @Bindable var appState: AppState
+    @State private var isManaging = false
+    @State private var selectedIDs: Set<String> = []
+
+    private var chats: [Chat] {
+        appState.showsHiddenChats ? appState.hiddenChats : appState.chats
+    }
 
     var body: some View {
-        List(chats, selection: $selection) { chat in
-            ChatRowView(chat: chat)
+        VStack(spacing: 0) {
+            header
+            Divider()
+            if isManaging {
+                List(chats) { chat in
+                    Toggle(isOn: Binding(
+                        get: { selectedIDs.contains(chat.id) },
+                        set: { selected in
+                            if selected { selectedIDs.insert(chat.id) }
+                            else { selectedIDs.remove(chat.id) }
+                        }
+                    )) {
+                        ChatRowView(chat: chat)
+                    }
+                    .toggleStyle(.checkbox)
+                    .accessibilityLabel("选择\(chat.displayName)")
+                }
+            } else {
+                List(chats, selection: $appState.selectedChatID) { chat in
+                    ChatRowView(chat: chat)
+                }
+            }
+            if isManaging {
+                Divider()
+                managementFooter
+            }
         }
         .overlay {
             if chats.isEmpty {
-                Text("还没有会话")
+                Text(appState.showsHiddenChats ? "没有隐藏的会话" : "暂无会话")
                     .foregroundStyle(.secondary)
             }
         }
+        .onChange(of: appState.showsHiddenChats) { _, _ in endManagement() }
+        .onChange(of: chats.map(\.id)) { _, ids in selectedIDs.formIntersection(ids) }
+    }
+
+    private var header: some View {
+        HStack(spacing: 8) {
+            if appState.showsHiddenChats {
+                Button { appState.showChatList(hidden: false) } label: {
+                    Label("返回", systemImage: "chevron.left")
+                }
+                .help("返回会话列表")
+            }
+            Text(appState.showsHiddenChats ? "隐藏会话" : "会话")
+                .font(.headline)
+            Spacer(minLength: 4)
+            if isManaging {
+                Menu("管理") {
+                    if !appState.showsHiddenChats {
+                        Button("查看隐藏会话（\(appState.hiddenChats.count)）") {
+                            appState.showChatList(hidden: true)
+                        }
+                    }
+                    Button("全选") { selectedIDs = Set(chats.map(\.id)) }
+                        .disabled(chats.isEmpty)
+                    Button("取消全选") { selectedIDs.removeAll() }
+                        .disabled(selectedIDs.isEmpty)
+                    Divider()
+                    Button("完成管理") { endManagement() }
+                }
+                .fixedSize()
+            } else {
+                Button("管理") { isManaging = true }
+            }
+        }
+        .controlSize(.small)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+    }
+
+    private var managementFooter: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(appState.showsHiddenChats ? "取消隐藏后，会话会回到主列表。" : "隐藏后，新消息也不会让会话回到主列表。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack {
+                Text("已选 \(selectedIDs.count) 项")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("完成") { endManagement() }
+                Button(appState.showsHiddenChats ? "取消隐藏" : "隐藏") {
+                    appState.setChatsHidden(selectedIDs, hidden: !appState.showsHiddenChats)
+                    selectedIDs.removeAll()
+                }
+                .disabled(selectedIDs.isEmpty || appState.status?.user == nil)
+                .buttonStyle(.borderedProminent)
+            }
+            .controlSize(.small)
+        }
+        .padding(12)
+    }
+
+    private func endManagement() {
+        isManaging = false
+        selectedIDs.removeAll()
     }
 }
 

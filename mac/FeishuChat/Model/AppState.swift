@@ -13,6 +13,8 @@ final class AppState {
     private(set) var isEventStreamConnected = false
     private(set) var status: BackendStatus?
     private(set) var chats: [Chat] = []
+    private(set) var hiddenChats: [Chat] = []
+    var showsHiddenChats = false
     private(set) var conversation: Conversation?
     var selectedChatID: String? {
         didSet {
@@ -35,11 +37,13 @@ final class AppState {
 
     @ObservationIgnored private var chatList = ChatList() {
         didSet {
-            chats = chatList.chats
+            chats = chatList.visibleChats
+            hiddenChats = chatList.hiddenChats
             notifications.setBadge(chatList.badgeCount)
         }
     }
     @ObservationIgnored private var drafts: [String: String] = [:]
+    @ObservationIgnored private let hiddenPreferences = HiddenChatPreferences()
     @ObservationIgnored private var eventTask: Task<Void, Never>?
     @ObservationIgnored private var observers: [any NSObjectProtocol] = []
     @ObservationIgnored private let connection = BackendConnection()
@@ -165,9 +169,16 @@ final class AppState {
     private func apply(_ new: BackendStatus) {
         let old = status
         status = new
+        if old?.user?.id != new.user?.id {
+            selectedChatID = nil
+            showsHiddenChats = false
+            drafts.removeAll()
+            chatList = ChatList(hiddenIDs: new.user.map { hiddenPreferences.load(userID: $0.id) } ?? [])
+        }
         switch new.state {
         case .loggedOut:
             selectedChatID = nil
+            showsHiddenChats = false
             drafts.removeAll()
             chatList = ChatList()
             if let error = new.lastError, old?.state != .loggedOut || old?.lastError != error {
@@ -236,6 +247,24 @@ final class AppState {
 
     // MARK: - 会话
 
+    func setChatsHidden(_ ids: Set<String>, hidden: Bool) {
+        guard let userID = status?.user?.id else { return }
+        if let selectedChatID, ids.contains(selectedChatID) {
+            self.selectedChatID = nil
+        }
+        if hidden {
+            chatList.hiddenIDs.formUnion(ids)
+        } else {
+            chatList.hiddenIDs.subtract(ids)
+        }
+        hiddenPreferences.save(chatList.hiddenIDs, userID: userID)
+    }
+
+    func showChatList(hidden: Bool) {
+        selectedChatID = nil
+        showsHiddenChats = hidden
+    }
+
     private func selectionChanged(from oldID: String?) {
         if let oldID, let conversation, conversation.chatID == oldID {
             drafts[oldID] = conversation.draft.isEmpty ? nil : conversation.draft
@@ -259,12 +288,14 @@ final class AppState {
         windows.show()
         guard isLoggedIn else { return }
         if chatList[chatID] != nil {
+            showsHiddenChats = chatList.hiddenIDs.contains(chatID)
             selectedChatID = chatID
             return
         }
         Task {
             await refreshChats()
             if chatList[chatID] != nil {
+                showsHiddenChats = chatList.hiddenIDs.contains(chatID)
                 selectedChatID = chatID
             }
         }

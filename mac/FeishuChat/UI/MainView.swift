@@ -6,7 +6,7 @@ struct MainView: View {
 
     var body: some View {
         NavigationSplitView {
-            ChatListView(chats: appState.chats, selection: $appState.selectedChatID)
+            ChatListView(appState: appState)
                 .safeAreaInset(edge: .top, spacing: 0) {
                     ConnectionStatusBar(appState: appState)
                 }
@@ -80,7 +80,8 @@ struct ConnectionDisplay: Equatable {
 
 extension AppState {
     var selectedChatName: String {
-        guard let id = selectedChatID, let chat = chats.first(where: { $0.id == id }) else { return "" }
+        guard let id = selectedChatID,
+              let chat = (chats + hiddenChats).first(where: { $0.id == id }) else { return "" }
         return chat.displayName
     }
 
