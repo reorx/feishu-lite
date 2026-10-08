@@ -1,0 +1,102 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-15
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Test
+        run: |
+          make -C mac test
+          uv run --project backend --locked pytest backend/tests
+          uv build --project backend --out-dir dist
+          uv tool install --python 3.12 dist/*.whl
+          "$(uv tool dir --bin)/feishu-lite-backend" --help
+      - run: brew install xcodegen xcbeautify
+      - name: Resolve version
+        id: version
+        run: |
+          version=0.1.0
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            version=${GITHUB_REF_NAME#v}
+          fi
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Tag must be vMAJOR.MINOR.PATCH'; exit 1; }
+          echo "marketing=$version" >> "$GITHUB_OUTPUT"
+      - name: Import Developer ID certificate
+        env:
+          CERT_P12: ${{ secrets.CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.CERT_P12_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          : "${CERT_P12:?Missing CERT_P12}" "${CERT_PASSWORD:?Missing CERT_P12_PASSWORD}" "${APPLE_TEAM_ID:?Missing APPLE_TEAM_ID}"
+          keychain="$RUNNER_TEMP/build.keychain-db"
+          password=$(uuidgen)
+          security create-keychain -p "$password" "$keychain"
+          security list-keychains -d user -s "$keychain" "$HOME/Library/Keychains/login.keychain-db"
+          security unlock-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 3600 "$keychain"
+          printf '%s' "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$keychain" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain" >/dev/null
+      - name: Build and package universal app
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          VERSION: ${{ steps.version.outputs.marketing }}
+        run: |
+          make -C mac build-release BACKEND_REVISION="$GITHUB_SHA" RELEASE_XCARGS="DEVELOPMENT_TEAM=$APPLE_TEAM_ID OTHER_CODE_SIGN_FLAGS=--timestamp MARKETING_VERSION=$VERSION CURRENT_PROJECT_VERSION=$GITHUB_RUN_NUMBER"
+          codesign --verify --deep --strict mac/.build/DerivedData/Build/Products/Release/FeishuChat.app
+          make -C mac dmg
+      - name: Notarize and staple
+        env:
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          : "${ASC_PRIVATE_KEY:?Missing ASC_PRIVATE_KEY}" "${ASC_KEY_ID:?Missing ASC_KEY_ID}" "${ASC_ISSUER_ID:?Missing ASC_ISSUER_ID}"
+          printf '%s' "$ASC_PRIVATE_KEY" | base64 --decode > "$RUNNER_TEMP/notary-key.p8"
+          xcrun notarytool submit mac/dist/*.dmg --key "$RUNNER_TEMP/notary-key.p8" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID" --wait --timeout 20m
+          xcrun stapler staple mac/dist/*.dmg
+          xcrun stapler validate mac/dist/*.dmg
+          shasum -a 256 mac/dist/*.dmg > mac/dist/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FeishuChat-release
+          path: mac/dist/*
+          if-no-files-found: error
+      - name: Publish in this repository
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash scripts/release-notes.sh "$GITHUB_SHA" > "$RUNNER_TEMP/release-notes.md"
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" mac/dist/* --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --notes-file "$RUNNER_TEMP/release-notes.md"
+          else
+            gh release create "$GITHUB_REF_NAME" mac/dist/* --repo "$GITHUB_REPOSITORY" --verify-tag --title "FeishuChat $GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi
+      - name: Clean signing credentials
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/cert.p12" "$RUNNER_TEMP/notary-key.p8"
+          if [[ -f "$RUNNER_TEMP/build.keychain-db" ]]; then
+            security delete-keychain "$RUNNER_TEMP/build.keychain-db"
+          fi

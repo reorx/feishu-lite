@@ -1,4 +1,5 @@
 import Foundation
+import FeishuChatCore
 
 /// 本地后端的地址和本次启动用的 token
 struct BackendEndpoint: Equatable {
@@ -14,6 +15,21 @@ struct BackendConfig {
     var externalEndpoint: BackendEndpoint?
     /// 透传给后端的数据目录（FEISHU_LITE_HOME），不设就用后端的默认目录
     var homeOverride: String?
+
+    var usesInstalledBackend: Bool { backendDir.isEmpty }
+
+    var executablePath: String? {
+        if usesInstalledBackend {
+            return BackendInstallation.executable(named: "feishu-lite-backend")
+        }
+        if FileManager.default.isExecutableFile(atPath: uvPath) { return uvPath }
+        return BackendInstallation.executable(named: "uv")
+    }
+
+    static var installationCommand: String {
+        let revision = Bundle.main.object(forInfoDictionaryKey: "FeishuBackendRevision") as? String ?? "master"
+        return BackendInstallation.installCommand(revision: revision.isEmpty ? "master" : revision)
+    }
 
     static func load(bundle: Bundle = .main,
                      environment: [String: String] = ProcessInfo.processInfo.environment) -> BackendConfig {

@@ -75,6 +75,10 @@ final class AppState {
         supervisor.stop()
     }
 
+    func retryBackendInstallation() {
+        supervisor.start()
+    }
+
     private func backendStateChanged(_ state: BackendSupervisor.State) {
         backendState = state
         eventTask?.cancel()

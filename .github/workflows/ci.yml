@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - run: uv run --locked pytest
+        working-directory: backend
+      # 安装 wheel 才能验证发布后的依赖元数据；uv run 无法覆盖这个场景。
+      - name: Verify standalone tool installation
+        run: |
+          uv build --project backend --out-dir dist
+          uv tool install --python 3.12 dist/*.whl
+          "$(uv tool dir --bin)/feishu-lite-backend" --help
+
+  mac:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen xcbeautify
+      - run: make -C mac test
+      - run: make -C mac build
+      - run: make -C mac build-release RELEASE_XCARGS='CODE_SIGN_IDENTITY=-'

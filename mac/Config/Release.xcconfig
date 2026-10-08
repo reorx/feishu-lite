@@ -1,4 +1,7 @@
-#include "Backend.xcconfig"
+// 发布版使用用户安装的后端，绝不烘入构建机源码路径。
+FEISHU_BACKEND_DIR =
+FEISHU_UV_PATH =
+FEISHU_BACKEND_REVISION = master
 
 // Release 必须 Developer ID 签名 + notarytool 公证。
 // DEVELOPMENT_TEAM 由 Local.xcconfig 提供，或由发布脚本通过 xcodebuild 参数覆盖。

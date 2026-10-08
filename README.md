@@ -17,6 +17,20 @@
 - 隐藏暂时不想看的会话，之后随时恢复
 - 关掉窗口后仍在后台接收消息，可以设置开机启动
 
+## 安装
+
+需要 **macOS 14 或更新版本**，支持 Apple Silicon 和 Intel。
+
+从[本仓库 Releases](https://github.com/reorx/feishu-lite/releases) 下载 DMG，将 FeishuChat 拖到 Applications。发布包经过 Developer ID 签名和 Apple 公证。
+
+**使用前必须安装 Python 后端 `feishu-lite-backend`**。App 本身不包含 Python 或 `larkx` 等依赖：
+
+1. 安装 [Homebrew](https://brew.sh/zh-cn/)（已有则跳过），在终端运行 `brew install uv git`。
+2. 复制对应 Release 页面提供的 `uv tool install --force --python 3.12 'git+https://github.com/reorx/feishu-lite.git@<版本对应的 commit>#subdirectory=backend'` 命令执行。请使用 Release 中的完整命令，不要原样输入占位符。
+3. uv 会自动安装 Python 3.12、后端和固定版本的 `larkx`。安装需要联网访问 GitHub 和 Python 包源。
+
+如果直接打开 App 而尚未安装后端，会显示安装说明和可复制命令。安装完点击「已安装，重新检测」即可。后端默认安装到 `~/.local/bin`，无需修改 Finder 的 PATH；升级 App 时也请执行新 Release 中的后端安装命令。
+
 ## 使用
 
 1. 打开 FeishuChat，用手机飞书扫描窗口里的二维码，在手机上确认登录。
@@ -29,6 +43,14 @@
 目前还不能发送图片和文件，也没有音视频会议、云文档等功能，用到这些时请打开官方客户端。
 
 FeishuChat 不是飞书官方产品，它使用和飞书网页版相同的方式连接飞书，飞书更新后可能会暂时无法使用。登录信息和消息缓存只保存在你自己的电脑上，不经过任何第三方服务器。
+
+## 构建和发布
+
+普通 push / PR 会运行后端测试、独立 Python 工具安装验证、Swift 测试，以及 Debug / Universal Release 构建。发布配置见 [.github/workflows/release.yml](.github/workflows/release.yml)。
+
+推送 `vMAJOR.MINOR.PATCH` 标签会构建 Universal DMG、签名、公证，并直接上传到**当前仓库**的 GitHub Releases。手动运行 Release 工作流只生成可下载 artifact。首次需配置 `CERT_P12`、`CERT_P12_PASSWORD`、`APPLE_TEAM_ID`、`ASC_PRIVATE_KEY`、`ASC_KEY_ID`、`ASC_ISSUER_ID` 六个仓库 Secrets；证书和私钥使用 base64 编码。无需跨仓库发布 Token。
+
+本地使用 `make -C mac test`、`make -C mac build-release`、`make -C mac dmg`；签名需要本机 Developer ID 证书和 `RELEASE_XCARGS='DEVELOPMENT_TEAM=你的TeamID'`。开发调试仍使用 `make -C mac build` 和源码后端。
 
 ## Reference
 

@@ -22,7 +22,7 @@ FeishuChat 的 SwiftUI 客户端：拉起并守护 `../backend` 的 Python 后�
 
 ## App 怎么工作
 
-- `Services/BackendSupervisor` 用 `uv run --project <backend> feishu-lite-backend --port P` 拉起后端，端口和 token 每次启动随机生成，子进程退出后按退避重启。`uv` 和后端目录的路径在 `Config/Backend.xcconfig`，经 Info.plist 传给 App。后端日志在 `~/Library/Logs/FeishuChat/backend.log`。
+- `Services/BackendSupervisor` 在 Debug 下用 `uv run --project <backend> feishu-lite-backend --port P` 拉起源码后端；Release 直接运行用户用 uv 安装的 `feishu-lite-backend`，不依赖源码目录。启动前检查依赖，缺失时显示安装引导并等待用户重新检测。端口和 token 每次启动随机生成，子进程退出后按退避重启；日志在 `~/Library/Logs/FeishuChat/backend.log`。
 - `Model/AppState` 是唯一的状态入口：订阅后端的 SSE 事件流，维护登录状态、会话列表和当前会话（`Model/Conversation`）。事件流每次（重新）连上都会把会话列表和当前会话重新拉一遍，因为断开期间的变化不会补发。
 - 接口模型、SSE 解析、通知策略、消息合并和排序都在 `FeishuChatCore`，改这些行为先改那里的测试。
 - **`@Observable` 类里标了 `@ObservationIgnored` 的属性，视图不能直接或间接依赖**（包括由它算出来的计算属性），否则视图收不到变化。给视图用的派生值要存成被观察的属性，参考 `Conversation.rows`。
@@ -44,6 +44,8 @@ FeishuChat 的 SwiftUI 客户端：拉起并守护 `../backend` 的 Python 后�
 
 ```
 make build       # xcodegen + xcodebuild Debug 构建（xcbeautify 美化输出）
+make build-release # Universal Release；默认 Developer ID 签名
+make dmg         # 将 Release App 打包到 dist/
 make test        # FeishuChatCore swift test
 make run         # kill 旧实例并启动已构建的 app（不触发构建）
 make dev         # build + run

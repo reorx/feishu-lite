@@ -9,7 +9,7 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.141.1",
-    "larkx",
+    "larkx @ git+https://github.com/cv-cat/LarkAgentX@2cb4f90fcfd5d7608800291ebb5e912ba6383901",
     "pillow>=12.3.0",
     "qrcode>=8.2",
     "uvicorn>=0.54.0",
@@ -24,9 +24,6 @@ build-backend = "uv_build"
 
 [tool.uv.build-backend]
 module-name = "feishu_lite"
-
-[tool.uv.sources]
-larkx = { git = "https://github.com/cv-cat/LarkAgentX", rev = "2cb4f90fcfd5d7608800291ebb5e912ba6383901" }
 
 [dependency-groups]
 dev = [

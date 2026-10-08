@@ -11,6 +11,8 @@ final class BackendSupervisor {
         case ready(BackendEndpoint)
         /// 起不来，退避之后会再试
         case failed(String)
+        /// 依赖缺失时暂停，等待用户安装后主动重新检测。
+        case dependencyMissing(String)
     }
 
     static let backoff: [Duration] = [.seconds(1), .seconds(2), .seconds(5), .seconds(10), .seconds(30)]
@@ -41,6 +43,10 @@ final class BackendSupervisor {
         if let external = config.externalEndpoint {
             log.notice("using external backend at \(external.baseURL.absoluteString, privacy: .public)")
             state = .ready(external)
+            return
+        }
+        guard config.executablePath != nil else {
+            state = .dependencyMissing(config.usesInstalledBackend ? "feishu-lite-backend" : "uv")
             return
         }
         loop = Task { await superviseLoop() }
@@ -92,7 +98,7 @@ final class BackendSupervisor {
     }
 
     private func launch() throws -> (Process, BackendEndpoint, Task<Int32, Never>) {
-        guard FileManager.default.isExecutableFile(atPath: config.uvPath) else {
+        guard let executablePath = config.executablePath else {
             throw SupervisorError.uvNotFound(config.uvPath)
         }
         let port = try Self.freePort()
@@ -100,9 +106,13 @@ final class BackendSupervisor {
         let logHandle = try Self.openLogFile()
 
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: config.uvPath)
-        process.arguments = ["run", "--project", config.backendDir, "feishu-lite-backend", "--port", String(port)]
-        process.currentDirectoryURL = URL(fileURLWithPath: config.backendDir)
+        process.executableURL = URL(fileURLWithPath: executablePath)
+        process.arguments = config.usesInstalledBackend
+            ? ["--port", String(port)]
+            : ["run", "--project", config.backendDir, "feishu-lite-backend", "--port", String(port)]
+        if !config.usesInstalledBackend {
+            process.currentDirectoryURL = URL(fileURLWithPath: config.backendDir)
+        }
         var environment = ProcessInfo.processInfo.environment
         environment["FEISHU_LITE_TOKEN"] = token
         environment["FEISHU_LITE_PARENT_PID"] = String(ProcessInfo.processInfo.processIdentifier)

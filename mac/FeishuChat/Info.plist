@@ -17,11 +17,13 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>FeishuBackendDir</key>
 	<string>$(FEISHU_BACKEND_DIR)</string>
+	<key>FeishuBackendRevision</key>
+	<string>$(FEISHU_BACKEND_REVISION)</string>
 	<key>FeishuUVPath</key>
 	<string>$(FEISHU_UV_PATH)</string>
 	<key>LSApplicationCategoryType</key>

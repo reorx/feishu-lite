@@ -1,10 +1,12 @@
 SHELL := /bin/bash
 DERIVED_DATA := .build/DerivedData
 APP := $(DERIVED_DATA)/Build/Products/Debug/FeishuChat.app
+RELEASE_APP := $(DERIVED_DATA)/Build/Products/Release/FeishuChat.app
+BACKEND_REVISION ?= $(shell git rev-parse HEAD)
 XCODEBUILD := xcodebuild -project FeishuChat.xcodeproj -scheme FeishuChat \
 	-destination 'platform=macOS' -derivedDataPath $(DERIVED_DATA)
 
-.PHONY: gen build test run dev clean
+.PHONY: gen build build-release dmg test run dev clean
 
 # 从 project.yml 重新生成 FeishuChat.xcodeproj（xcodeproj 不入库）
 gen:
@@ -12,6 +14,12 @@ gen:
 
 build: gen
 	set -o pipefail && $(XCODEBUILD) -configuration Debug build | xcbeautify
+
+build-release: gen
+	set -o pipefail && $(XCODEBUILD) -configuration Release build ARCHS='arm64 x86_64' ONLY_ACTIVE_ARCH=NO FEISHU_BACKEND_REVISION=$(BACKEND_REVISION) $(RELEASE_XCARGS) | xcbeautify
+
+dmg:
+	bash scripts/make-dmg.sh "$(RELEASE_APP)" dist
 
 # FeishuChatCore 纯逻辑单测
 test:

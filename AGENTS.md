@@ -19,6 +19,8 @@ MVP 功能已经做完并通过验收：扫码登录、会话列表、历史消�
 
 ## 运行和测试
 
+- CI 与发布：`.github/workflows/ci.yml` 验证测试、独立后端安装和 App 构建；`release.yml` 在推送 `vMAJOR.MINOR.PATCH` 时构建、签名、公证 Universal DMG 并发布到当前仓库。安装依赖和 Secrets 约定见 README「构建和发布」。Release 不内置 Python/larkx，安装命令固定到构建对应的 commit。
+
 - 后端测试：`cd backend && uv run pytest`。App：`cd mac && make test && make build && make run`。
 - App 自己拉起后端，不需要单独启动。正式数据在 `~/Library/Application Support/FeishuChat/`，后端日志在 `~/Library/Logs/FeishuChat/backend.log`。
 - 接口约定以 `backend/src/feishu_lite/api.py` 和 `types.py` 为准；App 这边对应的模型在 `mac/FeishuChatCore/Sources/FeishuChatCore/Models.swift`，两边要一起改。

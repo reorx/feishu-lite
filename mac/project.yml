@@ -18,6 +18,8 @@ settings:
   base:
     SWIFT_VERSION: "5.0"
     ENABLE_HARDENED_RUNTIME: YES
+    MARKETING_VERSION: 0.1.0
+    CURRENT_PROJECT_VERSION: 1
 
 targets:
   FeishuChat:
@@ -39,6 +41,9 @@ targets:
         # 后端子进程的位置，值来自 Config/Backend.xcconfig
         FeishuBackendDir: $(FEISHU_BACKEND_DIR)
         FeishuUVPath: $(FEISHU_UV_PATH)
+        FeishuBackendRevision: $(FEISHU_BACKEND_REVISION)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
     entitlements:
       path: FeishuChat/FeishuChat.entitlements
       properties:
