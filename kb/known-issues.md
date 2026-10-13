@@ -7,18 +7,13 @@
 - 记录：2026-10-14，原[F1报告](sessions/2026-10-14-email-reader-f1-acceptance.md)；接续[F1b报告](sessions/2026-10-14-email-reader-f1b-acceptance.md)。
 - HTML滚动P2已通过最新源码独立复验，新增内存scheme的首载/恢复、精确URL子资源/frame/用户链接拒绝及资源零增量通过；浅色/鼠标拖宽/旧cursor完整恢复/fake凭证错误UI亦已补齐。
 - 仍待：未知能力稳定加载UI；精确旧didFinish/新navigation乱序及已发STORE期间账号/UIDVALIDITY变化；HTTPS/单标签内网实际外开、跨邮件/token动态访问探测。F1b已证明待编译退役与generation/账号/UIDVALIDITY重置不read，当前新navigation才read；不能扩大成所有竞态通过。尚无这些路径的确认新缺陷。纯文本R2滚动P2已由 [F1c](sessions/2026-10-14-email-reader-f1c-acceptance.md)关闭；真实中文组字、精确旧layout回放及少量交互时序证据仍未验，见该报告的准确范围。
-- 真正SecItem/Debug-Release授权、生命周期/实际睡眠及整体检查留F2b；F2a主要真实系统通知/点击/Dock已验，准确边界见下项。真实邮箱Seen/跨端仍须用户指定邮件。隔离副本必须假Keychain、外部合成服务，不能读取真实env/缓存或沿用旧二进制验新修复。
-
-## 邮件通知：未知投递提示与收件箱工具栏重叠（P2）
-
-- 记录：2026-10-14，[F2a报告](sessions/2026-10-14-email-system-notifications-f2a.md)，证据 `tmp/2026-10-14-email-reader/f2a-acceptance/18*.png`。
-- 隔离副本播种未知receipt后，提示与收件箱标题/工具栏在最小800×512窗口（内容800×460）及980×680正常窗口都重叠，两轮重建复现；恢复按钮仍可用，实际再提醒/ack通过。[R3](sessions/2026-10-14-email-notice-layout-r3.md)已改为独立布局行，无窗口宿主几何回归与自动检查通过；保留本项待下一独立tab屏幕/键盘复验，F2a整体不能签收。
+- [F2b](sessions/2026-10-14-email-system-integration-f2b.md)已验证真实测试UUID自身SecItem、凭证恢复调用、隔离生产Supervisor生命周期及全量；跨签名互访遇login密码授权阻塞，反向互访/真实拒绝锁定/实际睡眠仍未验；F2a主要真实系统通知/点击/Dock已验，准确边界见下项。真实邮箱Seen/跨端仍须用户指定邮件。隔离副本必须假Keychain、外部合成服务，不能读取真实env/缓存或沿用旧二进制验新修复。
 
 ## 双模块通知：少量系统边界与完整集成仍未独立验收
 
 - 记录：2026-10-13；更新：2026-10-14，[F2a报告](sessions/2026-10-14-email-system-notifications-f2a.md)。
 - F2a已用真实UN中心验证逐封/汇总、五次实际点击（页外/关窗/汇总/404/当前聊天）、跨进程receipt与ack去重、已递送及播种待递送的精确清理、实际Dock；合成数据不等于真实IMAP接入。
-- 稳定账号运行中关闭通知权限未验：首轮disabled_check.py的ack断言失败因fixture恢复已移除的旧UUID，被当前进程retiredAccounts拒绝；原始41证据保留。重启后的42只证明已拒绝权限下启动恢复pending，不能覆盖运行中切换。另待真实410/旧账号点击、升级前聊天payload、系统add/部分失败与未知提示键盘操作；真实SecItem/生命周期/睡眠、完整聊天回归和全量审计留F2b。只用隔离测试目标，不改正式权限或清工作未读。
+- 稳定账号运行中关闭通知权限未验：首轮disabled_check.py的ack断言失败因fixture恢复已移除的旧UUID，被当前进程retiredAccounts拒绝；原始41证据保留。重启后的42只证明已拒绝权限下启动恢复pending，不能覆盖运行中切换。另待真实410/旧账号点击、升级前聊天payload、系统add/部分失败与未知提示键盘操作；F2b已关闭R3布局P2并完成测试UUID自身SecItem、隔离生产生命周期和全量审计；跨签名互访出现login钥匙串密码授权框，未验且未放宽ACL；已触发原计划configuration service隔离实现条件，由协调者下一阶段处理，无需等待用户密码；反向互访、机器睡眠、扫码/取消隐藏完整恢复及邮箱错误期间聊天仍未验，见[F2b报告](sessions/2026-10-14-email-system-integration-f2b.md)。只用隔离测试目标，不改正式权限或清工作未读。
 
 ## 会话列表：只显示聊天，会话盒子、文档、应用消息等 feed 卡片被跳过
 

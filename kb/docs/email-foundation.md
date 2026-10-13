@@ -89,6 +89,7 @@ App 使用非持久化 WKWebsiteDataStore、禁用页面 JavaScript 和自动新
 - [C2 交接](../sessions/2026-10-13-email-imap-executor-c2.md)：生产接口、错误/取消/世代契约、真实库脚本服务端计时及 DNS 限制。
 - [C3a 交接](../sessions/2026-10-13-email-sync-c3a.md)：服务方法/事件、持久化、接线示例与服务停止证据。
 - [C3b 交接](../sessions/2026-10-13-email-api-c3b.md)：完整 HTTP/SSE 字段、错误/取消/确认规则与实际进程停止证据。
-- [D1 交接](../sessions/2026-10-13-email-configuration-d1.md)：Swift 模型/API、凭证状态机、持久清理、有界 SSE 工作与 D2/E 接入接口；真实 UI/钥匙串未验。
+- [D1 交接](../sessions/2026-10-13-email-configuration-d1.md)：Swift 模型/API、凭证状态机、持久清理、有界 SSE 工作与 D2/E 接入接口；主要UI已有F1系列证据；F2b测试UUID自身真实SecItem/恢复调用通过，跨签名互访与真实拒绝锁定仍未验。
 - [D2 交接](../sessions/2026-10-13-email-reader-d2.md)：收件箱、异步/显示/已读契约、HTML 隔离、E 路由入口及独立 UI/WebKit 合成验收材料。
+- [F2b验收](../sessions/2026-10-14-email-system-integration-f2b.md)：R3布局P2关闭，测试UUID真实SecItem与跨签名密码阻塞、隔离生产Supervisor/合成唤醒、全量及精确未验/清理；不代表真实邮箱或机器睡醒。
 - [原计划](../plans/2026-10-13-email-reader-plan.md)：整个阅读器的产品范围与验收条件。
