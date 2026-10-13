@@ -177,7 +177,7 @@ tags:
 - 只修改本阶段后端及必要文档，协调文档只读。写 `kb/sessions/2026-10-13-email-api-c3b.md`，留 D1/D2/E 可直接消费的完整 wire 示例、字段与错误映射、事件/通知确认规则、生命周期证据、红绿日志、偏离、自主决策及「交给协调者」。合成样本/日志放 `tmp/2026-10-13-email-api-c3b/`，不用真实邮件。
 - 更新 AGENTS.md/README/原计划有证据的状态，范围外问题记报告或按 kb 规则登记；实现与文档一起提交，仅暂存自己文件。关闭自建服务器/连接/进程，保留用户资源。在 tab 最终报告 commit、测试、报告路径、清理与工作区状态；coordinator 会等待稳定结束并审核后派 D1。
 
-### 当前任务 D1：邮箱配置、MailState 与钥匙串恢复
+### 任务 D1：邮箱配置、MailState 与钥匙串恢复（自动交付已签收）
 
 执行者：新 Herdr tab 的 Codex，当前 master。必读根/mac AGENTS.md、原计划全文、B 实现及独立验收 session、C3a/C3b session，尤其 `kb/sessions/2026-10-13-email-api-c3b.md` 的全部 wire/错误/SSE 契约。C3b 基线 `f48e5ed`，297项后端测试和真实HTTP/IMAP/完整退出验证通过。使用适用 SwiftUI、impeccable、kb 技能。本 brief 由 coordinator 编写，D1/D2 分界为实施拆分，不改变用户产品范围。
 
@@ -200,6 +200,28 @@ tags:
 - 本tab不启动实机UI验收；用户要求验收开独立tab，配置UI及真实SecItem/权限证据留独立验收。不运行会杀用户App的make run，不改变签名/bundle id，不push/发布/开始D2/自行委派。测试假资源结束清理。
 - session写 `kb/sessions/2026-10-13-email-configuration-d1.md`，证据 `tmp/2026-10-13-email-configuration-d1/`；完整记录接口、凭证状态机、自动测试红绿、真实未验、自主决策、D2/E接续及「交给协调者」。更新必要AGENTS/README/原计划有证据条目，代码文档同次提交，仅暂存自己的文件；不改本文。在tab回报commit、测试、报告路径、清理和工作区状态，coordinator签收后另派D2。
 
+### 当前任务 D2：收件箱阅读器、安全正文与可见性已读
+
+执行者：新的 Herdr tab 中 Codex，当前 master。先读根/mac AGENTS.md、原计划全文尤其§3/§5/§6D/§7、B实现/验收、C3b和D1 session。D1基线 `bf490b8`，Core70+App26测试/Debug构建通过；`kb/sessions/2026-10-13-email-configuration-d1.md` 是 MailState、合并任务、选择和凭证边界的实际依据。使用适用SwiftUI/impeccable/kb技能。本文为coordinator拆分，产品范围不变。
+
+目标：Email工作区可读取收件箱摘要和正文，按需分页，安全展示HTML/纯文本及附件元数据；只有正确目标的正文成功显示且满足ViewingContext时才提交已读。保留D1配置和恢复能力，为E通知路由接续，实机独立验收由coordinator另派。
+
+完成条件与范围：
+
+- 逻辑先写失败行为测试，使用C3b真实wire与D1 typed API；在现有MailState上接续，不另造并行邮箱状态或第二条SSE。账号、连接epoch、UIDVALIDITY、当前选择、请求代次一起防迟到响应，后台refresh合并有界，不对每个事件创建任务。不要阻塞唯一SSE消费。
+- 原生邮件双栏：列表列顶部全部文件夹下拉，保持中文层级及标识；只INBOX可读，其他文件夹及Noselect禁用并清楚提示，不展示虚假未读。列表行含发件人/主题/收件时间/未读/附件，长中文与空值回退，按UID顺序不自行按Date重排。
+- 初始最多100、下一页50，透传不透明next_cursor；重复请求/重连/新信插入无重复或错误丢项，分页与全箱badge独立。刷新/reset/删除/过期cursor正确失效并恢复列表，账号移除清选择；离线缓存和未缓存正文错误区分。手动刷新、同步状态、最后同步和过期提示保留；首次not_synced/空文件夹不误报没有邮件。
+- 配置入口可继续打开D1表单，已配置默认阅读工作区。模块切换重建视图但状态保留选中、列表首可见行、详情滚动位置；有稳定锚点方案。保持窄导航、最小800×460、聊天草稿/键盘隔离和现有原生视觉。不把实现术语暴露到正常用户界面。
+- 详情显示主题、发件/收件/抄送、时间、正文、附件基本信息；未知大小省略或标明约数，不下载/预览附件。纯文本按纯文本显示；空正文/错误占位有明确状态。正文GET无已读副作用，UI正在加载或失败时不能发read。
+- HTML后端已净化但App仍完整隔离：非持久WKWebsiteDataStore，禁用页面JavaScript，无本机token/其他账号数据注入；严格CSP和内容规则阻断全部网络/本地资源，规则编译并成功挂上之后才加载第一封。规则失败必须fail closed给可重试错误，不先显示后补保护。使用公开API，不靠私有配置。
+- 拦截自动导航、表单、iframe、file/data/javascript/custom等scheme；只有真实用户点击合法HTTP(S)才经外部浏览器打开，target=_blank通过WKUIDelegate接续。合法内网/IP的HTTP(S)链接不额外禁用；不得自动请求链接预览。远程/CID内嵌图片保持占位与文本，不增加加载远程图片开关。
+- 正文“成功显示”由实际渲染完成确认：纯文本对应当前视图出现，HTML对应当前WK加载成功；只拿到HTTP200不能等同已显示。回调必须校验当前账号/邮件/渲染代次，旧WK完成回调不得标新邮件。离开Email/切目标/窗口关闭/后台/渲染失败不提交read；回到可见前台时重新判断。
+- 在AppState.reevaluateViewing与既有激活/窗口/key/切换入口补MailState read。统一ViewingContext决定已读与后续通知抑制，不能从pendingMailRoute推断正文可见。显式read去重、失败不伪清计数、不排离线写队列；超时/410/404重新核实状态和目标，防止无限重试。状态计数仍取整个INBOX快照并走唯一badge入口。
+- 提供E可调用的邮件/INBOX路由加载入口及目标失效回退；目标不在当前页可按id加载正文，摘要元数据获取策略需与已有API一致，不凭空拼邮件或下载全箱。若需新增后端按id摘要能力，先报告当前契约限制并在本任务做最小有测试接续，说明变更；不要让通知误开同UID另一封。实际通知投递/ack/唤醒仍留E，不提前确认pending。
+- 自动测试至少覆盖分页/刷新交错、切模块/后台/隐藏窗口不read、成功显示后read一次、快速切邮件/账号、WK迟到成功、离线正文/失败read、旧cursor/目标删除、HTML规则未就绪不加载/失败封闭、导航与_blank允许/拒绝、旧后端及D1凭证恢复回归。不要仅测没有实际调用的策略函数；Core纯逻辑无AppKit/WebKit，系统胶水在App层。
+- 运行 cd mac && make test && make build；若有后端接续修改，先行为测试再实现并跑后端全量。网页资源零请求/JS不执行等真实WebKit证据不能只靠纯函数冒充，留明确独立验收清单和可复用合成样本/计数端点；本tab不启动实机UI，coordinator另派。不得读取真实env/邮箱/缓存，不改真实flags，不make run、不改签名或bundle id、不push/发布/开始E/自行委派。
+- 报告 `kb/sessions/2026-10-13-email-reader-d2.md`，证据 `tmp/2026-10-13-email-reader-d2/`；写清生产接口、异步/渲染/已读契约、安全策略与自动测试边界、E接续、独立UI/WebKit检查、自主决策及「交给协调者」。必要文档随实现一起提交，只暂存自己的文件、不修改本文；清理自建测试资源，最终在tab回报commit/测试/报告/工作区状态。
+
 ### 状态
 
 - [x] A：已签收 `3cbc23d`；7 个测试、42 次计时通过；真实已读/通知等仍按原计划待验。
@@ -208,7 +230,7 @@ tags:
 - [x] C2：`b1dd3ce`，后端全量 179 项通过；36 次时限测量全部 <2秒。DNS stop_timeout/closed/failure 等接续约束必须由 C3a 实施。
 - [x] C3a：`3f755b7`，后端全量 221 项通过（新增42项）；4个完整进程停止场景最大1.524秒。服务层已签收，API/App/真实验证尚未完成。
 - [x] C3b：`f48e5ed`，后端全量297项通过；真实HTTP→IMAP FETCH 0.110秒，5个完整进程退出最大1.685秒，独立wheel安装/CLI冒烟通过。App接入及真实邮箱尚待验证。
-- [ ] D1
+- [x] D1：`bf490b8`，Core70+App26项测试及Debug构建通过；配置/钥匙串包装/重启恢复/有界SSE自动交付签收。真实SecItem与UI保留F独立验收。
 - [ ] D2
 - [ ] E
 - [ ] F
