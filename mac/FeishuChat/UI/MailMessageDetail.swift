@@ -97,41 +97,6 @@ private struct MailBodyPresentation: View {
     }
 }
 
-private struct MailPlainBody: View {
-    let mail: MailState
-    let content: String
-    let token: MailRenderToken
-    @State private var restoring = true
-    private var paragraphs: [String] { content.isEmpty ? ["（正文为空）"] : content.components(separatedBy:"\n\n") }
-    var body: some View {
-        GeometryReader { viewport in
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(alignment:.leading,spacing:12) {
-                        ForEach(Array(paragraphs.enumerated()),id:\.offset) { index, paragraph in
-                            Text(verbatim:paragraph).textSelection(.enabled).frame(maxWidth:.infinity,alignment:.leading)
-                                .id(String(index)).trackScrollRow(String(index),space:"mail-plain")
-                        }
-                    }.padding(20)
-                }.coordinateSpace(name:"mail-plain")
-                    .onPreferenceChange(VisibleScrollRows.self) { frames in
-                        guard !restoring, let id = token.identity.messageID,
-                              let first = VisibleScrollRows.first(in:frames,height:viewport.size.height) else { return }
-                        mail.detailScrollAnchors[id] = first
-                    }
-                    .task {
-                        await Task.yield()
-                        if let id = token.identity.messageID, let anchor = mail.detailScrollAnchors[id] { proxy.scrollTo(anchor,anchor:.top) }
-                        await Task.yield()
-                        guard !Task.isCancelled else { return }
-                        restoring = false
-                        mail.bodyDidDisplay(token) // the native body has appeared in this presentation
-                    }
-            }
-        }
-    }
-}
-
 private struct MailHTMLView: NSViewRepresentable {
     let mail: MailState
     let content: String

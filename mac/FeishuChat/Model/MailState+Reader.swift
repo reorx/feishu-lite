@@ -33,6 +33,7 @@ struct MailRenderToken: Equatable {
     }
     func invalidateReaderConnection() {
         htmlInteractions.removeAll()
+        plainPositions.removeAll()
         invalidatePresentation()
         selectionRevision += 1
         if case .loading = bodyLoadState { bodyLoadState = .failed("邮箱连接已变化，请重新读取正文。") }

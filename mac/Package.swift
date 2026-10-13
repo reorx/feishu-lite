@@ -8,8 +8,13 @@ let package = Package(
     dependencies: [.package(path: "FeishuChatCore")],
     targets: [
         .target(name: "FeishuChatState", dependencies: ["FeishuChatCore"], path: "FeishuChat",
-                exclude: ["App", "UI", "Assets.xcassets", "Info.plist", "FeishuChat.entitlements"],
-                sources: ["Model", "Services"], swiftSettings: [.swiftLanguageMode(.v5)]),
+                exclude: ["App", "Assets.xcassets", "Info.plist", "FeishuChat.entitlements",
+                          "UI/MainView.swift", "UI/MailInboxList.swift", "UI/ComposerView.swift",
+                          "UI/ImageMessageView.swift", "UI/RootView.swift", "UI/LoginView.swift",
+                          "UI/EmailWorkspace.swift", "UI/ConversationView.swift", "UI/ChatListView.swift",
+                          "UI/MailMessageDetail.swift", "UI/ScrollAnchors.swift"],
+                sources: ["Model", "Services", "UI/MailPlainBody.swift"],
+                swiftSettings: [.swiftLanguageMode(.v5)]),
         .testTarget(name: "FeishuChatStateTests", dependencies: ["FeishuChatState", "FeishuChatCore"],
                     swiftSettings: [.swiftLanguageMode(.v5)]),
     ]

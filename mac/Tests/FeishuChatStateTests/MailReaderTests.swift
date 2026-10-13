@@ -99,6 +99,7 @@ private final class ReaderHTTP: URLProtocol {
     for _ in 0..<400 { if condition() { return }; try await Task.sleep(for:.milliseconds(5)) }
     Issue.record("等待阅读器超时")
 }
+@MainActor func readerRequestCount(_ suffix: String) -> Int { ReaderHTTP.count(suffix) }
 @MainActor private func visible(_ mail: MailState, module: AppModule = .email, active: Bool = true, window: Bool = true) -> ViewingContext {
     ViewingContext(activeModule:module,isAppActive:active,isWindowVisible:window,selectedChatID:nil,selectedMail:mail.selectedRoute)
 }

@@ -27,7 +27,7 @@ final class MailState: CustomReflectable {
     var selectedMessageID: String?
     var selectedFolderID = "INBOX"
     var listScrollAnchor: String?
-    var detailScrollAnchors: [String: String] = [:]
+    @ObservationIgnored let plainPositions = MailPlainPositionCache()
     @ObservationIgnored let htmlInteractions = MailHTMLInteractionCache()
     var bodyLoadState: BodyLoadState = .idle
     var folders: [MailFolder] = []
@@ -289,7 +289,7 @@ final class MailState: CustomReflectable {
         selectedFolderID = "INBOX"
         bodyLoadState = .idle
         listScrollAnchor = nil
-        detailScrollAnchors.removeAll()
+        plainPositions.removeAll()
         htmlInteractions.removeAll()
     }
 
