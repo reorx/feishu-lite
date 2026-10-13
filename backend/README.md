@@ -10,4 +10,4 @@ uv run feishu-lite-backend login                # 终端里扫码登录（排障
 
 环境变量：`FEISHU_LITE_TOKEN`（必填，请求头 `Authorization: Bearer <token>`）、`FEISHU_LITE_HOME`（数据目录，默认 `~/Library/Application Support/FeishuChat`）、`FEISHU_LITE_PARENT_PID`（父进程消失时自动退出）。
 
-`src/feishu_lite/mail/` 提供邮件模型、独立 mail.db、MIME/正文净化基础，尚未接入 IMAP 同步、生命周期或邮件 API。存储只能在所属线程使用，解析/净化可交工作线程；接口、限额和 C2/C3 交接见 [C1 报告](../kb/sessions/2026-10-13-email-foundation-c1.md)，行为说明见 [邮件缓存与安全正文](../kb/docs/email-foundation.md)。运行 `uv run pytest tests/mail` 可仅验证合成邮件基础样本。
+`src/feishu_lite/mail/` 提供邮件模型、独立 mail.db、MIME/正文净化，以及真实 IMAPClient 的 INBOX 适配器与专用 daemon 执行器；尚未接入同步调度、应用生命周期或邮件 API。存储只能在所属事件循环线程使用，IMAP I/O 和解析/净化交工作线程；数据契约见 [C1 报告](../kb/sessions/2026-10-13-email-foundation-c1.md)，异步接口、世代/取消和关停限制见 [C2 报告](../kb/sessions/2026-10-13-email-imap-executor-c2.md)，行为说明见 [邮件缓存与安全正文](../kb/docs/email-foundation.md)。`uv run pytest tests/mail` 使用合成数据和本地脚本化 IMAP/TLS 服务端，不连接真实邮箱。

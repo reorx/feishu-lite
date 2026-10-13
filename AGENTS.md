@@ -28,7 +28,7 @@ MVP 功能已经做完并通过验收：扫码登录、会话列表、历史消�
 
 Messages / Email 双模块外壳已实现并通过自动测试与构建；独立隔离 UI 已验证草稿、两处首可见行恢复、键盘隔离和模拟聊天回归，系统通知与部分完整回归仍未验，见 `kb/sessions/2026-10-13-email-shell-b-acceptance.md`。Email 当前是待接入占位，IMAP 阅读器尚未实现。真实 IMAP 只读探路已通过，后端库使用 IMAPClient；首版列出全部文件夹、仅读取收件箱，开发依据见 `kb/plans/2026-10-13-email-reader-plan.md`。实现 IMAP 前读 `kb/notes/2026-10-13-email-imap-probe.md`；接续 App 开发的实际接口见 `kb/sessions/2026-10-13-email-shell-phase-b.md`。
 
-邮件领域基础已在 `backend/src/feishu_lite/mail/` 实现：独立 mail.db、UID 标识/分页、MIME 与读取时 HTML 净化；IMAPClient 4.1.0 已引入，尚未接网络同步/API。SQLite 只在所属事件循环线程使用，MIME 工作线程不能访问 Store；C2/C3 接续先读 `kb/sessions/2026-10-13-email-foundation-c1.md`。
+邮件领域已有独立 mail.db、UID 标识/分页、MIME/HTML 净化，以及 IMAPClient 4.1.0 的 INBOX 适配器和可中断串行 daemon 执行器，尚未接同步调度/API。SQLite 只在所属事件循环线程使用，IMAP/MIME 工作线程不能访问 Store；C3 接续先读 `kb/sessions/2026-10-13-email-foundation-c1.md` 与 `kb/sessions/2026-10-13-email-imap-executor-c2.md`。网络超限会退役连接；停止期间 DNS 无句柄的限制和世代校验契约见 C2 报告。
 
 ## 文档
 

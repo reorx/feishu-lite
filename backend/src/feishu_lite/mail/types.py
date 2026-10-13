@@ -3,9 +3,9 @@ import base64
 import binascii
 import json
 import re
-from typing import Annotated, Literal
+from typing import Annotated, Generic, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError
 
 UID = Annotated[int, Field(strict=True, ge=1, le=4294967295)]
 UIDNext = Annotated[int, Field(strict=True, ge=1, le=4294967296)]
@@ -17,6 +17,12 @@ class MailError(Exception):
     def __init__(self, code: str):
         self.code = code
         super().__init__(code)
+
+
+class MailAuthenticationError(MailError):
+    """Mail credential failure; independent of chat AuthExpired."""
+    def __init__(self):
+        super().__init__('authentication_failed')
 
 
 class MailModel(BaseModel):
@@ -183,3 +189,41 @@ class ParseResult(MailModel):
     selection: BodySelection | None = None
     body: RawBody | None = None
     error: str | None = None
+
+
+class ImapConfig(MailModel):
+    # Never serialize this internal configuration into a status/API payload.
+    account_id: Identifier
+    generation: int = Field(ge=1)
+    host: str = 'imap.feishu.cn'
+    port: int = Field(default=993, ge=1, le=65535)
+    username: SecretStr = Field(repr=False, exclude=True)
+    password: SecretStr = Field(repr=False, exclude=True)
+
+
+class ImapIdentity(MailModel):
+    account_id: str
+    generation: int
+    connection_id: str
+
+
+ResultValue = TypeVar('ResultValue')
+
+
+class ImapResult(MailModel, Generic[ResultValue]):
+    identity: ImapIdentity
+    value: ResultValue
+
+
+class SelectedMailbox(MailModel):
+    folder_id: str = 'INBOX'
+    uidvalidity: UID
+    uidnext: UIDNext
+    flags: list[str]
+    permanent_flags: list[str]
+    readonly: bool
+
+
+class FetchedBody(MailModel):
+    raw: RawBody
+    body: MailBody

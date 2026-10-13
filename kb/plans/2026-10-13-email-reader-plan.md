@@ -246,6 +246,11 @@ C1 基础已独立实现，交接见 [C1 session](../sessions/2026-10-13-email-f
 - [x] C1 MIME：RFC2047/2231、UTF-8→GB18030 与 gb2312/gbk、alternative/related 正文 section、附件元数据及转发子树跳过；真实 IMAPClient FETCH parser 的合成 BodyData 契约验证通过。
 - [x] C1 安全基础：响应/头部/正文/深度/部分数限额与单封错误隔离、nh3 HTML 允许列表和读取时重新净化；浏览器执行/网络隔离仍待 D2。
 
+C2 适配器已隔离验证，具体接口与限制见 [C2 session](../sessions/2026-10-13-email-imap-executor-c2.md)；同步/API 尚未开始，下面的组合检查项继续保留。
+
+- [x] C2 使用真实 IMAPClient 4.1.0 配合 asyncio 脚本化 IMAP/TLS 服务端，验证完整 LIST、INBOX 限制、SELECT/EXAMINE 元数据、稀疏 UID 分页/搜索、摘要 PEEK、选定 section 正文与显式 Seen 的失败校验。
+- [x] C2 专用串行 daemon、有界取消/优先队列、世代结果、可中断/续订 IDLE、DONE 未确认断连、库解析前的响应/literal/结构限制和单封错误隔离；正文入队到 wire FETCH 与 FastAPI lifespan 子进程停止的 36 次重复计时均小于 2 秒。DNS 无句柄仅保证限时退役与进程退出，不冒充线程即时取消。
+
 - [ ] 测试分两层：服务层用 fake IMAP 适配器；IMAP 适配器本身用脚本化的最小 IMAP 服务端（asyncio TCP，支持 LOGIN/SELECT/EXAMINE/UID SEARCH/UID FETCH/UID STORE/IDLE/DONE，可注入延迟、断线和 IDLE 中的 EXPUNGE）测试选定的真实库。
 - [ ] 覆盖文件夹完整列举但只读 INBOX、中文名称、按 UID 列表分页、正文按需、附件仅元数据；脱敏 MIME 样本包含 RFC 2047/2231、未声明编码的 GBK 头部、gb2312 声明、转发的 message/rfc822、HTML 与纯文本 alternative。
 - [ ] 覆盖首次同步不通知、增量去重、无新邮件时 `n:*` 返回的最后一封不触发通知、重连补收与汇总规则、无订阅者时待提醒保留、ack 后才推进水位且重启不重复、UIDVALIDITY 重置、跨端 FLAGS 变化、删除/移动、全收件箱未读与加载页数独立。
