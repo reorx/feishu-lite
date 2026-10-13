@@ -2,12 +2,18 @@
 
 > 当前 app 已知、待后续处理的问题：缺陷、简化实现、未验收项、待建流程。只反映最新状态——解决了就删掉条目，经过记到 `kb/sessions/`。
 
-## 邮箱阅读器：HTML 滚动修复待独立复验；F1 部分项目待接续
+## P2：纯文本邮件切模块后回到页顶
 
-- 记录：2026-10-14，独立报告 `kb/sessions/2026-10-14-email-reader-f1-acceptance.md`。
-- **P2**：HTML 正文滚到段落008后切 Messages 再切 Email，选择不变但正文回到页顶；两次独立复现。资源计数没有增加，没有发现相关错误已读。普通产品 renderer 的证据在 `tmp/2026-10-14-email-reader/f1-acceptance/03-html-scroll-before.*` 与 `04-html-scroll-restored.*`；R1 已修复内存文档的会话恢复导航、旧视图保存与显示证明，Core74/App81及Debug构建通过；实际屏幕落点和新增scheme隔离仍待协调者独立复验，不能提前关闭P2。见 [R1报告](sessions/2026-10-14-email-html-scroll-r1.md)。
-- F1 已验证主要配置、100/50 分页、阅读/附件、最小内容窗口、真实 WebKit 资源/脚本隔离、HTTP/_blank/localhost 外开、规则延迟/失败封闭和主要可见性已读。浅色/鼠标拖宽/旧 cursor 完整恢复、未知能力和假钥匙串失败 UI、账号/UIDVALIDITY/连接变化的旧渲染归因等仍未验；81的额外read无法区分新世代合法展示，不能记为第二个产品缺陷。
-- 真正 SecItem/Debug-Release 授权和系统集成留 F2；配置成功只使用 fake SecItem。真实邮箱 Seen/跨端验证仍需用户指定测试邮件，不读取工作凭证或缓存。返修后从最新源码重新编译隔离 App 复验，不能使用本次旧构建签收新修复。
+- 记录：2026-10-14，[F1b独立验收](sessions/2026-10-14-email-reader-f1b-acceptance.md)，产品基线f148274；正常隔离副本仅fake Keychain，无renderer注入。
+- 合成纯文本159实际滚动后，首完整段落026在y311；只切Messages再Email，返回约1秒采证，首完整段落000在y333、026移到y1061。选择/窗口/config不变，无新增正文GET/read或资源请求。截图及AX为 `tmp/2026-10-14-email-reader/f1b-acceptance/10-plain-before.*`、`11-plain-after.*`，脚本scroll_checks.py。
+- 本次单次屏幕复现，持续性/第二次复现及根因待返修者确认；达到GUI接续边界后没有重复测试。与已签收的HTML R1分开，不能沿用原F1纯文本通过结论关闭。先写行为回归测试再返修，仍只用合成数据，不由验收者改产品。
+
+## 邮箱阅读器：少量 UI 与精确竞态仍未独立验收
+
+- 记录：2026-10-14，原[F1报告](sessions/2026-10-14-email-reader-f1-acceptance.md)；接续[F1b报告](sessions/2026-10-14-email-reader-f1b-acceptance.md)。
+- HTML滚动P2已通过最新源码独立复验，新增内存scheme的首载/恢复、精确URL子资源/frame/用户链接拒绝及资源零增量通过；浅色/鼠标拖宽/旧cursor完整恢复/fake凭证错误UI亦已补齐。
+- 仍待：未知能力稳定加载UI；精确旧didFinish/新navigation乱序及已发STORE期间账号/UIDVALIDITY变化；HTTPS/单标签内网实际外开、跨邮件/token动态访问探测。F1b已证明待编译退役与generation/账号/UIDVALIDITY重置不read，当前新navigation才read；不能扩大成所有竞态通过。尚无这些路径的确认新缺陷。
+- 真正SecItem/Debug-Release授权和系统集成留F2，真实邮箱Seen/跨端仍须用户指定邮件。隔离副本必须假Keychain、外部合成服务，不能读取真实env/缓存或沿用旧二进制验新修复。
 
 ## 双模块通知：实际系统投递与点击仍未独立验收
 

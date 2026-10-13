@@ -269,7 +269,7 @@ tags:
 
 F2 预留：真实系统通知与点击/清理/ack恢复、测试UUID的实际SecItem/Debug-Release互访、Dock、关窗/唤醒/退出、聊天完整回归和全套检查。真实邮箱读写/新信需要用户指定邮件与来源，当前不扩大授权；先完成能做的隔离验证。
 
-### 当前任务 R1：修复 HTML 正文切换后的滚动恢复
+### 任务 R1：修复 HTML 正文切换后的滚动恢复（自动交付已签收）
 
 执行者：新 Herdr tab 的 Codex，当前 master，基线 `d4e202d`。本文由 coordinator 编写。必读根/mac AGENTS.md、原计划、D2 session、F1 完整报告 `kb/sessions/2026-10-14-email-reader-f1-acceptance.md`，尤其 P2 最小复现、隔离差异和证据归因限制；使用适用 SwiftUI/kb 技能。
 
@@ -289,6 +289,41 @@ F2 预留：真实系统通知与点击/清理/ack恢复、测试UUID的实际Se
 
 R1 后的独立 F1 接续将用最新源码重建隔离 App，复验 HTML 滚动及首载规则/自动资源/可见性已读；补浅色、鼠标拖宽、旧cursor恢复、未知能力与凭证错误UI、账号/UIDVALIDITY/连接变化回调归因。F2系统集成仍另派。
 
+### 任务 F1b：独立复验 R1 与补齐 F1（报告已收，新纯文本P2待返修）
+
+执行者：新 Herdr tab 的 Codex，当前 master，产品基线 `f148274`。coordinator编写本brief。必读根/mac AGENTS、桌面测试文档、原计划§7、F1报告 `kb/sessions/2026-10-14-email-reader-f1-acceptance.md`、R1报告 `kb/sessions/2026-10-14-email-html-scroll-r1.md`、本文件F1隔离及证据约束。只验收、调整tmp工具和文档，不修改产品或自行委派；发现缺陷交coordinator返修。
+
+目标：用最新源码的独立隔离App判定R1是否真正恢复HTML阅读位置，复核新增内存scheme的安全边界和显示已读，再补F1明确未验项。已通过且不受R1影响的F1项目引用原证据，不重跑所有用例。自动基线Core74/App81及构建通过；像素落点尚未证明。
+
+执行与交付：
+
+- GUI前检查context和桌面约定，超过40%停止新增实机、形成交接，不把自动压缩视为可无限延长验收。用有限caffeinate；保护正式App/数据/偏好/通知/钥匙串，用户已获知隔离窗口。不得make run/广泛kill，不读取真实env/邮箱或修改真实Seen，不访问工作聊天。env操作先envops。
+- 从当前源码重建新隔离副本，独立bundle、ad-hoc、假SecItem、外部合成后端，记录准确源码差异。原F1二进制只作失败证据，不能验新修复。证据目录 `tmp/2026-10-14-email-reader/f1b-acceptance/`，独立bundle可用com.reorx.FeishuChat.f1b-acceptance；端口18874先确认空闲。复用F1fixture/AX脚本但更新bundle和工具定位，不盲跑旧脚本。
+- 先正常renderer复验HTML160滚动到清楚段落→Messages→Email，以及160→157→160、重复/快速切换。保存前后PNG/AX/资源/read计数，比较首可见段落和几何落点；允许说明微小布局差异，不接受回顶或旧邮件状态串用。可参考R1 recheck-scroll.py，但脚本exit0不等于通过。
+- 新scheme `feishu-mail-body://document/<随机UUID>`只允许当前主文档精确URL，经安全门后恢复；规则document例外本身不能区分iframe，CSP/delegate必须仍工作。真实WK复验首载/恢复的原始恶意HTML、净化HTML、纯文本，HTTP/file/CID/样式/iframe/object/meta/form/JS自动资源零请求；同scheme不同URL和精确URL作为子资源/iframe/用户链接不能突破。若需捕获随机URL或记录导航关联，限定tmp观察注入、明确与普通成功路径的差异，不能修改生产逻辑让用例通过。
+- 规则延迟/编译失败仍封闭，失败重试后才显示/read。R1 compileRules(documentURL:)签名已改变，旧F1无参文本替换不能照搬；仅改隔离副本故障注入，保留生产gate与恢复路径。合法HTTP(S)普通/_blank仍外开，自动导航拒绝；先统计自动零请求再真实用户点击，本机HTTP与localhost即可复核已有路线，其他未实测范围如HTTPS精确列出。
+- 补F1未验：实际浅色（确认截图确已变化）、鼠标拖宽（AX尺寸改变）、旧cursor410后完整恢复到权威列表/选择/边界、未知能力加载、fake Keychain缺失/拒绝/写失败UI。可复用已有fixture但分清工具失败，已无错误按钮时不要因找不到按钮误判。
+- 补可见性竞态：关联presentation/navigation、账号、generation、UIDVALIDITY与read请求时刻，区分旧回调与新世代合法重渲染；不能沿用F1的81“+1即错”断言。验证离开/旧目标/旧账号回调不标当前显示，真实当前完成才read；账号/UIDVALIDITY变化不串旧位置。纯文本/列表/聊天草稿简短回归即可，真实系统通知/F2不在本tab展开。
+- 未验项无法安全完成时保留准确原因和接续最小步骤；优先完成R1关键安全/落点判定，不为了凑矩阵耗尽上下文。发生产品缺陷保留最小复现/影响/证据，继续不依赖它的检查；不修产品，不把工具定位失败当产品缺陷。
+- 报告 `kb/sessions/2026-10-14-email-reader-f1b-acceptance.md`，明确R1通过/失败及完整新增矩阵、与F1合并后剩余项、隔离差异。仅更新必要known-issues/next-up/原计划/文档有证据状态，不把F2或整体F提前关闭；报告和文档同次提交，只暂存自己文件，不改本文，不push/发布/换branch/worktree。
+- 收尾清理自己的App/listener/preferences/caffeinate/浏览器测试tab，保护用户/其他会话资源，按项目定向mac-dev-cleanup。最终tab回报commit、能否签收R1/F1、未验/缺陷、截图、资源和工作区。coordinator保持监控，审阅后再派F2或返修。
+
+### 当前任务 R2：纯文本正文滚动恢复返修
+
+执行者：新 Herdr tab 的 Codex，当前master，基线 `7281388`，coordinator编写。必读根/mac AGENTS、原计划滚动/已读要求、D2/R1报告、F1b完整报告 `kb/sessions/2026-10-14-email-reader-f1b-acceptance.md` 及其10/11截图、known-issues。使用适用SwiftUI/kb技能。HTML R1已独立通过，本任务只处理纯文本P2，不重做HTML恢复。
+
+背景：F1b最终审阅纠正了草稿中误判的纯文本“通过”：正常隔离副本只有fake SecItem，159正文滚动750px后切Messages再Email，首完整段落026→000；截图和AX一致，read/GET/资源计数未增加，账号/窗口不变。单次实机证据确实失败，不声称每次必现。coordinator已独立看图确认。F1之前通过不能覆盖新证据。
+
+目标及完成条件：
+
+- 优先用可重复的自动行为或隔离视图生命周期测试建立第二份复现，先红后绿再修。检查实际ScrollView位置采集/恢复、视图拆除、初始化布局/观察依赖、选择身份和anchor更新，避免只测一个没有被UI实际使用的变量。若无法复现，保留原失败、记录差异并交coordinator决定，不凭猜测大改。
+- 修复同纯文本切模块、切另一封再回、快速切换时的位置保存/恢复；初始化/拆除产生的临时顶部不能覆盖已存阅读位置。账号/UIDVALIDITY/正文内容变化不串旧位置，合适时从顶部开始。纯文本始终按字面显示，不转WebKit、不启用HTML/JS，不扩张产品范围。
+- 同时保持已验HTML会话恢复、邮件列表锚点/选择、正文成功显示→可见性已读、聊天草稿及键盘隔离。不把已读/网络变化伪装成滚动修复。不为本缺陷无界保存视图/全文/位置历史。
+- 本tab开发与自动验证，不开正式App或自行实机验收/委派；可使用无窗口SwiftUI/控制器harness定位。若自动测试不能证明段落落点，明确边界，下一独立tab补第二次实机复现/修复验收。用户已要求验收独立，不在开发tab自行签收。
+- 运行针对性红绿与 `cd mac && make test && make build`；不主动formatter/linter，无必要不动后端/通知或重跑无关测试。所有数据合成、凭证fake、不读env/真实邮箱/缓存、不改真实Seen、不make run、不动正式bundle/signature/用户进程、不push/发布/branch/worktree。
+- 报告 `kb/sessions/2026-10-14-email-plain-scroll-r2.md`；脚本/日志 `tmp/2026-10-14-email-reader/r2-plain-scroll/`。写明实际根因、红绿复现、旧通过与当前失败的解释（无法证明则标未知）、资源/身份边界、独立复验最小步骤。其他范围问题写交给协调者，不顺手修。
+- 代码与必要文档同次提交，known-issues保留修复待独立复验，不提前勾F1/F；仅暂存自己文件，不改本文。清理自建测试资源，最终tab回报commit、测试、报告、清理及工作区后停在R2。coordinator签收后新tab复验并继续F2。
+
 ### 状态
 
 - [x] A：已签收 `3cbc23d`；7 个测试、42 次计时通过；真实已读/通知等仍按原计划待验。
@@ -301,5 +336,7 @@ R1 后的独立 F1 接续将用最新源码重建隔离 App，复验 HTML 滚动
 - [x] D2：`fedbc8b`，后端301/Core72/App46项与Debug构建通过；阅读/渲染可见已读自动交付签收。真实UI/WebKit/滚动与安全资源计数留F；合成工具在tmp/2026-10-13-email-reader-d2/。
 - [x] E：`d1af9b1`，后端301/Core74/App67项及Debug构建通过；通知/路由/唤醒自动交付签收。未知投递intent不得ack，保留显式再次提醒；实际系统行为留F2。
 - [ ] F1：报告 `d4e202d` 已收；主要 UI/WebKit/可见性已读通过，HTML滚动恢复 P2 返修R1；具体未验矩阵见F1 session。
-- [ ] R1：HTML正文滚动返修，完成后独立复验。
+- [x] R1：`f148274` 自动交付已签收，Core74/App81及Debug构建通过；有界会话缓存与精确内存文档恢复，屏幕落点/新增scheme安全留F1b独立复验。
+- [x] F1b：报告 `7281388` 已收；HTML R1屏幕/新增scheme安全通过，浅色/拖宽/cursor及fake凭证错误补齐。新发现纯文本回顶P2，故F1整体未通过；精确未验矩阵见报告。
+- [ ] R2：纯文本正文回顶返修，完成后独立验收。
 - [ ] F2：系统集成与整体复核，尚未派发。

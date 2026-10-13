@@ -12,11 +12,11 @@
 - **补齐邮箱真实验证**：验证 SELECT/STORE 的 `\Seen` 持久化与官方端可见、跨端 FLAGS/60 秒未读对账、新信推送及通知；长期 IDLE 断开周期另行观察。A 只读接入与库选型已通过，但这些项目未测，不用工作邮件代替测试样本，不制造错误密码或连接数压力。
   → 条件与已有证据见 `kb/notes/2026-10-13-email-imap-probe.md`，结果由对应执行者写入阶段 session。
 
-## 2026-10-14 F1 交付后，协调者派返修与独立接续时
+## F1b 报告签收后，协调者安排少量 F1 接续时
 
-- **独立复验 R1 HTML 阅读位置**：F1 的 P2 已完成自动返修，见 [R1报告](sessions/2026-10-14-email-html-scroll-r1.md)。用最新产品源码重建隔离副本，复验屏幕落点、切另一封/快速切换、首载与恢复规则门、新内存文档scheme例外及资源隔离、普通/_blank外开与可见性已读；不得沿用旧F1构建签收。
-- **补齐 F1 未验项**：浅色、实际鼠标拖宽、旧 cursor 完整恢复、未知能力/fake Keychain 失败 UI、账号/UIDVALIDITY/连接变化的渲染归因；旧连接用例81不可凭总read数判缺陷或通过。只用合成数据。
-  → 完整矩阵、复现步骤和工具定位纠正在 `kb/sessions/2026-10-14-email-reader-f1-acceptance.md`，证据在 `tmp/2026-10-14-email-reader/f1-acceptance/`。本次资源已清理，接续 tab 仍遵守 context/桌面测试约定。
+- **处理纯文本回顶P2**：正常隔离副本切模块前首完整段落026、返回后000，截图/AX与请求计数一致，单次复现；与已通过的HTML R1分开。先补行为回归测试及第二次屏幕确认，再返修，不碰真实数据。详细步骤见F1b报告和known-issues。
+- **补精确未验边界**：未知能力稳定加载UI；旧didFinish/新navigation乱序与已发STORE期间账号/UIDVALIDITY变化；HTTPS/单标签内网外开及跨邮件/token动态探测。用最新源码、假Keychain、可控合成服务及presentation/navigation/请求时间关联，不用总read数判缺陷。HTML滚动P2、新scheme隔离、浅色/拖宽/cursor恢复/fake凭证错误UI已验证，不重复全部F1矩阵。
+  → [F1b报告](sessions/2026-10-14-email-reader-f1b-acceptance.md)列出最小接续与准确边界，证据在 `tmp/2026-10-14-email-reader/f1b-acceptance/`；仍遵守context/桌面约定，不自行启动F2。
 
 ## 邮箱 E 自动实现签收后，协调者另派 F2 时
 
