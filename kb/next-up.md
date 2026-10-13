@@ -14,7 +14,7 @@
 
 ## 2026-10-14 F1 交付后，协调者派返修与独立接续时
 
-- **返修并复验 HTML 阅读位置**：切 Messages 再回 Email 丢失 HTML 滚动位置（P2）。修复后用最新产品源码重建隔离副本，复验滚动、首载规则门、资源隔离与可见性已读。
+- **独立复验 R1 HTML 阅读位置**：F1 的 P2 已完成自动返修，见 [R1报告](sessions/2026-10-14-email-html-scroll-r1.md)。用最新产品源码重建隔离副本，复验屏幕落点、切另一封/快速切换、首载与恢复规则门、新内存文档scheme例外及资源隔离、普通/_blank外开与可见性已读；不得沿用旧F1构建签收。
 - **补齐 F1 未验项**：浅色、实际鼠标拖宽、旧 cursor 完整恢复、未知能力/fake Keychain 失败 UI、账号/UIDVALIDITY/连接变化的渲染归因；旧连接用例81不可凭总read数判缺陷或通过。只用合成数据。
   → 完整矩阵、复现步骤和工具定位纠正在 `kb/sessions/2026-10-14-email-reader-f1-acceptance.md`，证据在 `tmp/2026-10-14-email-reader/f1-acceptance/`。本次资源已清理，接续 tab 仍遵守 context/桌面测试约定。
 

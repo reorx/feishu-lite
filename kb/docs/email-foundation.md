@@ -9,7 +9,7 @@ tags:
 
 # 邮件同步、缓存与安全正文
 
-供接续邮箱开发和审阅的人阅读：邮件账号如何恢复、同步如何保持身份和提醒关联，以及哪些正文可以展示。独立邮件后端已经接入本机 HTTP/SSE 和进程生命周期；App 配置、钥匙串恢复、收件箱阅读器、可见性已读及通知/路由/唤醒通过隔离自动测试/Debug 构建。主要配置/阅读界面、真实 WebKit 资源隔离与可见性已读已有 F1 独立证据；HTML 滚动恢复失败，真实 SecItem、系统通知及其余 UI/竞态项仍待验，见 [F1 报告](../sessions/2026-10-14-email-reader-f1-acceptance.md)。
+供接续邮箱开发和审阅的人阅读：邮件账号如何恢复、同步如何保持身份和提醒关联，以及哪些正文可以展示。独立邮件后端已经接入本机 HTTP/SSE 和进程生命周期；App 配置、钥匙串恢复、收件箱阅读器、可见性已读及通知/路由/唤醒通过隔离自动测试/Debug 构建。主要配置/阅读界面、真实 WebKit 资源隔离与可见性已读已有 F1 独立证据；HTML 滚动恢复已完成 [R1自动返修](../sessions/2026-10-14-email-html-scroll-r1.md)，屏幕落点及新增scheme隔离待独立复验；真实 SecItem、系统通知及其余 UI/竞态项仍待验，见 [F1 报告](../sessions/2026-10-14-email-reader-f1-acceptance.md)。
 
 ## 账号与独立同步
 
@@ -57,13 +57,13 @@ App 同步按到达顺序应用 SSE，HTTP 恢复按领域合并，阅读器列�
 
 正文缓存保存解码后的原始文本，每次阅读再按当前政策净化。HTML 保留文本、基本排版与表格，移除脚本、表单、frame、自动跳转、所有样式及资源属性。图片变成文字占位。链接仅允许具有有效 host 的显式 HTTP(S) URL；合法 IP、单标签内网名和内网域名都可以由用户主动点击外开。相对链接、其他 scheme 和畸形 URL 移除。href 本身不授权自动网络加载；点击外开、全网络阻断与明确用户手势边界由 App 实现。
 
-App 使用非持久化 WKWebsiteDataStore、禁用页面 JavaScript 和自动新窗口；独立文档的 CSP 禁止脚本、资源、连接、表单和 frame，只以随机 nonce 允许 App 的排版样式。block-all 内容规则编译并成功挂载后才能首载；失败显示可重试错误，规则保留到视图销毁。自动导航与不允许的 scheme 被拒绝，HTTP(S) 用户点击通过默认浏览器外开，`target=_blank` 使用 WKUIDelegate，不创建新网页视图。没有 token 注入、页面脚本桥或链接预览。
+App 使用非持久化 WKWebsiteDataStore、禁用页面 JavaScript 和自动新窗口；独立文档的 CSP 禁止脚本、资源、连接、表单和 frame，只以随机 nonce 允许 App 的排版样式。block-all 内容规则编译并成功挂载后才能首载或恢复；唯一例外是当前 `feishu-mail-body://document/<UUID>` 精确URL的document资源，handler只供应当前内存正文。规则document类型也包含frame，必须同时由CSP禁frame及delegate仅允许首次非用户主框架导航落实边界；同scheme其他URL、子资源与scheme用户点击仍拒绝。失败显示可重试错误，规则保留到视图销毁。自动导航与不允许的 scheme 被拒绝，HTTP(S) 用户点击通过默认浏览器外开，`target=_blank` 使用 WKUIDelegate，不创建新网页视图。没有 token 注入、页面脚本桥或链接预览。
 
 成功显示的证据来自当前纯文本视图出现或当前 WKNavigation 的 didFinish；HTTP 200、待跳转路由和加载中的选择都不算。账号、后端 epoch、连接 generation、UIDVALIDITY、选择 revision 和渲染 token 必须全部匹配；ViewingContext 再检查 Email、前台和可见窗口，才允许显式已读。离线不排队，失败不清整箱计数，同一身份自动尝试一次；超时/404/410只核实状态与精确目标，不无限重试。未确认请求切走再返回时提供显式重试入口。切模块、激活和窗口 key 入口都会补判。
 
 离线阅读缓存没有发已读请求，不消耗尝试；恢复在线后即使 generation 不变，状态入口也自动补判，当前显示/可见条件仍满足就提交一次。已发请求的 STORE 结果不确定则先核实，保留去重并提供手动重试，不能把前一种恢复也要求为手动操作。
 
-列表首可见行、纯文本段落锚点与 HTML 的公开 interactionState 仅存 App 内存，移除/更换账号或 UIDVALIDITY 重置清除。F1 实际验证列表/纯文本按条目标识恢复，但 HTML 切模块后回到页顶（P2），仍需返修。后端净化和自动策略测试本身不代表实际 WebKit 安全；F1 另有首封/切回资源零请求、JS 不执行、HTTP/_blank 外开和规则失败封闭的合成实机证据，HTTPS/单标签内网外开及部分旧渲染竞态仍未验。
+列表首可见行、纯文本段落锚点与 HTML 的公开 interactionState 仅存 App 内存，HTML缓存最近8封、单份最多256KiB，不保留WK/DOM；完整身份和正文SHA256匹配才恢复，移除/更换账号、UIDVALIDITY或连接失效清除。F1 实际验证列表/纯文本按条目标识恢复；HTML回页顶（P2）已完成R1自动返修，实际落点与新scheme完整资源隔离待独立复验，见 [R1报告](../sessions/2026-10-14-email-html-scroll-r1.md)。后端净化和自动策略测试本身不代表实际 WebKit 安全；F1 另有首封/切回资源零请求、JS 不执行、HTTP/_blank 外开和规则失败封闭的合成实机证据，HTTPS/单标签内网外开及部分旧渲染竞态仍未验。
 
 ## 邮箱通信与停止
 

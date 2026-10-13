@@ -82,7 +82,7 @@ private final class ReaderHTTP: URLProtocol {
     }
 }
 
-@MainActor private func reader() async -> (MailState, UserDefaults, String) {
+@MainActor func reader() async -> (MailState, UserDefaults, String) {
     ReaderHTTP.reset()
     let config = URLSessionConfiguration.ephemeral
     config.protocolClasses = [ReaderHTTP.self]
@@ -95,7 +95,7 @@ private final class ReaderHTTP: URLProtocol {
     await mail.setCapability(features:["mail"])
     return (mail, preferences, suite)
 }
-@MainActor private func waitReader(_ condition: () -> Bool) async throws {
+@MainActor func waitReader(_ condition: () -> Bool) async throws {
     for _ in 0..<400 { if condition() { return }; try await Task.sleep(for:.milliseconds(5)) }
     Issue.record("等待阅读器超时")
 }

@@ -28,7 +28,7 @@ final class MailState: CustomReflectable {
     var selectedFolderID = "INBOX"
     var listScrollAnchor: String?
     var detailScrollAnchors: [String: String] = [:]
-    @ObservationIgnored var htmlInteractions: [String: MailHTMLInteraction] = [:]
+    @ObservationIgnored let htmlInteractions = MailHTMLInteractionCache()
     var bodyLoadState: BodyLoadState = .idle
     var folders: [MailFolder] = []
     var items: [MailSummary] = []
