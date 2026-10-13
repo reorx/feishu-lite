@@ -93,7 +93,7 @@ tags:
 - 写 `kb/sessions/2026-10-13-email-shell-b-acceptance.md`，按通过/失败/未验逐项记录；复核 B known-issues，已确实验证的条目移除，实际影响使用的缺陷保留准确描述。只对有证据的原计划条目勾选。必要时更新受影响文档，与验收报告一起提交；不修改本文、不 push、不发布、不开始 C。
 - 最终回报：commit、测试与截图路径、缺陷列表、资源清理结果、对 B 能否签收的结论、交给 coordinator 的事项。在自己的 tab 返回摘要，详细结果落盘。coordinator 保持等待并读取报告后再派下一项。
 
-### 当前任务 C1：邮件领域模型、存储与 MIME 解析
+### 任务 C1：邮件领域模型、存储与 MIME 解析（已签收）
 
 执行者：新的 Herdr tab 中 Codex，在当前 master 上工作。先读根 AGENTS.md、原计划全文（尤其 §4 存储、§5 MIME/分页、§6C/§6D HTML）、A 笔记、B 实现与独立验收 session；使用适用的 Python/kb 技能，不熟悉的库依项目约定查正式文档。本文为 coordinator 的拆分，不改变原计划范围；接口细节允许按实际代码选择并在交接中说明。
 
@@ -112,11 +112,32 @@ tags:
 - 更新必要 AGENTS.md/README 与原计划证据条目，session 写 `kb/sessions/2026-10-13-email-foundation-c1.md`：具体接口与调用示例、数据 schema/迁移、错误类别、限额、测试红绿证据、后续 C2/C3/D 的责任、偏离和待验。未交付功能不冒充已实现，已知缺陷按 kb 规则登记。
 - 当前分支提交实现和相关文档，不修改本文，不 push、不发布、不开始 C2 或委派其他 agent；清理自建资源。最终在 tab 报告 commit、测试、交接文档、工作区状态。coordinator 等待收尾信号并核对报告后派下一阶段。
 
+### 当前任务 C2：IMAP 适配器与可中断串行执行器
+
+执行者：新 Herdr tab 的 Codex，当前 master。必读原计划 §4 IMAP 执行模型、§5 同步/正文规则、§6C；A 探路笔记、C1 session `kb/sessions/2026-10-13-email-foundation-c1.md` 与邮件基础源码/测试、根 AGENTS.md。库已通过 uv 引入 IMAPClient 4.1.0，不重新选型。
+
+目标：让 C3 通过清晰的异步适配器调用邮件 I/O；真实库运行在专用 daemon 线程，同一连接上的命令串行，正文/已读优先，IDLE 可中断且停止不拖住进程。只做适配器和测试，不接 API/同步调度/App，不连接真实账号。
+
+完成条件：
+
+- 先写行为测试，使用 asyncio TCP 最小脚本化 IMAP 服务端驱动真实 IMAPClient（不是只 mock 库方法）。支持 LOGIN、LIST、SELECT/EXAMINE、UID SEARCH/FETCH/STORE、IDLE/DONE、LOGOUT，覆盖延迟、断线、推送 EXPUNGE/EXISTS/FETCH、DONE 无确认、半行/半开响应、FETCH 无返回。可复用 A 的思路，但不能把 A 的临时测试当生产适配器验证。
+- 正常连接校验证书和主机名，端口/TLS 配置不泄漏密码；任何 SecretStr/异常/日志不得输出凭证、原响应或邮件。认证异常独立于聊天 AuthExpired，认证失败与普通断网可区分。真实 TLS 行为 A 已有依据，本阶段用合成服务端和必要本地 TLS fixture 验证，不读 tmp/feishu-mail.env。
+- 一条连接一个所有者 daemon 线程，不使用默认线程池承载永久 IMAP 任务；跨线程结果通过事件循环安全入口返回，工作线程不访问 MailStore/SQLite 或直接 emit SSE。提供账号/连接世代，停止或取消后迟到结果不得交付给新账号。排队请求有界、取消可收敛。
+- 串行命令队列：等待 IDLE 时有请求先 DONE，收到 tagged 确认才发下一命令；正文/STORE 优先于待执行分页/对账（不要求抢占已在 wire 的单条命令）。无 IDLE 时有可用正常请求路径；推送仅视为需对账信号，不解释序号。续订不超过 29 分钟，45 秒对账调度由 C3 管理。
+- 正常 IDLE 中的正文请求入队后 2 秒内开始 FETCH。DONE 无确认时在有限期限内断开并返回明确错误，不能并发发送 FETCH 或无限等普通 socket 超时。记录测试时限与计时起止，避免只测 mock 的瞬间完成。
+- stop 在 IDLE、DONE、FETCH、建连/greeting/TLS 阻塞等阶段均在 2 秒内让完整服务测试子进程退出；必要时由事件循环对公开 socket shutdown，中断阻塞读，所有者清理。daemon 不能代替正常资源关闭：测试 socket、线程、pending future 和本地服务端清理；没有句柄时的建连限制须明确且有测试。
+- LIST 返回全部目录，中文/层级/selectable 正确；收件箱识别按 INBOX 语义。内容读取仅 INBOX，后端限制不能只留 UI。SELECT 元数据包含 UIDVALIDITY、UIDNEXT、PERMANENTFLAGS/只读状态，不能把 UNSEEN 响应当未读数；提供全箱 unseen、UID 列表、新 UID 与缓存存在查询基础，不做每轮 FETCH 1:* FLAGS/STATUS selected mailbox。
+- 摘要只取 FLAGS/INTERNALDATE/RFC822.SIZE/BODYSTRUCTURE/指定 HEADER.FIELDS PEEK，用 C1 解析生成共享模型。正文只按 C1 selected.body 数字 section 发 BODY.PEEK，不下载附件或整个 RFC822；STORE 用 +FLAGS.SILENT (\\Seen)，保留其他 flags，拒绝失败/只读时伪成功。适配器不因读取正文而 STORE。
+- 在网络读取/库解析之前限制单次响应、literal、BODYSTRUCTURE 输入；C1 默认响应 8 MiB、头部 256 KiB、正文 2 MiB，不接受先分配巨大 literal 再检查。必要的库扩展集中、明确说明与测试，不手写 IDLE。遇到恶意/畸形单封可分类失败，不能卡死后续请求/聊天事件循环；脚本化服务端验证超限、断线、持续推送的公平性。
+- C1 的 get_raw_body/render_body 分线程约定保持；提供工作线程解析/净化入口或清楚交接供 C3 使用，不能在事件循环执行大块 MIME/HTML 工作。正常库 I/O、解析所有权一致，避免不必要的新执行框架。
+- 跑后端全量 `uv run pytest`；已有 C1/聊天行为不回退，不跑 formatter/style linter。限额/超时/资源清理等失败先复现再修。测试必须使用合成脱敏协议样本。
+- session 写 `kb/sessions/2026-10-13-email-imap-executor-c2.md`，列出真实生产接口、错误/世代/取消契约、C3 接续示例、计时、脚本服务端覆盖、残余限制与红绿证据。必要文档随代码提交，不修改本文、不 push、不发布、不开始 C3、不委派。最终回报 commit、测试、清理与报告路径。
+
 ### 状态
 
 - [x] A：已签收 `3cbc23d`；7 个测试、42 次计时通过；真实已读/通知等仍按原计划待验。
 - [ ] B：实现 `66312a9`；独立验收 `a05dcb8`，核心外壳可进入 C，无产品缺陷待返修。系统通知/点击、Dock 实际显示、真实输入法及 supervisor 启动回归留 F，故全项未勾选。截图 `tmp/2026-10-13-email-reader/b-acceptance/`。
-- [ ] C1
+- [x] C1：`2efd0be`，后端全量 123 项通过；按协调审阅保留合法 HTTP(S) 内网链接，未接通 API/同步。
 - [ ] C2
 - [ ] C3
 - [ ] D1
