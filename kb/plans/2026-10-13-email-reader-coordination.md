@@ -200,7 +200,7 @@ tags:
 - 本tab不启动实机UI验收；用户要求验收开独立tab，配置UI及真实SecItem/权限证据留独立验收。不运行会杀用户App的make run，不改变签名/bundle id，不push/发布/开始D2/自行委派。测试假资源结束清理。
 - session写 `kb/sessions/2026-10-13-email-configuration-d1.md`，证据 `tmp/2026-10-13-email-configuration-d1/`；完整记录接口、凭证状态机、自动测试红绿、真实未验、自主决策、D2/E接续及「交给协调者」。更新必要AGENTS/README/原计划有证据条目，代码文档同次提交，仅暂存自己的文件；不改本文。在tab回报commit、测试、报告路径、清理和工作区状态，coordinator签收后另派D2。
 
-### 当前任务 D2：收件箱阅读器、安全正文与可见性已读
+### 任务 D2：收件箱阅读器、安全正文与可见性已读（自动交付已签收）
 
 执行者：新的 Herdr tab 中 Codex，当前 master。先读根/mac AGENTS.md、原计划全文尤其§3/§5/§6D/§7、B实现/验收、C3b和D1 session。D1基线 `bf490b8`，Core70+App26测试/Debug构建通过；`kb/sessions/2026-10-13-email-configuration-d1.md` 是 MailState、合并任务、选择和凭证边界的实际依据。使用适用SwiftUI/impeccable/kb技能。本文为coordinator拆分，产品范围不变。
 
@@ -222,6 +222,28 @@ tags:
 - 运行 cd mac && make test && make build；若有后端接续修改，先行为测试再实现并跑后端全量。网页资源零请求/JS不执行等真实WebKit证据不能只靠纯函数冒充，留明确独立验收清单和可复用合成样本/计数端点；本tab不启动实机UI，coordinator另派。不得读取真实env/邮箱/缓存，不改真实flags，不make run、不改签名或bundle id、不push/发布/开始E/自行委派。
 - 报告 `kb/sessions/2026-10-13-email-reader-d2.md`，证据 `tmp/2026-10-13-email-reader-d2/`；写清生产接口、异步/渲染/已读契约、安全策略与自动测试边界、E接续、独立UI/WebKit检查、自主决策及「交给协调者」。必要文档随实现一起提交，只暂存自己的文件、不修改本文；清理自建测试资源，最终在tab回报commit/测试/报告/工作区状态。
 
+### 当前任务 E：通知、未读、路由与唤醒联动
+
+执行者：新的 Herdr tab 中 Codex，当前 master。必读根/mac AGENTS.md、原计划全文尤其§5通知/已读与§6E/§7、B/C3a/C3b/D1/D2 session及实际接口。D2基线 `fedbc8b`，后端301/Core72/App46测试及构建通过。D2报告 `kb/sessions/2026-10-13-email-reader-d2.md` 的 displayedBodyRoute/openRoute/loadPendingMailRoute 是准确接续入口；C3b通知批次与ack是后端契约。本文由coordinator编写，任务仅E，完成后交独立F验收。
+
+目标：将现有持久pending和双模块状态接入真实通知服务，实现新邮件提醒、可靠确认/去重、精确清理、点击定位、汇总badge与唤醒重连；单封正文安全/已读逻辑复用D2，不另造可见性判断。
+
+完成条件与范围：
+
+- 新逻辑先写失败行为测试；Core保持纯逻辑，NotificationService系统操作用可注入recorders/通知中心包装测试实际调用，不能只测独立策略。使用合成wire/假钥匙串/独立偏好，不投递真实系统通知、不访问真实邮箱或用户数据，本tab不启动实机UI。
+- 消费mail.arrived与每次SSE恢复的status.pending，独立于聊天登录，合并为有界串行处理任务。对账号/连接epoch/UIDVALIDITY/当前batch成员校验，重复事件或并发状态快照不能同时重复投递/ack，账号移除时取消旧任务，迟到通知完成不得重新加入旧账号。
+- individual只显示发件人/主题、不下载正文；自己发给自己仍正常提醒。Email前台不能抑制其他邮件；仅统一ViewingContext证明正在查看同一成功显示的正文时抑制。历史/分页/旧邮件变未读/UIDVALIDITY重建没有pending就不得凭列表变化产生提醒。
+- 尊重后端mode与稳定batch id：超过3封或最早INTERNALDATE早10分钟已由C3a分类，App不自行另分批改变身份；summary一条且路由INBOX，individual逐项。identifier/thread按mail+账号+稳定目标命名，聊天清理不碰邮件，邮件清理不碰聊天。
+- 整批全部投递成功或明确按用户通知偏好/当前可见性抑制后才ack；UNUserNotificationCenter.add失败不能假装已投递。明确通知权限拒绝/用户关闭与临时系统失败的处理，不忙重试或永久刷错误。确认超时/重连/重复事件/进程重启必须避免再次弹同批；稳定identifier本身未必保证不重新弹banner，结合已投递记录/通知中心查询/最小非秘密持久确认记录设计并测试。投递与ack无法跨系统原子时准确记录边界，不声称无法证明的exactly-once。
+- 后端ack失败保留可恢复状态，下一次恢复先核实已处理项再确认，不能重复发送通知来“重试ack”；部分批次投递失败保留成功项去重，成员已读/删除后不补投。记录必要非秘密ID与状态可持久化，禁止保存邮件正文/密码；账号移除、UIDVALIDITY重建清相应记录，限制增长并说明保留策略。
+- read_ids/deleted_ids/reset及账号移除精确清理系统已递送与待递送通知；App重启/SSE丢事件后也要从权威状态/必要目标查询恢复清理，不能仅依赖当前pending（ack后已不存在）。汇总通知成员部分失效的清理策略明确并测试，避免保留指向已失效目标的提醒；慢系统API/旧任务不能反向覆盖新状态。
+- 点击通知先开窗口、切Email，再等待后端能力/账号恢复调用D2路由加载；pending不是已显示。汇总回INBOX；页外目标用summary接口；404/410/旧账号回可用列表并提示，不能按裸UID选另一封。重复点击/后端未ready/账号变化时只消费匹配的最新路由；保留旧聊天通知兼容、Messages焦点和读取行为。
+- 汇总badge仍唯一AppState.updateUnread，两领域独立保留真计数，免打扰/隐藏聊天规则保持，0/99+显示、offline/auth_failed旧邮件计数、移除邮件归零均有实际调用点测试。不以通知数量或已加载列表估算邮件未读。
+- NSWorkspace.didWakeNotification通过同一后端调用POST /mail/sync?reconnect=true，合并连续唤醒/重连，重建连接后对账并消费pending；不要唤醒时强迫聊天扫码或重复读钥匙串。当前成功显示缓存正文恢复online时仍按D2规则补read，已发STORE不确定时保留显式重试。关闭窗口后台同步继续，退出取消新增任务/观察者，无第二条SSE。
+- 自动测试覆盖后端合成批次阈值边界、自发邮件、同封可见/其他新封、权限/偏好、投递部分失败/ack失败/重复事件/重启、移除与迟到、读删reset及断线漏事件恢复、通知点击页外与失效、双模块badge、唤醒合并及聊天回归。不能把recorders通过当系统通知实际弹出/点击通过。
+- 运行cd mac && make test && make build；必要后端接续须先测试再实现，并跑后端全量。不主动formatter/linter、不改变bundle/signature、不make run、不读真实env、不真实发信/flags、不push/发布/委派/开始F。范围外问题记「交给协调者」，不顺手扩展产品范围。
+- 报告 `kb/sessions/2026-10-14-email-notifications-e.md`，证据 `tmp/2026-10-14-email-notifications-e/`；列出投递/去重/ack/清理状态机、真实与模拟边界、无法原子化的残余风险、F可用合成入口与逐项检查、测试红绿和自主决策。必要AGENTS/README/原计划等与实现同次提交，仅暂存自己的文件，不修改本文。清理本任务资源，在tab回报commit、测试、报告、清理与工作区状态；coordinator等待签收后另开F。
+
 ### 状态
 
 - [x] A：已签收 `3cbc23d`；7 个测试、42 次计时通过；真实已读/通知等仍按原计划待验。
@@ -231,6 +253,6 @@ tags:
 - [x] C3a：`3f755b7`，后端全量 221 项通过（新增42项）；4个完整进程停止场景最大1.524秒。服务层已签收，API/App/真实验证尚未完成。
 - [x] C3b：`f48e5ed`，后端全量297项通过；真实HTTP→IMAP FETCH 0.110秒，5个完整进程退出最大1.685秒，独立wheel安装/CLI冒烟通过。App接入及真实邮箱尚待验证。
 - [x] D1：`bf490b8`，Core70+App26项测试及Debug构建通过；配置/钥匙串包装/重启恢复/有界SSE自动交付签收。真实SecItem与UI保留F独立验收。
-- [ ] D2
+- [x] D2：`fedbc8b`，后端301/Core72/App46项与Debug构建通过；阅读/渲染可见已读自动交付签收。真实UI/WebKit/滚动与安全资源计数留F；合成工具在tmp/2026-10-13-email-reader-d2/。
 - [ ] E
 - [ ] F
