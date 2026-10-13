@@ -198,7 +198,7 @@ struct ModuleIntegrationTests {
         preferences.set("email", forKey: "active-module")
         let config = BackendConfig(uvPath: "", backendDir: "", externalEndpoint: nil, homeOverride: nil)
         let windows = WindowRecorder()
-        let app = AppState(supervisor: BackendSupervisor(config: config), notifications: NotificationService(),
+        let app = AppState(supervisor: BackendSupervisor(config: config), notifications: NotificationService(badgeWriter: { _ in }, notificationCenter: NotificationCenterRecorder()),
                            windows: windows, preferences: preferences)
         #expect(app.activeModule == .email)
         let mail = NotificationRoute.email(accountID: "test-account", folderID: "INBOX", messageID: "test-mail")

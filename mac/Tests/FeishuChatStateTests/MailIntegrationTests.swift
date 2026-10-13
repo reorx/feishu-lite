@@ -351,7 +351,7 @@ extension MailIntegrationTests {
             keychain.preferences.synchronize()
         }
         var badges: [Int] = []
-        let app = AppState(supervisor: BackendSupervisor(config: BackendConfig(uvPath: "", backendDir: "", externalEndpoint: nil, homeOverride: nil)), notifications: NotificationService(badgeWriter: { badges.append($0) }), windows: MailWindowRecorder(), preferences: keychain.preferences, credentials: keychain, makeClient: { _ in mailConnection().client! })
+        let app = AppState(supervisor: BackendSupervisor(config: BackendConfig(uvPath: "", backendDir: "", externalEndpoint: nil, homeOverride: nil)), notifications: NotificationService(badgeWriter: { badges.append($0) }, notificationCenter: NotificationCenterRecorder()), windows: MailWindowRecorder(), preferences: keychain.preferences, credentials: keychain, makeClient: { _ in mailConnection().client! })
         app.activeModule = .email
         let endpoint = BackendEndpoint(baseURL: URL(string: "http://synthetic.invalid")!, token: "test-only")
         app.backendStateChanged(.ready(endpoint), startEventLoop: false)
@@ -439,7 +439,7 @@ extension MailIntegrationTests {
             keychain.preferences.removePersistentDomain(forName: keychain.suite)
             keychain.preferences.synchronize()
         }
-        let app = AppState(supervisor: BackendSupervisor(config: BackendConfig(uvPath: "", backendDir: "", externalEndpoint: nil, homeOverride: nil)), notifications: NotificationService(badgeWriter: { _ in }), windows: MailWindowRecorder(), preferences: keychain.preferences, credentials: keychain, makeClient: { _ in mailConnection().client! })
+        let app = AppState(supervisor: BackendSupervisor(config: BackendConfig(uvPath: "", backendDir: "", externalEndpoint: nil, homeOverride: nil)), notifications: NotificationService(badgeWriter: { _ in }, notificationCenter: NotificationCenterRecorder()), windows: MailWindowRecorder(), preferences: keychain.preferences, credentials: keychain, makeClient: { _ in mailConnection().client! })
         app.activeModule = .email
         app.backendStateChanged(.ready(BackendEndpoint(baseURL: URL(string: "http://synthetic.invalid")!, token: "test-only")), startEventLoop: false)
         MailHTTP.heldPath = "/mail/status"
@@ -470,7 +470,7 @@ extension MailIntegrationTests {
             keychain.preferences.removePersistentDomain(forName: keychain.suite)
             keychain.preferences.synchronize()
         }
-        let app = AppState(supervisor: BackendSupervisor(config: BackendConfig(uvPath: "", backendDir: "", externalEndpoint: nil, homeOverride: nil)), notifications: NotificationService(badgeWriter: { _ in }), windows: MailWindowRecorder(), preferences: keychain.preferences, credentials: keychain, makeClient: { _ in mailConnection().client! })
+        let app = AppState(supervisor: BackendSupervisor(config: BackendConfig(uvPath: "", backendDir: "", externalEndpoint: nil, homeOverride: nil)), notifications: NotificationService(badgeWriter: { _ in }, notificationCenter: NotificationCenterRecorder()), windows: MailWindowRecorder(), preferences: keychain.preferences, credentials: keychain, makeClient: { _ in mailConnection().client! })
         app.activeModule = .email
         app.backendStateChanged(.ready(BackendEndpoint(baseURL: URL(string: "http://synthetic.invalid")!, token: "test-only")), startEventLoop: false)
         MailHTTP.heldPath = "/mail/status"
@@ -508,7 +508,7 @@ extension MailIntegrationTests {
             keychain.preferences.removePersistentDomain(forName: keychain.suite)
             keychain.preferences.synchronize()
         }
-        let app = AppState(supervisor: BackendSupervisor(config: BackendConfig(uvPath: "", backendDir: "", externalEndpoint: nil, homeOverride: nil)), notifications: NotificationService(badgeWriter: { _ in }), windows: MailWindowRecorder(), preferences: keychain.preferences, credentials: keychain, makeClient: { _ in mailConnection().client! })
+        let app = AppState(supervisor: BackendSupervisor(config: BackendConfig(uvPath: "", backendDir: "", externalEndpoint: nil, homeOverride: nil)), notifications: NotificationService(badgeWriter: { _ in }, notificationCenter: NotificationCenterRecorder()), windows: MailWindowRecorder(), preferences: keychain.preferences, credentials: keychain, makeClient: { _ in mailConnection().client! })
         app.activeModule = .email
         app.backendStateChanged(.ready(BackendEndpoint(baseURL: URL(string: "http://synthetic.invalid")!, token: "test-only")), startEventLoop: false)
         MailHTTP.heldPath = "/mail/status"
@@ -575,7 +575,7 @@ extension MailIntegrationTests {
             keychain.preferences.removePersistentDomain(forName: keychain.suite)
             keychain.preferences.synchronize()
         }
-        let app = AppState(supervisor: BackendSupervisor(config: BackendConfig(uvPath: "", backendDir: "", externalEndpoint: nil, homeOverride: nil)), notifications: NotificationService(badgeWriter: { _ in }), windows: MailWindowRecorder(), preferences: keychain.preferences, credentials: keychain, makeClient: { _ in mailConnection().client! })
+        let app = AppState(supervisor: BackendSupervisor(config: BackendConfig(uvPath: "", backendDir: "", externalEndpoint: nil, homeOverride: nil)), notifications: NotificationService(badgeWriter: { _ in }, notificationCenter: NotificationCenterRecorder()), windows: MailWindowRecorder(), preferences: keychain.preferences, credentials: keychain, makeClient: { _ in mailConnection().client! })
         app.activeModule = .email
         app.backendStateChanged(.ready(BackendEndpoint(baseURL: URL(string: "http://synthetic.invalid")!, token: "test-only")), startEventLoop: false)
         await app.refreshAfterEventStreamConnected()

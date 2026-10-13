@@ -22,9 +22,12 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate, Mes
     private var center: UNUserNotificationCenter { UNUserNotificationCenter.current() }
     @ObservationIgnored private let log = Logger(subsystem: "com.reorx.FeishuChat", category: "notification")
     @ObservationIgnored private let badgeWriter: ((Int) -> Void)?
+    @ObservationIgnored let localCenter: any LocalNotificationCenter
+    @ObservationIgnored var onAuthorizationChange: (() -> Void)?
 
-    init(badgeWriter: ((Int) -> Void)? = nil) {
+    init(badgeWriter: ((Int) -> Void)? = nil, notificationCenter: (any LocalNotificationCenter)? = nil) {
         self.badgeWriter = badgeWriter
+        localCenter = notificationCenter ?? SystemNotificationCenter()
         super.init()
     }
 
@@ -43,9 +46,9 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate, Mes
 
     /// 用户可能刚从系统设置回来，重新读一次授权状态
     func refreshAuthorization() async {
-        let status = await center.notificationSettings().authorizationStatus
-        isDenied = status == .denied
-        log.notice("notification authorization status: \(status.rawValue)")
+        let status = await localCenter.authorization()
+        isDenied = status == .disabled
+        onAuthorizationChange?()
     }
 
     func openSystemSettings() {
@@ -76,19 +79,19 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate, Mes
     /// 会话已读之后，把通知中心里它的通知也清掉
     func clearNotifications(chatID: String) {
         Task {
-            let delivered = await center.deliveredNotifications()
+            let delivered = await localCenter.notifications()
             // 通过领域目标清理，兼容升级前已递送的 chat_id 通知；不会清掉邮箱通知。
             let ids = delivered.filter {
-                NotificationRoute(userInfo: $0.request.content.userInfo) == .messages(chatID: chatID)
-            }.map(\.request.identifier)
+                NotificationRoute(userInfo: $0.userInfo) == .messages(chatID: chatID)
+            }.map(\.id)
             if !ids.isEmpty {
-                center.removeDeliveredNotifications(withIdentifiers: ids)
+                localCenter.remove(ids)
             }
         }
     }
 
     func clearSessionExpired() {
-        center.removeDeliveredNotifications(withIdentifiers: [Self.sessionExpiredID, "session-expired"])
+        localCenter.remove([Self.sessionExpiredID, "session-expired"])
     }
 
     func setBadge(_ count: Int) {
@@ -100,10 +103,11 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate, Mes
     }
 
     private func post(id: String, content: UNNotificationContent) {
-        let request = UNNotificationRequest(identifier: id, content: content, trigger: nil)
         Task {
             do {
-                try await center.add(request)
+                try await localCenter.add(LocalNotification(id:id,title:content.title,body:content.body,
+                                                           threadID:content.threadIdentifier,
+                                                           userInfo:content.userInfo as? [String:String] ?? [:]))
                 log.notice("posted notification \(id, privacy: .public)")
             } catch {
                 log.error("failed to post notification: \(error.localizedDescription, privacy: .public)")

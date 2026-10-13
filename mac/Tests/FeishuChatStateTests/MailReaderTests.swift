@@ -360,7 +360,7 @@ private final class ReaderHTTP: URLProtocol {
         let endpoint = BackendEndpoint(baseURL:URL(string:"http://synthetic.invalid")!,token:"synthetic")
         let windows = ReaderWindows()
         let app = AppState(supervisor:BackendSupervisor(config:BackendConfig(uvPath:"",backendDir:"",externalEndpoint:endpoint,homeOverride:nil)),
-                           notifications:NotificationService(badgeWriter:{ _ in }),windows:windows,preferences:prefs,
+                           notifications:NotificationService(badgeWriter:{ _ in }, notificationCenter: NotificationCenterRecorder()),windows:windows,preferences:prefs,
                            credentials:ReaderCredentials(),makeClient:{ _ in BackendClient(endpoint:endpoint,session:URLSession(configuration:config)) })
         defer { app.backendStateChanged(.stopped,startEventLoop:false); prefs.removePersistentDomain(forName:suite) }
         app.backendStateChanged(.ready(endpoint),startEventLoop:false)

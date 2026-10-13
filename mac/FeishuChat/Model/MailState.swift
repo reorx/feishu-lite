@@ -73,6 +73,9 @@ final class MailState: CustomReflectable {
     /// E 在此处理精确账号通知清理；不隐式 ack。
     @ObservationIgnored var onAccountRemoved: ((String) -> Void)?
     @ObservationIgnored var onEvent: ((MailEvent) -> Void)?
+    @ObservationIgnored var onNotificationChange: (() -> Void)?
+    @ObservationIgnored var onReadIDs: (([String], String) -> Void)?
+    var notificationRevision: Int { revision }
     @ObservationIgnored var viewingContext: (() -> ViewingContext)?
     @ObservationIgnored var readerTask: Task<Void, Never>?
     @ObservationIgnored var readerTaskID = UUID()
@@ -200,6 +203,7 @@ final class MailState: CustomReflectable {
                 pending.append(batch)
             }
             if event.reset {
+                pending = []
                 resetReader()
                 clearSelection()
             } else if let selectedMessageID, event.deletedIDs.contains(selectedMessageID) {
@@ -207,11 +211,14 @@ final class MailState: CustomReflectable {
             }
         }
         if event.folderID == "INBOX" {
+            let invalid = Set(event.readIDs + event.deletedIDs)
+            if !invalid.isEmpty { removePendingMembers(Array(invalid)) }
             applyReadIDs(event.readIDs)
             items.removeAll { event.deletedIDs.contains($0.id) }
             if event.type != .status { requestReaderRefresh() }
         }
         onEvent?(event)
+        onNotificationChange?()
     }
 
     func restoreCredentialIfNeeded() async {
@@ -231,6 +238,7 @@ final class MailState: CustomReflectable {
             if let oldID = status?.mailAccountID {
                 retiredAccounts.insert(oldID)
                 secrets.removeValue(forKey: oldID)
+                onAccountRemoved?(oldID)
             }
             clearSelection()
             resetReader()
@@ -260,6 +268,17 @@ final class MailState: CustomReflectable {
             requestReaderRefresh()
         } else if hasLoadedList, old?.state != .online, new.state == .online { requestReaderRefresh() }
         reevaluateViewing()
+        onNotificationChange?()
+    }
+
+    func applyNotificationAck(_ new: MailStatus, expected: MailReaderIdentity, revision: Int) {
+        guard readerIdentity == expected, self.revision == revision else { return }
+        apply(new)
+    }
+
+    func removePendingMembers(_ ids: [String]) {
+        for i in pending.indices { pending[i].items.removeAll { ids.contains($0.id) } }
+        pending.removeAll { $0.items.isEmpty }
     }
 
     private func clearSelection() {

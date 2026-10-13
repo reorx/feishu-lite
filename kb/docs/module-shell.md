@@ -21,6 +21,8 @@ tags:
 
 邮件正文只有在当前视图成功显示、App 激活、主窗口可见且正在 Email 时才提交已读。加载、失败、后台刷新、切走后的旧完成回调不能提交；回到前台或切回 Email 会补判。离线保留缓存阅读和旧计数，不排离线写队列；失败或未确认已读可手动重试，自动操作去重。
 
-点击通知先切到对应模块并打开窗口，再选中目标。聊天和邮件的通知目标分开标识，邮件目标包含账号和文件夹；聊天已读只清理同一聊天的通知。升级前已递送的聊天通知继续可点击和清理。Email 通知目标保存在外壳的 `pendingMailRoute`，E 可调用 `loadPendingMailRoute()` 加载，页外目标按 id 取得缓存摘要和正文，失效目标回收件箱。可见性读取 `mail.displayedBodyRoute`，待跳转或裸选择不能充当已显示/已读证据。当前未接实际邮件通知投递、ack、唤醒或通知清理，仍由 E 完成。
+点击通知先切到对应模块并打开窗口，再选中目标。聊天和邮件的通知目标分开标识，邮件目标包含账号和文件夹；聊天已读只清理同一聊天的通知。升级前已递送的聊天通知继续可点击和清理。Email 通知目标保存在外壳的 `pendingMailRoute`，自动等待后端能力和邮箱身份后合并调用 `loadPendingMailRoute()`；重复点击只消费最新路由。页外目标按 id 取得缓存摘要和正文，失效目标回收件箱并提示。可见性读取 `mail.displayedBodyRoute`，待跳转或裸选择不能充当已显示/已读证据。
+
+邮件提醒按后端稳定批次处理，成功投递或明确抑制后才确认；当前 Email 只抑制同一封成功显示的正文，其他邮件及自己发给自己的收件仍提醒。读删、重建和账号移除清理对应邮件通知。投递结果不确定时保留待提醒与恢复入口，不自动重弹或确认；明确再次提醒可能重复显示。唤醒经同一本机后端合并重连，再对账计数/提醒与可见已读。以上调用点已通过自动测试；实际系统通知、恢复提示布局与睡眠行为留独立验收，见 [E 报告](../sessions/2026-10-14-email-notifications-e.md)。
 
 相关代码：[外壳状态](../../mac/FeishuChat/Model/AppState.swift)、[聊天状态](../../mac/FeishuChat/Model/MessagesState.swift)、[策略与路由](../../mac/FeishuChatCore/Sources/FeishuChatCore/ModuleShell.swift)。验证见 [Core 行为测试](../../mac/FeishuChatCore/Tests/FeishuChatCoreTests/ModuleShellTests.swift) 和 [实际状态调用测试](../../mac/Tests/FeishuChatStateTests/ModuleIntegrationTests.swift)；完整范围见 [邮箱阅读器计划](../plans/2026-10-13-email-reader-plan.md)。

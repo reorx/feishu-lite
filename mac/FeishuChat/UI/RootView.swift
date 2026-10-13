@@ -26,7 +26,8 @@ struct RootView: View {
                 case .messages:
                     MessagesWorkspace(appState: appState)
                 case .email:
-                    EmailWorkspace(mail: appState.mail, redetect: appState.retryBackendInstallation)
+                    EmailWorkspace(mail: appState.mail, notifications: appState.mailNotifications,
+                                   redetect: appState.retryBackendInstallation)
                 }
             }
             .onAppear { appState.reevaluateViewing() }

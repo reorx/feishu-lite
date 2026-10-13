@@ -24,6 +24,11 @@ extension BackendClient {
     }
     func mailBody(id: String) async throws -> MailBody { try await mailRequest("GET", ["mail", "messages", id]) }
     func mailSummary(id: String) async throws -> MailSummary { try await mailRequest("GET", ["mail", "messages", id, "summary"]) }
+    /// HTTP boundary: missing/retired notification targets need exact cleanup, other errors retain them.
+    func mailSummaryIfPresent(id: String) async throws -> MailSummary? {
+        do { return try await mailSummary(id:id) }
+        catch let error as MailAPIError where error.status == 404 || error.status == 410 { return nil }
+    }
     func readMail(id: String) async throws -> MailReadResult { try await mailRequest("POST", ["mail", "messages", id, "read"]) }
     func syncMail(reconnect: Bool = false, wait: Bool = false) async throws -> MailStatus {
         try await mailRequest("POST", ["mail", "sync"], query: [URLQueryItem(name: "reconnect", value: String(reconnect)), URLQueryItem(name: "wait", value: String(wait))])

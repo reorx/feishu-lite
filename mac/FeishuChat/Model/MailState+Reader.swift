@@ -298,6 +298,8 @@ struct MailRenderToken: Equatable {
     }
     func applyReadIDs(_ ids: [String]) {
         guard !ids.isEmpty else { return }
+        if let account = status?.mailAccountID { onReadIDs?(ids, account) }
+        removePendingMembers(ids)
         for i in items.indices where ids.contains(items[i].id) { items[i].unread = false }
         if let id = selectedSummary?.id, ids.contains(id) { selectedSummary?.unread = false }
     }

@@ -28,9 +28,10 @@ final class AppState {
     let messages: MessagesState
     let mail: MailState
     let notifications: NotificationService
+    let mailNotifications: MailNotificationCoordinator
 
     var viewingContext: ViewingContext {
-        ViewingContext(activeModule: activeModule, isAppActive: NSApp.isActive,
+        ViewingContext(activeModule: activeModule, isAppActive: NSApp?.isActive ?? false,
                        isWindowVisible: windows.isShowingContent, selectedChatID: messages.selectedChatID,
                        selectedMail: mail.displayedBodyRoute)
     }
@@ -40,6 +41,11 @@ final class AppState {
     @ObservationIgnored private var eventTask: Task<Void, Never>?
     @ObservationIgnored private var mailWork: Task<Void, Never>?
     @ObservationIgnored private var chatWork: Task<Void, Never>?
+    @ObservationIgnored private var routeWork: Task<Void, Never>?
+    @ObservationIgnored private var routeRevision = 0
+    @ObservationIgnored private var wakeWork: Task<Void, Never>?
+    @ObservationIgnored private var wakeRequested = false
+    @ObservationIgnored private var workspaceObservers: [(NotificationCenter, any NSObjectProtocol)] = []
     @ObservationIgnored private var wantsMailRefresh = false
     @ObservationIgnored private var wantsCredentialRestore = false
     @ObservationIgnored private var wantsChatRefresh = false
@@ -65,6 +71,7 @@ final class AppState {
         messages = MessagesState(connection: connection, notifications: notifications)
         mail = MailState(connection: connection, credentials: credentials ?? MailKeychain(), externalBackend: supervisor.isExternalBackend,
                          preferences: preferences)
+        mailNotifications = MailNotificationCoordinator(mail:mail,notifications:notifications,preferences:preferences)
         messages.viewingContext = { [weak self] in
             self?.viewingContext ?? ViewingContext(activeModule: .messages, isAppActive: false,
                                                   isWindowVisible: false, selectedChatID: nil)
@@ -77,8 +84,21 @@ final class AppState {
         mail.onUnreadCountChange = { [weak self] count in self?.updateUnread(email: count) }
         mail.onAccountRemoved = { [weak self] id in
             if case let .email(accountID, _, _) = self?.pendingMailRoute, accountID == id { self?.pendingMailRoute = nil }
-            // E 接入精确账号系统通知清理；D1 不投递或 ack 邮件。
+            self?.mailNotifications.removeAccount(id)
         }
+        mail.onNotificationChange = { [weak self] in
+            self?.mailNotifications.request()
+            self?.requestRouteWork()
+            if self?.wakeRequested == true { self?.systemDidWake() }
+        }
+        mail.onReadIDs = { [weak self] ids, account in self?.mailNotifications.invalidate(ids:ids,account:account) }
+        mail.onEvent = { [weak self] event in
+            if let account = event.accountID {
+                if event.reset { self?.mailNotifications.resetAccount(account) }
+                self?.mailNotifications.invalidate(ids:event.readIDs + event.deletedIDs,account:account)
+            }
+        }
+        notifications.onAuthorizationChange = { [weak self] in self?.mailNotifications.request() }
     }
 
     // MARK: - 生命周期
@@ -90,6 +110,7 @@ final class AppState {
         notifications.activate()
         observeUserReturning()
         observeDayChange()
+        observeWake()
         supervisor.start()
     }
 
@@ -98,6 +119,10 @@ final class AppState {
         backendEpoch += 1
         cancelEventWork()
         mail.backendChanged(ready: false)
+        mailNotifications.stop()
+        routeWork?.cancel(); wakeWork?.cancel()
+        observers.forEach { NotificationCenter.default.removeObserver($0) }; observers = []
+        workspaceObservers.forEach { $0.0.removeObserver($0.1) }; workspaceObservers = []
         messages.login.end()
         supervisor.stop()
     }
@@ -114,6 +139,9 @@ final class AppState {
         eventTask = nil
         cancelEventWork()
         isEventStreamConnected = false
+        mailNotifications.backendChanged()
+        routeRevision += 1; routeWork?.cancel()
+        wakeWork?.cancel(); wakeWork = nil
         status = nil
         guard case let .ready(endpoint) = state else {
             mail.backendChanged(ready: false)
@@ -125,6 +153,8 @@ final class AppState {
         connection.client = client
         mail.backendChanged(ready: true)
         let epoch = backendEpoch
+        if wakeRequested { systemDidWake() }
+        requestRouteWork()
         if startEventLoop { eventTask = Task { await runEventLoop(client, epoch: epoch) } }
     }
 
@@ -149,15 +179,26 @@ final class AppState {
         let sources: [(NotificationCenter, Notification.Name)] = [
             (.default, .NSCalendarDayChanged),
             (.default, .NSSystemTimeZoneDidChange),
-            (NSWorkspace.shared.notificationCenter, NSWorkspace.didWakeNotification),
         ]
         for (center, name) in sources {
-            observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+            let observer = center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated {
                     self?.refreshToday()
                 }
-            })
+            }
+            observers.append(observer)
         }
+    }
+    func observeWake(center: NotificationCenter? = nil) {
+        let center = center ?? NSWorkspace.shared.notificationCenter
+        guard workspaceObservers.isEmpty else { return }
+        let observer = center.addObserver(forName:NSWorkspace.didWakeNotification,object:nil,queue:.main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.refreshToday()
+                self?.systemDidWake()
+            }
+        }
+        workspaceObservers.append((center,observer))
     }
 
     private func refreshToday() {
@@ -209,6 +250,7 @@ final class AppState {
             status = new
             messages.handle(event)
             if mail.updateCapability(features: new.features) { requestMailWork(refresh: true) }
+            if wakeRequested { systemDidWake() }
         default: messages.handle(event)
         }
     }
@@ -294,12 +336,15 @@ final class AppState {
     }
 
     func open(_ route: NotificationRoute) {
+        routeRevision += 1
+        routeWork?.cancel()
         activeModule = route.module
         windows.show()
         switch route {
-        case let .messages(chatID): messages.openChat(chatID)
+        case let .messages(chatID): pendingMailRoute = nil; messages.openChat(chatID)
         case .email: pendingMailRoute = route
         }
+        requestRouteWork()
         reevaluateViewing()
     }
 
@@ -307,11 +352,61 @@ final class AppState {
     /// This is loading only; delivery/ack stay with the notification integration.
     func loadPendingMailRoute() async {
         guard let route = pendingMailRoute, mail.capability == .supported,
-              mail.status != nil else { return }
+              canLoadMailRoute else { return }
+        let revision = routeRevision
         await mail.openRoute(route)
-        if pendingMailRoute == route { pendingMailRoute = nil }
+        if pendingMailRoute == route, revision == routeRevision, !Task.isCancelled { pendingMailRoute = nil }
         reevaluateViewing()
     }
+
+    private func requestRouteWork() {
+        guard routeWork == nil, pendingMailRoute != nil, mail.capability == .supported,
+              canLoadMailRoute else { return }
+        let epoch = backendEpoch
+        routeWork = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                self.routeWork = nil
+                if self.pendingMailRoute != nil { self.requestRouteWork() }
+            }
+            guard epoch == self.backendEpoch, !Task.isCancelled else { return }
+            await self.loadPendingMailRoute()
+        }
+    }
+    private var canLoadMailRoute: Bool {
+        guard mail.isBackendReady, let status = mail.status else { return false }
+        if case let .email(account, _, id) = pendingMailRoute,
+           account == status.mailAccountID, id != nil { return status.uidvalidity != nil }
+        return true
+    }
+    func waitForMailRoute() async { while let routeWork { await routeWork.value } }
+
+    /// Workspace wake enters one coalesced reconnect; no chat login or keychain read here.
+    func systemDidWake() {
+        wakeRequested = true
+        guard wakeWork == nil, mail.capability == .supported, mail.isBackendReady,
+              mail.status?.mailAccountID != nil, let client = connection.client else { return }
+        let epoch = backendEpoch
+        wakeWork = Task { [weak self] in
+            guard let self else { return }
+            defer { if epoch == self.backendEpoch { self.wakeWork = nil } }
+            self.wakeRequested = false
+            let account = self.mail.status?.mailAccountID
+            do {
+                _ = try await client.syncMail(reconnect:true,wait:true)
+                guard epoch == self.backendEpoch, account == self.mail.status?.mailAccountID, !Task.isCancelled else { return }
+                // The reconnect response may race with ordered SSE; get a versioned snapshot instead.
+                await self.mail.refreshStatus()
+                self.mailNotifications.request()
+                self.mail.reevaluateViewing()
+            } catch {
+                guard epoch == self.backendEpoch, !Task.isCancelled else { return }
+                await self.mail.refreshStatus()
+            }
+            self.wakeRequested = false // wake bursts during this reconnect are already covered
+        }
+    }
+    func waitForWakeWork() async { await wakeWork?.value }
 
     private func openMessages() {
         activeModule = .messages

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct EmailWorkspace: View {
     let mail: MailState
+    let notifications: MailNotificationCoordinator
     let redetect: () -> Void
 
     var body: some View {
@@ -44,6 +45,29 @@ struct EmailWorkspace: View {
                         MailMessageDetail(mail: mail)
                     }
                 }
+            }
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if mail.capability == .supported, notifications.uncertainDeliveryCount > 0 {
+                VStack(spacing: 0) {
+                    HStack(alignment: .center, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("有 \(notifications.uncertainDeliveryCount) 条邮件提醒的投递结果未确认")
+                            Text("已保留待提醒邮件。再次提醒可能重复显示同一通知。")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 0)
+                        Button("再次提醒", action: notifications.retryUncertainDeliveries)
+                            .disabled(!mail.isBackendReady)
+                    }.padding(12)
+                    Divider()
+                }
+            } else if mail.capability == .supported, let failure = notifications.lastFailure {
+                HStack(spacing: 16) {
+                    Text(failure).font(.callout)
+                    Spacer(minLength: 0)
+                    Button("重试提醒", action: notifications.request).disabled(!mail.isBackendReady)
+                }.padding(12)
             }
         }
         .navigationTitle("Email")
