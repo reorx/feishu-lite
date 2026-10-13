@@ -7,13 +7,13 @@
 - 记录：2026-10-14，原[F1报告](sessions/2026-10-14-email-reader-f1-acceptance.md)；接续[F1b报告](sessions/2026-10-14-email-reader-f1b-acceptance.md)。
 - HTML滚动P2已通过最新源码独立复验，新增内存scheme的首载/恢复、精确URL子资源/frame/用户链接拒绝及资源零增量通过；浅色/鼠标拖宽/旧cursor完整恢复/fake凭证错误UI亦已补齐。
 - 仍待：未知能力稳定加载UI；精确旧didFinish/新navigation乱序及已发STORE期间账号/UIDVALIDITY变化；HTTPS/单标签内网实际外开、跨邮件/token动态访问探测。F1b已证明待编译退役与generation/账号/UIDVALIDITY重置不read，当前新navigation才read；不能扩大成所有竞态通过。尚无这些路径的确认新缺陷。纯文本R2滚动P2已由 [F1c](sessions/2026-10-14-email-reader-f1c-acceptance.md)关闭；真实中文组字、精确旧layout回放及少量交互时序证据仍未验，见该报告的准确范围。
-- [F2b](sessions/2026-10-14-email-system-integration-f2b.md)已验证真实测试UUID自身SecItem、凭证恢复调用、隔离生产Supervisor生命周期及全量；旧共享 service 跨签名互访遇 login 密码授权阻塞；[R4](sessions/2026-10-14-email-keychain-services-r4.md) 已隔离 Debug/Release service 并通过自动测试/双配置构建，新 service 真实双配置行为、历史 ACL 授权/真实拒绝锁定/实际睡眠仍未验；F2a主要真实系统通知/点击/Dock已验，准确边界见下项。真实邮箱Seen/跨端仍须用户指定邮件。隔离副本必须假Keychain、外部合成服务，不能读取真实env/缓存或沿用旧二进制验新修复。
+- [F2b](sessions/2026-10-14-email-system-integration-f2b.md)已验证真实测试UUID自身SecItem、凭证恢复调用、隔离生产Supervisor生命周期及全量；旧共享 service 跨签名互访遇 login 密码授权阻塞；[R4](sessions/2026-10-14-email-keychain-services-r4.md) 已隔离 Debug/Release service 并通过自动测试/双配置构建，[F2c](sessions/2026-10-14-email-keychain-chat-f2c.md)已验证新 service 真实测试 UUID 双向隔离和生产 MailState 受控缺失/保存/清理；历史 ACL 授权/真实拒绝锁定/实际睡眠仍未验；F2a主要真实系统通知/点击/Dock已验，准确边界见下项。真实邮箱Seen/跨端仍须用户指定邮件。隔离副本必须假Keychain、外部合成服务，不能读取真实env/缓存或沿用旧二进制验新修复。
 
 ## 双模块通知：少量系统边界与完整集成仍未独立验收
 
 - 记录：2026-10-13；更新：2026-10-14，[F2a报告](sessions/2026-10-14-email-system-notifications-f2a.md)。
 - F2a已用真实UN中心验证逐封/汇总、五次实际点击（页外/关窗/汇总/404/当前聊天）、跨进程receipt与ack去重、已递送及播种待递送的精确清理、实际Dock；合成数据不等于真实IMAP接入。
-- 稳定账号运行中关闭通知权限未验：首轮disabled_check.py的ack断言失败因fixture恢复已移除的旧UUID，被当前进程retiredAccounts拒绝；原始41证据保留。重启后的42只证明已拒绝权限下启动恢复pending，不能覆盖运行中切换。另待真实410/旧账号点击、升级前聊天payload、系统add/部分失败与未知提示键盘操作；F2b已关闭R3布局P2并完成测试UUID自身SecItem、隔离生产生命周期和全量审计；跨签名互访出现login钥匙串密码授权框，未验且未放宽ACL；[R4](sessions/2026-10-14-email-keychain-services-r4.md) 已完成 configuration service 隔离及自动验证，新 service 的真实双配置 SecItem 隔离仍待独立复验；机器睡眠、扫码/取消隐藏完整恢复及邮箱错误期间聊天仍未验，见[F2b报告](sessions/2026-10-14-email-system-integration-f2b.md)。只用隔离测试目标，不改正式权限或清工作未读。
+- 稳定账号运行中关闭通知权限未验：首轮disabled_check.py的ack断言失败因fixture恢复已移除的旧UUID，被当前进程retiredAccounts拒绝；原始41证据保留。重启后的42只证明已拒绝权限下启动恢复pending，不能覆盖运行中切换。另待真实410/旧账号点击、升级前聊天payload、系统add/部分失败与未知提示键盘操作；F2b已关闭R3布局P2并完成测试UUID自身SecItem、隔离生产生命周期和全量审计；跨签名互访出现login钥匙串密码授权框，未验且未放宽ACL；[R4](sessions/2026-10-14-email-keychain-services-r4.md) 已完成 configuration service 隔离及自动验证，[F2c](sessions/2026-10-14-email-keychain-chat-f2c.md)已独立验证新 service 真实测试 UUID 双向隔离、稳定合成扫码/取消隐藏完整恢复及邮箱auth_failed/受控HTTP超时期间聊天历史、实际键入后点击发送与草稿；历史 ACL、机器睡眠、中文 IME 与故障期间 Return 自动化有效事件证据仍未验；其余边界保留[F2b报告](sessions/2026-10-14-email-system-integration-f2b.md)。只用隔离测试目标，不改正式权限或清工作未读。
 
 ## 会话列表：只显示聊天，会话盒子、文档、应用消息等 feed 卡片被跳过
 

@@ -277,6 +277,7 @@ C3b API/SSE 与实际退出证据见 [C3b session](../sessions/2026-10-13-email-
 - [x] R2自动返修：无窗口SwiftUI宿主复现重建后偏移0，原生只读TextKit按实际布局恢复文字位置；9项新测试覆盖重建/快速切换、窄宽重排、临时顶部/旧回调、身份/正文隔离、空/长正文与检测开关，Core74/App90及Debug构建通过，见 [R2报告](../sessions/2026-10-14-email-plain-scroll-r2.md)。不改HTML契约，屏幕和原生视图主要交互已由F1c独立复验；真实中文组字/精确旧layout仍未验。
 - [x] F1c原生纯文本独立复验：正常最新副本159两轮滚动→Messages→Email、159↔158与快速切模块位置/几何一致；鼠标拖宽换行、800×460、深浅色、空/6000行正文、选择复制、只读输入/Return不发聊天及字面资源零增量通过，P2关闭。可见性/身份隔离的实际边界和中文组字/旧layout等未验项见 [F1c报告](../sessions/2026-10-14-email-reader-f1c-acceptance.md)，不关闭整个F1/F/F2。
 - [ ] F1剩余：未知能力稳定加载UI、精确旧didFinish乱序与已发STORE期间身份更换、HTTPS/单标签内网外开及跨邮件/token动态攻击；完整边界见F1b报告，下方完整组合项及F2不提前勾选。
+- [x] R4/F2c 独立子项：按 configuration 区分 service；不同真实签名 Debug/Release helper 对最新 MailKeychain 的新测试 UUID 验双向独立读/改/删、缺失不回退、双 canary 与精确清理通过。生产 MailState 的缺失重新输入/手动保存/延后删除重建通过真实 SecItem + HTTP/状态 harness；历史 ACL、真实拒绝/锁定仍未验，见 [F2c报告](../sessions/2026-10-14-email-keychain-chat-f2c.md)。
 - [ ] 实现钥匙串存储（按 `mail_account_id`）、测试连接/保存/后端重启后注入/App 重启恢复、密码失效后停止重试与移除账号；验证凭证不出现在磁盘配置及日志；钥匙串无条目、拒绝访问、锁定分别给出 §3 的提示。
 - [ ] 验证隔离：设 `FEISHU_LITE_HOME` 的实例读不到、覆盖不了、删不掉真实条目；外部后端模式不自动注入。实测 Debug 与 Release 构建访问对方创建的条目是否弹授权框，会弹就按构建配置区分钥匙串 service 名。
 - [ ] 实现文件夹下拉、收件箱列表、分页、正文阅读、附件信息、手动刷新、后端版本过旧提示和各种空/离线/失败状态。
@@ -290,6 +291,7 @@ C3b API/SSE 与实际退出证据见 [C3b session](../sessions/2026-10-13-email-
 - [x] E 隔离自动实现：消费持久 pending、逐封/汇总投递、同封可见性抑制、自发邮件、部分失败/ack 失败/重启去重、读删/reset/账号与迟到清理、最新通知路由及唤醒合并。未知 intent 不自动重投/不 ack，保留 pending 并提供明确恢复；Core74/App67/后端301项及 Debug 构建通过，见 [E session](../sessions/2026-10-14-email-notifications-e.md)。下方实际通知/跨端联调不凭 recorder 勾选。
 - [x] F2a合成服务/真实系统中心：逐封与给定summary模式投递、正文可见同封抑制、其他目标/关窗提醒、成功receipt跨进程仅重试ack、实际点击页外/关窗/汇总/404/当前chat、读删/reset/移除精确清理、Dock证据通过。播种真实待递送请求与未知receipt的边界见 [F2a报告](../sessions/2026-10-14-email-system-notifications-f2a.md)，不代替真实IMAP分类/跨端验证。
 - [x] F2b独立子项：R3最小/正常/长计数实际换行/配置正文模块重建及鼠标真实再提醒通过，布局P2关闭；真实测试UUID自身SecItem CRUD/canary、production MailState合成ready/SSE恢复调用、隔离生产Supervisor关窗/崩溃重启/退出、合成唤醒、有限历史/发送/图片/草稿及全量301/Core74/App92与Debug构建通过。跨签名互访出现login钥匙串密码授权框，已触发本计划§D按构建configuration区分service的后续实现条件，由协调者下一阶段处理，无需等待用户密码；当前互访/反向及完整聊天/真实睡眠仍未验，见[F2b报告](../sessions/2026-10-14-email-system-integration-f2b.md)，不勾选完整组合项。
+- [x] F2c 有限聊天子项：稳定合成 SSE 下隐藏取消完整往返、假扫码 waiting/scanned/success 与 logged_out/connecting/online、Email下不扫码、邮箱auth_failed/延迟HTTP timeout期间聊天历史、实际键入后点击发送与模块草稿保持通过。故障期间 Return 自动化、中文 IME 与真实飞书/IMAP/睡眠仍未验，见 [F2c报告](../sessions/2026-10-14-email-keychain-chat-f2c.md)；完整组合项继续未勾选。
 - [ ] F2a剩余：R3布局P2已关闭，Tab/Return仍未验；稳定账号运行中关闭权限未验（disabled首轮fixture旧UUID失败保留，重启拒绝权限通过不覆盖）；410/旧账号点击、遗留聊天payload、真实add/部分失败等见报告。F2b独立子项见上条，完整余项保留，不勾选下方组合项。
 - [ ] 验证历史导入静默、实时提醒、重连去重、补收汇总规则（超过 3 封或最早一封早于发现时 10 分钟）、待提醒在 App 重连后补发；通知目标包含领域和账号信息。
 - [ ] 验证本地及远端已读后的 badge/通知清理，通知点击跨模块跳转与目标失效回退。

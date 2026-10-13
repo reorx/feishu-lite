@@ -388,7 +388,7 @@ F2b预留：实际SecItem测试UUID/Debug-Release互访、backend supervisor独�
 
 结束清理自己App/listener/子进程/caffeinate/合成通知/测试UUID钥匙串/偏好/HOME与测试浏览器tab，确认无遗留；保留证据和源码差异。不关闭用户App/浏览器，不更改正式权限/签名/数据。最终tab回报commit、R3能否关闭、系统通过/失败/未验、全量结果、资源和工作区后停；coordinator统一决定剩余返修或请求真实测试目标。
 
-### 当前任务 R4：按构建配置隔离邮件钥匙串 service
+### 任务 R4：按构建配置隔离邮件钥匙串 service（自动交付已签收）
 
 执行者：新 Herdr tab Codex，当前 master，基线 `284fbfc`。本文由 coordinator 编写。必读根/mac AGENTS、原计划阶段 D 的钥匙串隔离条款、D1报告、F2b报告 `kb/sessions/2026-10-14-email-system-integration-f2b.md` 及其签名/授权证据。只做本修复及自动验证，不自行委派、不开实机 GUI、不读取真实 env 或用户条目。
 
@@ -404,6 +404,34 @@ F2b预留：实际SecItem测试UUID/Debug-Release互访、backend supervisor独�
 - 不改后端、邮件通知、阅读 UI 或其他未验项。不得访问原 env、正式数据/钥匙串、打开系统密码框或真实邮箱；开发阶段不做实机，真实双配置同 UUID 行为交下一独立 tab。
 - 报告 `kb/sessions/2026-10-14-email-keychain-services-r4.md`，日志 `tmp/2026-10-14-email-reader/r4-keychain-services/`。说明精确 service 策略、既有 Debug 重新输入边界、测试红绿/构建、独立验收最小步骤。更新必要 AGENTS/基础文档/known-issues/next-up，不把整体 F 勾为完成。
 - 产品和必要文档同次提交，只暂存自己文件，不改本文、不 push/发布/新分支/worktree；资源清理，最终回报 commit、检查数字、报告、风险/未验及工作区后停止。coordinator 再派独立 R4 实际 SecItem 复验及剩余必要合成聊天验收。
+
+### 任务 F2c：R4 真实隔离复验与必要聊天余项（已签收）
+
+执行者：新 Herdr tab Codex，当前 master，产品基线 `1f20f89`。coordinator 编写。必读根/mac AGENTS、桌面测试约定、R4报告 `kb/sessions/2026-10-14-email-keychain-services-r4.md` 的真实复验5步，以及F2b报告的工具首败/隔离/剩余矩阵。只独立验收及tmp工具/文档，不修产品、不自行委派，不重跑整套历史矩阵。
+
+目标：以真实测试 UUID 证明新 Debug/Release service 隔离，签收R4；补原计划明确要求、F2b未完成的有限聊天与邮箱故障隔离。所有真实邮箱/工作聊天/正式缓存/原env不访问，真实Seen和新信仍需用户指定目标。
+
+1. R4真实复验优先：从当前原码新编译不同configuration的签名helper（Apple Development / Developer ID），采用真实MailKeychain.system；核对选定service和真实签名，不用手动service参数替代编译选择。同一随机UUID，按R4报告步骤验证单侧存在时另一侧notFound/幂等删除不影响、两侧不同密码独立读/改/删、双canary保留、双方精确清理。密码仅内存，不进日志/文件/命令参数或git，不能枚举用户条目。复用F2b工具时先审计旧service及其读写假设，所有UUID重新随机。
+2. 真实状态调用可用受控HTTP+生产MailState证明Debug缺失只提示重新输入、不fallback/不注入，手动保存只写当前service；延后删除失败用注入单次错误，不锁用户钥匙串。Release兼容性只以自己新建、同Release签名的旧service条目证明查询兼容，历史不同签名ACL明确留未验。遇系统密码/解锁不输入、不放宽ACL，停止该路径并记录；不为取得成功重复授权试探。结束按创建方service逐UUID清并确认缺失。
+3. 有限GUI：新隔离副本（可用com.reorx.FeishuChat.f2c-acceptance），fake SecItem、独立HOME/data/prefs，最新源码；18875先确认空闲，复用F2b fixture但改为稳定SSE（避免每次立即结束导致connecting干扰操作）。只tmp改测试服务，确保聊天history数组及登录状态/图片契约正确。先context检查，超过40%停止新增GUI交接，不因压缩重开新范围。只开本测试App，不make run/改正式签名或全局设置。
+4. 补取消隐藏完整往返：正确AX checkbox→隐藏→隐藏列表选中→取消隐藏→原列表恢复，截图和可见状态证明，不凭脚本命名判断。合成扫码图及logged_out/connecting/online状态切换，说明二维码是假测试码无需用户扫码，不发真实登录请求；邮箱auth_failed和受控网络timeout时，聊天历史/实际键入发送仍可用、模块草稿保持。请求计数/时间与画面对应，邮箱失败期间不重复之前整套聊天UI。实际中文IME若当前环境能用且无需改全局设置可补，否则明确未验，不能AX/Unicode冒充组字。
+5. R3键盘操作及F2a权限运行切换/旧payload/410/部分add等本次不扩展；引用既有自动+实机精确边界。未知能力/旧navigation精确竞态也不要挤进本次。没有新产品代码无需重复全量，引用R4的74/96及Debug/Release构建、F2b的后端301；工具自身验证只做必要项。
+
+产物：`kb/sessions/2026-10-14-email-keychain-chat-f2c.md`，证据 `tmp/2026-10-14-email-reader/f2c-acceptance/`。明确R4通过/失败、测试签名和真实OS与harness边界、必要聊天各项及未验，保留首败归因。发现产品缺陷只最小复现交coordinator；截图归档，不读/泄漏用户数据。维护必要known-issues/next-up/原计划及状态文档，与报告同次提交，仅暂存自己文件、不改本文、不push/发布/分支/worktree。
+
+清理自己helper/App/fixture/caffeinate/测试UUID钥匙串/偏好/隔离HOME/通知/浏览器，精确保护他人资源，保留证据。最终tab回报commit、R4判定、聊天结果、未验及清理/工作区后停止。coordinator汇总后安排真实邮箱所需用户指定目标；不要声称整体计划已经完成。
+
+### 当前接续：真实邮箱测试目标与最终验收边界
+
+coordinator 已审阅 F2b `284fbfc`、R4 `1f20f89` 和 F2c `6993f6a` 的报告、提交与关键屏幕/结构化证据。R1 HTML、R2纯文本滚动、R3提示布局均已独立复验关闭；原计划触发的R4配置service隔离也已在真实SecItem、不同签名下复验通过。开发及验收代码执行均在独立Codex tab，coordinator只派发、读证据与维护本文。
+
+最新自动基线：后端301（F2b）；Core74/App96、Debug及未签名Universal Release构建（R4）。F2c无产品改动，未重复全量。R3原有SSE时序用例首轮失败保留，F2b/R4全量未复现，不宣称绝无flake。F2c的键盘自动化失败保留，实际键入+按钮发送通过不覆盖Return/IME。
+
+真实邮箱下一阶段尚缺**用户指定可打开并标已读的测试邮件（唯一主题/发件来源）以及新邮件来源/到达安排**。仅有 `tmp/feishu-mail.env` 连接凭证不能替代原计划§7要求的指定目标；不打开工作邮件、不清除其未读，不请求用户在聊天中提供密码。收到目标后，再写具体最小真实接入任务书并开独立tab：env操作先envops、独立测试配置和日志脱敏，验证真实文件夹/邮件/跨端Seen、新信通知定位/重启去重及受控重连。实际机器睡眠另外安排，禁止自动让用户Mac睡眠。
+
+其他已知未验：历史不同签名ACL及真实拒绝/锁定、实际IME与可靠Return事件、R3键盘焦点、系统通知权限运行切换/遗留payload/失效身份/部分add，以及报告列明的旧navigation/已发STORE身份切换精确竞态。它们保留对应报告和next-up的准确范围，不是本轮确认新缺陷，也不能凭自动绿灯当作全部实机通过。完整D/E/F及原计划整体保持未勾选。
+
+本轮隔离测试进程、端口、通知、偏好、HOME/data和创建的钥匙串目标均已由执行者定向清理；截图/日志保留在各阶段tmp目录。F2c交付后Codex出现模型切换建议，未代用户操作或切换模型，不影响已提交产物。
 
 ### 状态
 
@@ -424,4 +452,5 @@ F2b预留：实际SecItem测试UUID/Debug-Release互访、backend supervisor独�
 - [x] F2a：`7c12278`报告已收；真实通知/5次点击/跨进程去重与ack/精确清理/Dock子项签收；未知提示重叠P2转R3，权限运行中切换等精确未验保留报告。
 - [x] R3：`e22d1a9`自动交付签收，Core74/App92及Debug构建通过；几何红绿覆盖真实split，屏幕及按钮留F2b。既有SSE用例首轮偶发失败已保留，整体复核注意。
 - [x] F2b：`284fbfc`报告签收，R3屏幕布局关闭；真实自身SecItem/隔离生产生命周期、合成状态恢复/唤醒/有限聊天及全量301/Core74/App92通过。跨签名授权触发原计划R4，真实邮件/精确未验保留报告。
-- [ ] R4：Debug/Release service 隔离，自动交付后独立复验。
+- [x] R4：`1f20f89`自动交付签收，新增4项先红后绿，Core74/App96及Debug/未签名Universal Release构建通过；真实隔离留F2c。
+- [x] F2c：`6993f6a`签收；真实双service隔离及8个精确目标清理通过，稳定合成SSE下取消隐藏/扫码状态/邮箱失败期间聊天和草稿通过；真实邮箱及报告精确边界仍待验。

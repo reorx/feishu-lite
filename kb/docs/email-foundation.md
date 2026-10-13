@@ -9,7 +9,7 @@ tags:
 
 # 邮件同步、缓存与安全正文
 
-供接续邮箱开发和审阅的人阅读：邮件账号如何恢复、同步如何保持身份和提醒关联，以及哪些正文可以展示。独立邮件后端已经接入本机 HTTP/SSE 和进程生命周期；App 配置、钥匙串恢复、收件箱阅读器、可见性已读及通知/路由/唤醒通过隔离自动测试/Debug 构建。主要配置/阅读界面、真实 WebKit 资源隔离与可见性已读已有 F1 独立证据；HTML屏幕滚动及新增scheme隔离已通过 [F1b独立复验](../sessions/2026-10-14-email-reader-f1b-acceptance.md)，浅色/拖宽/cursor恢复/fake凭证错误UI已补齐，纯文本滚动及原生只读视图主要行为已通过 [F1c独立复验](../sessions/2026-10-14-email-reader-f1c-acceptance.md)，P2关闭；真实中文组字及精确旧layout仍未验；真实SecItem、系统通知及少量UI/精确竞态仍待验。
+供接续邮箱开发和审阅的人阅读：邮件账号如何恢复、同步如何保持身份和提醒关联，以及哪些正文可以展示。独立邮件后端已经接入本机 HTTP/SSE 和进程生命周期；App 配置、钥匙串恢复、收件箱阅读器、可见性已读及通知/路由/唤醒通过隔离自动测试/Debug 构建。主要配置/阅读界面、真实 WebKit 资源隔离与可见性已读已有 F1 独立证据；HTML屏幕滚动及新增scheme隔离已通过 [F1b独立复验](../sessions/2026-10-14-email-reader-f1b-acceptance.md)，浅色/拖宽/cursor恢复/fake凭证错误UI已补齐，纯文本滚动及原生只读视图主要行为已通过 [F1c独立复验](../sessions/2026-10-14-email-reader-f1c-acceptance.md)，P2关闭；真实中文组字及精确旧layout仍未验；测试 UUID 双配置真实 SecItem 隔离已由 F2c 验证，系统权限/历史 ACL、真实邮箱及少量 UI/精确竞态仍待验。
 
 ## 账号与独立同步
 
@@ -17,7 +17,7 @@ tags:
 
 App 使用 file-based SecItem，Release service 保持 `com.reorx.FeishuChat.mail`，Debug（`#if DEBUG`）使用 `com.reorx.FeishuChat.mail.debug`，account 为后端 UUID，地址仅附加属性。读取、添加、更新、删除及延后删除重试都只匹配当前配置 service + 精确 UUID，不探测、回退、迁移或删除另一 service。能力未知/旧后端时不读；启动时每账号自动读一次，只有自管后端 ready 且当前 SSE 已连接才注入。重连幂等，后端重启复用 App 内存，外部后端模式只能手动输入。找不到、拒绝/认证失败、锁定或不可交互分别提示，显式重试可重读，后台不反复提示或注入失效密码。
 
-写钥匙串失败时密码仅保留 App 内存，可重试写入，提示退出后需重新输入；不声称已保存。删除旧账号条目前先把精确 id 写到 UserDefaults 的 `mail-keychain-pending-deletions`，成功后移除记录；失败跨 App 重建保留，可显式重试。该列表仅保存非秘密 UUID，密码不进 UserDefaults。F2b 旧共享 service 跨签名互访的 login 密码授权框触发了 [R4 隔离修复](../sessions/2026-10-14-email-keychain-services-r4.md)，自动测试与双配置构建通过，真实双配置 SecItem 隔离及系统错误分类仍待独立复验。升级前 Debug 的账号在新 service 无条目时沿现有缺失提示重新输入；旧共享条目保留，旧待删 UUID 在当前 service 缺失时按现有幂等语义消除，不触及旧 service。Release 沿用既有条目，不修改 ACL；若旧条目由另一签名创建，仍可能需要系统授权，不能据此承诺历史 ACL 问题消失。此修复仅隔离 service，不隔离 mail.db/UserDefaults，测试仍须独立 UUID 与假系统调用，不能只靠 HOME。
+写钥匙串失败时密码仅保留 App 内存，可重试写入，提示退出后需重新输入；不声称已保存。删除旧账号条目前先把精确 id 写到 UserDefaults 的 `mail-keychain-pending-deletions`，成功后移除记录；失败跨 App 重建保留，可显式重试。该列表仅保存非秘密 UUID，密码不进 UserDefaults。F2b 旧共享 service 跨签名互访的 login 密码授权框触发了 [R4 隔离修复](../sessions/2026-10-14-email-keychain-services-r4.md)，自动测试与双配置构建通过；[F2c独立复验](../sessions/2026-10-14-email-keychain-chat-f2c.md)已验证不同真实签名的新测试 UUID 双 service 隔离、缺失重新输入/手动保存和延后删除重建调用，后者 HTTP/状态为 harness、单次删除错误为注入。真实系统拒绝/锁定及历史 ACL 仍未验。升级前 Debug 的账号在新 service 无条目时沿现有缺失提示重新输入；旧共享条目保留，旧待删 UUID 在当前 service 缺失时按现有幂等语义消除，不触及旧 service。Release 沿用既有条目，不修改 ACL；若旧条目由另一签名创建，仍可能需要系统授权，不能据此承诺历史 ACL 问题消失。此修复仅隔离 service，不隔离 mail.db/UserDefaults，测试仍须独立 UUID 与假系统调用，不能只靠 HOME。
 
 本机邮件服务分为未配置、缺凭证、连接中、在线、离线和认证失败。断网保留旧未读数和最后检查时间，并标记计数过期；认证失败等待凭证变更。网络重连采用最长 60 秒的退避。一个后台循环合并手动刷新、IDLE 信号和默认 45 秒整箱对账；无 IDLE 时也用这个周期检查新信。持续推送留出至少 100ms 合并窗口，避免忙等。强制重连的刷新会等待新连接对账后才返回成功。
 
@@ -89,7 +89,8 @@ App 使用非持久化 WKWebsiteDataStore、禁用页面 JavaScript 和自动新
 - [C2 交接](../sessions/2026-10-13-email-imap-executor-c2.md)：生产接口、错误/取消/世代契约、真实库脚本服务端计时及 DNS 限制。
 - [C3a 交接](../sessions/2026-10-13-email-sync-c3a.md)：服务方法/事件、持久化、接线示例与服务停止证据。
 - [C3b 交接](../sessions/2026-10-13-email-api-c3b.md)：完整 HTTP/SSE 字段、错误/取消/确认规则与实际进程停止证据。
-- [D1 交接](../sessions/2026-10-13-email-configuration-d1.md)：Swift 模型/API、凭证状态机、持久清理、有界 SSE 工作与 D2/E 接入接口；主要UI已有F1系列证据；F2b测试UUID自身真实SecItem/恢复调用通过，跨签名互访与真实拒绝锁定仍未验。
+- [D1 交接](../sessions/2026-10-13-email-configuration-d1.md)：Swift 模型/API、凭证状态机、持久清理、有界 SSE 工作与 D2/E 接入接口；主要UI已有F1系列证据；F2b测试UUID自身真实SecItem/恢复调用通过，新 service 双配置隔离已由 F2c 验证，历史 ACL 与真实拒绝锁定仍未验。
 - [D2 交接](../sessions/2026-10-13-email-reader-d2.md)：收件箱、异步/显示/已读契约、HTML 隔离、E 路由入口及独立 UI/WebKit 合成验收材料。
+- [F2c验收](../sessions/2026-10-14-email-keychain-chat-f2c.md)：新测试 UUID 真实签名双 service 隔离、生产 MailState 受控恢复/清理，以及稳定合成聊天隐藏取消/扫码/邮箱故障期间历史、键入后点击发送与草稿；Return 自动化/IME 仍未验。
 - [F2b验收](../sessions/2026-10-14-email-system-integration-f2b.md)：R3布局P2关闭，测试UUID真实SecItem与跨签名密码阻塞、隔离生产Supervisor/合成唤醒、全量及精确未验/清理；不代表真实邮箱或机器睡醒。
 - [原计划](../plans/2026-10-13-email-reader-plan.md)：整个阅读器的产品范围与验收条件。
