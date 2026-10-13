@@ -26,7 +26,7 @@ struct RootView: View {
                 case .messages:
                     MessagesWorkspace(appState: appState)
                 case .email:
-                    EmailWorkspace()
+                    EmailWorkspace(mail: appState.mail, redetect: appState.retryBackendInstallation)
                 }
             }
             .onAppear { appState.reevaluateViewing() }
@@ -90,28 +90,6 @@ private struct ModuleNavigation: View {
     }
 }
 
-/// B 阶段只交付模块外壳；邮箱配置与后端接入由后续阶段实现。
-private struct EmailWorkspace: View {
-    var body: some View {
-        NavigationSplitView {
-            VStack(alignment: .leading, spacing: 10) {
-                Label("Email", systemImage: "envelope")
-                    .font(.headline)
-                Text("邮箱尚未接入")
-                    .foregroundStyle(.secondary)
-                Spacer()
-            }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 420)
-        } detail: {
-            ContentUnavailableView("邮箱阅读器待接入", systemImage: "envelope",
-                                   description: Text("当前提供模块切换。邮箱配置与收件阅读将在后续阶段加入。"))
-                .navigationTitle("Email")
-        }
-    }
-}
-
 /// 还没连上本地后端时的占位
 private struct BackendStartupView: View {
     let state: BackendSupervisor.State
@@ -152,11 +130,11 @@ private struct DependencyInstallationView: View {
                 .font(.title2)
             Text("未检测到 \(tool)。FeishuChat 需要 Python 后端才能连接飞书。请打开「终端」，按顺序完成安装。")
             Text("1. 安装 uv 和 Git（已安装 Homebrew 时）")
-            command("brew install uv git")
+            BackendCommandView(value: "brew install uv git")
             Link("没有 Homebrew？查看安装方法", destination: URL(string: "https://brew.sh/zh-cn/")!)
             if tool != "uv" {
                 Text("2. 安装后端及其 Python 依赖")
-                command(BackendConfig.installationCommand)
+                BackendCommandView(value: BackendConfig.installationCommand)
                 Text("uv 会自动安装 Python 3.12 和 larkx 等依赖。首次安装需要联网，可能需要几分钟。")
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -167,21 +145,6 @@ private struct DependencyInstallationView: View {
         .frame(maxWidth: 600)
     }
 
-    private func command(_ value: String) -> some View {
-        HStack(alignment: .top) {
-            Text(value)
-                .font(.system(.callout, design: .monospaced))
-                .textSelection(.enabled)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 8)
-            Button("复制") {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(value, forType: .string)
-            }
-        }
-        .padding(12)
-        .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
-    }
 }
 
 private struct LogoutConfirmation: ViewModifier {

@@ -77,6 +77,8 @@ final class MessagesState {
             reloadConversationIfBehind(chat)
         case let .messageNew(message, chat):
             received(message, in: chat)
+        case .mail:
+            break
         }
     }
 

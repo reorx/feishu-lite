@@ -26,9 +26,9 @@ MVP 功能已经做完并通过验收：扫码登录、会话列表、历史消�
 
 会话列表支持多选隐藏、隐藏列表和取消隐藏；偏好按账号保存在 App 的 UserDefaults，收到新消息不会解除隐藏，不改变未读和通知策略。验收见 `kb/sessions/2026-10-08-hidden-chats.md`。
 
-Messages / Email 双模块外壳已实现并通过自动测试与构建；独立隔离 UI 已验证草稿、两处首可见行恢复、键盘隔离和模拟聊天回归，系统通知与部分完整回归仍未验，见 `kb/sessions/2026-10-13-email-shell-b-acceptance.md`。Email 当前是待接入占位，IMAP 阅读器尚未实现。真实 IMAP 只读探路已通过，后端库使用 IMAPClient；首版列出全部文件夹、仅读取收件箱，开发依据见 `kb/plans/2026-10-13-email-reader-plan.md`。实现 IMAP 前读 `kb/notes/2026-10-13-email-imap-probe.md`；接续 App 开发的实际接口见 `kb/sessions/2026-10-13-email-shell-phase-b.md`。
+Messages / Email 双模块外壳已实现并通过自动测试与构建；独立隔离 UI 已验证草稿、两处首可见行恢复、键盘隔离和模拟聊天回归，系统通知与部分完整回归仍未验，见 `kb/sessions/2026-10-13-email-shell-b-acceptance.md`。Email 已实现配置、试连、精确账号钥匙串、MailState 与重启恢复并通过自动测试/Debug 构建；配置 UI、真实 SecItem 和 Debug/Release 授权仍待独立验收，阅读器尚未实现，见 `kb/sessions/2026-10-13-email-configuration-d1.md`。真实 IMAP 只读探路已通过，后端库使用 IMAPClient；首版列出全部文件夹、仅读取收件箱，开发依据见 `kb/plans/2026-10-13-email-reader-plan.md`。实现 IMAP 前读 `kb/notes/2026-10-13-email-imap-probe.md`。
 
-邮件后端已接通独立 mail.db、MailService、全部 `/mail/*` API、双领域 SSE 和进程生命周期；App 邮件配置/阅读仍待接入。SQLite/emit 只在事件循环线程使用，IMAP/MIME 工作线程不能访问 Store；App 接续先读 `kb/sessions/2026-10-13-email-api-c3b.md` 的 wire/错误/重启/确认契约，服务与 C1/C2 细节由 C3a 报告索引。DNS stop_timeout 后必须等待旧所有者 closed 才新建网络实例；密码只留内存，正文 GET 没有已读副作用，邮件错误不使用聊天 409。SSE 队列满会结束慢流，重连须读取两领域状态及持久 pending，generation 只在本进程有效。
+邮件后端已接通独立 mail.db、MailService、全部 `/mail/*` API、双领域 SSE 和进程生命周期；App 已有 typed 邮件调用、独立状态和整箱 badge，阅读与通知投递留 D2/E。SQLite/emit 只在事件循环线程使用，IMAP/MIME 工作线程不能访问 Store；App 接续先读 C3b 和 D1 报告的 wire/错误/重启/确认契约。DNS stop_timeout 后必须等待旧所有者 closed 才新建网络实例；后端密码只留内存，正文 GET 没有已读副作用，邮件错误不使用聊天 409。SSE 队列满会结束慢流，重连读取两领域状态及持久 pending；App 同步按序应用事件，每领域至多一个合并 HTTP 恢复任务，后端重启重置 generation。密码写失败只留 App 内存；旧钥匙串删除失败仅持久化账号 id，重建后可精确重试，不存密码。
 
 ## 文档
 
@@ -41,7 +41,7 @@ Messages / Email 双模块外壳已实现并通过自动测试与构建；独立
 
 - 后端测试：`cd backend && uv run pytest`。App：`cd mac && make test && make build && make run`。
 - App 自己拉起后端，不需要单独启动。正式数据在 `~/Library/Application Support/FeishuChat/`，后端日志在 `~/Library/Logs/FeishuChat/backend.log`。
-- 聊天接口以 `backend/src/feishu_lite/api.py` 和 `types.py` 为准；邮件接口/共享模型在 `mail/api.py`、`mail/types.py`。App 聊天模型在 `mac/FeishuChatCore/Sources/FeishuChatCore/Models.swift`，邮件 Swift 解码尚待接入；改已接入接口时两边要一起改。
+- 聊天接口以 `backend/src/feishu_lite/api.py` 和 `types.py` 为准；邮件接口/共享模型在 `mail/api.py`、`mail/types.py`。App 聊天模型在 `mac/FeishuChatCore/Sources/FeishuChatCore/Models.swift`，邮件模型在同目录 `MailModels.swift`，合成 wire 样本由 Core 测试交叉验证；改已接入接口时两边要一起改。
 
 ## 不变量
 

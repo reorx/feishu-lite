@@ -100,6 +100,41 @@ struct BackendClient {
 
     // MARK: - 请求
 
+    /// 邮件 HTTP 边界只交付安全错误；不沿用聊天的响应前缀/登出映射。
+    func mailRequest<T: Decodable>(_ method: String, _ components: [String], query: [URLQueryItem] = [],
+                                   body: Data? = nil) async throws -> T {
+        var url = URLComponents(url: endpoint.baseURL, resolvingAgainstBaseURL: false)!
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
+        let path = components.map { $0.addingPercentEncoding(withAllowedCharacters: allowed)! }.joined(separator: "/")
+        url.percentEncodedPath = url.percentEncodedPath.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/" + path
+        if !url.percentEncodedPath.hasPrefix("/") { url.percentEncodedPath = "/" + url.percentEncodedPath }
+        url.queryItems = query.isEmpty ? nil : query
+        var request = URLRequest(url: url.url!)
+        request.httpMethod = method
+        request.timeoutInterval = Self.mailRequestTimeout
+        request.setValue("Bearer \(endpoint.token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = body
+        do {
+            let (data, response) = try await session.data(for: request)
+            if let http = response as? HTTPURLResponse,
+               let error = MailAPIError.responseError(status: http.statusCode, body: data) { throw error }
+            return try BackendJSON.decoder.decode(T.self, from: data)
+        } catch let error as MailAPIError {
+            throw error
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as URLError where error.code == .cancelled {
+            throw CancellationError()
+        } catch let error as URLError where error.code == .timedOut {
+            throw MailAPIError(status: 504, code: "request_timeout")
+        } catch is DecodingError {
+            throw MailAPIError(status: 502, code: "malformed_response")
+        } catch {
+            throw MailAPIError(status: 503, code: "transport_failed")
+        }
+    }
+
     private func get<T: Decodable>(_ path: String, query: [URLQueryItem] = []) async throws -> T {
         try await send("GET", path, query: query)
     }

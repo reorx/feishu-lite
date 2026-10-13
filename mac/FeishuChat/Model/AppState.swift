@@ -23,39 +23,58 @@ final class AppState {
         }
     }
     private(set) var unreadCounts = UnreadCounts(messages: 0, email: 0)
-    /// D 阶段接入 MailState 后消费目标；B 阶段仅保存类型化目标并显示占位。
+    /// D2 消费目标前不代表已选中或正文已显示。
     private(set) var pendingMailRoute: NotificationRoute?
     let messages: MessagesState
+    let mail: MailState
     let notifications: NotificationService
 
     var viewingContext: ViewingContext {
         ViewingContext(activeModule: activeModule, isAppActive: NSApp.isActive,
                        isWindowVisible: windows.isShowingContent, selectedChatID: messages.selectedChatID,
-                       selectedMail: pendingMailRoute)
+                       selectedMail: mail.selectedRoute)
     }
 
     private static let modulePreferenceKey = "active-module"
     @ObservationIgnored private let preferences: UserDefaults
     @ObservationIgnored private var eventTask: Task<Void, Never>?
+    @ObservationIgnored private var mailWork: Task<Void, Never>?
+    @ObservationIgnored private var chatWork: Task<Void, Never>?
+    @ObservationIgnored private var wantsMailRefresh = false
+    @ObservationIgnored private var wantsCredentialRestore = false
+    @ObservationIgnored private var wantsChatRefresh = false
+    @ObservationIgnored private var chatStatusRevision = 0
+    var activeEventWorkCount: Int { (mailWork == nil ? 0 : 1) + (chatWork == nil ? 0 : 1) }
     @ObservationIgnored private var observers: [any NSObjectProtocol] = []
     @ObservationIgnored private let connection = BackendConnection()
     @ObservationIgnored private let supervisor: BackendSupervisor
     @ObservationIgnored private let windows: any AppWindows
+    @ObservationIgnored private var backendEpoch = 0
+    @ObservationIgnored private let makeClient: (BackendEndpoint) -> BackendClient
     @ObservationIgnored private let log = Logger(subsystem: "com.reorx.FeishuChat", category: "app")
 
     init(supervisor: BackendSupervisor, notifications: NotificationService, windows: any AppWindows,
-         preferences: UserDefaults = .standard) {
+         preferences: UserDefaults = .standard, credentials: (any MailCredentialStore)? = nil,
+         makeClient: @escaping (BackendEndpoint) -> BackendClient = { BackendClient(endpoint: $0) }) {
         self.supervisor = supervisor
         self.notifications = notifications
         self.windows = windows
         self.preferences = preferences
+        self.makeClient = makeClient
         activeModule = preferences.string(forKey: Self.modulePreferenceKey).flatMap(AppModule.init(rawValue:)) ?? .messages
         messages = MessagesState(connection: connection, notifications: notifications)
+        mail = MailState(connection: connection, credentials: credentials ?? MailKeychain(), externalBackend: supervisor.isExternalBackend,
+                         preferences: preferences)
         messages.viewingContext = { [weak self] in
             self?.viewingContext ?? ViewingContext(activeModule: .messages, isAppActive: false,
                                                   isWindowVisible: false, selectedChatID: nil)
         }
         messages.onUnreadCountChange = { [weak self] count in self?.updateUnread(messages: count) }
+        mail.onUnreadCountChange = { [weak self] count in self?.updateUnread(email: count) }
+        mail.onAccountRemoved = { [weak self] id in
+            if case let .email(accountID, _, _) = self?.pendingMailRoute, accountID == id { self?.pendingMailRoute = nil }
+            // E 接入精确账号系统通知清理；D1 不投递或 ack 邮件。
+        }
     }
 
     // MARK: - 生命周期
@@ -72,27 +91,37 @@ final class AppState {
 
     func shutdown() {
         eventTask?.cancel()
+        backendEpoch += 1
+        cancelEventWork()
+        mail.backendChanged(ready: false)
         messages.login.end()
         supervisor.stop()
     }
 
     func retryBackendInstallation() {
+        supervisor.stop()
         supervisor.start()
     }
 
-    private func backendStateChanged(_ state: BackendSupervisor.State) {
+    func backendStateChanged(_ state: BackendSupervisor.State, startEventLoop: Bool = true) {
+        backendEpoch += 1
         backendState = state
         eventTask?.cancel()
         eventTask = nil
+        cancelEventWork()
         isEventStreamConnected = false
+        status = nil
         guard case let .ready(endpoint) = state else {
+            mail.backendChanged(ready: false)
             connection.client = nil
             messages.login.end()
             return
         }
-        let client = BackendClient(endpoint: endpoint)
+        let client = makeClient(endpoint)
         connection.client = client
-        eventTask = Task { await runEventLoop(client) }
+        mail.backendChanged(ready: true)
+        let epoch = backendEpoch
+        if startEventLoop { eventTask = Task { await runEventLoop(client, epoch: epoch) } }
     }
 
     /// 用户回到 App（切回前台、窗口重新成为当前窗口）时，正开着的会话要补一次已读
@@ -136,34 +165,116 @@ final class AppState {
 
     // MARK: - 事件流
 
-    private func runEventLoop(_ client: BackendClient) async {
+    private func runEventLoop(_ client: BackendClient, epoch: Int) async {
         var attempt = 0
         while !Task.isCancelled {
             do {
-                for try await event in client.events() {
-                    let justConnected = !isEventStreamConnected
-                    isEventStreamConnected = true
-                    attempt = 0
-                    handle(event)
-                    if justConnected {
-                        await messages.refreshAfterConnect()
-                    }
-                }
+                try await consumeEventStream(client.events(), epoch: epoch)
+                attempt = 0
             } catch {
                 log.warning("event stream ended: \(error.localizedDescription, privacy: .public)")
             }
-            if Task.isCancelled { return }
+            if Task.isCancelled || epoch != backendEpoch { return }
             isEventStreamConnected = false
+            mail.streamDisconnected()
             let delay = Self.reconnectBackoff[min(attempt, Self.reconnectBackoff.count - 1)]
             attempt += 1
             try? await Task.sleep(for: delay)
         }
     }
 
-    private func handle(_ event: BackendEvent) {
-        if case let .status(new) = event { status = new }
-        messages.handle(event)
-        // C/D 的 mail.* 事件在此按领域分派，不在工作区视图里创建 SSE。
+    /// 两领域 HTTP 的等待不阻挡下一条 SSE；重启时统一取消这些有限任务。
+    func consumeEventStream(_ stream: AsyncThrowingStream<BackendEvent, Error>, epoch: Int? = nil) async throws {
+        let epoch = epoch ?? backendEpoch
+        for try await event in stream {
+            guard epoch == backendEpoch, !Task.isCancelled else { return }
+            let justConnected = !isEventStreamConnected
+            isEventStreamConnected = true
+            receiveStreamEvent(event)
+            if justConnected { beginStreamRecovery() }
+        }
+    }
+
+    func receiveStreamEvent(_ event: BackendEvent) {
+        switch event {
+        case let .mail(event):
+            mail.receive(event)
+            if event.type == .status { requestMailWork(refresh: false) }
+        case let .status(new):
+            chatStatusRevision += 1
+            status = new
+            messages.handle(event)
+            if mail.updateCapability(features: new.features) { requestMailWork(refresh: true) }
+        default: messages.handle(event)
+        }
+    }
+
+    private func cancelEventWork() {
+        mailWork?.cancel()
+        chatWork?.cancel()
+        mailWork = nil
+        chatWork = nil
+        wantsMailRefresh = false
+        wantsCredentialRestore = false
+        wantsChatRefresh = false
+    }
+
+    private func requestMailWork(refresh: Bool) {
+        wantsMailRefresh = wantsMailRefresh || refresh
+        wantsCredentialRestore = true
+        guard mailWork == nil else { return }
+        let epoch = backendEpoch
+        mailWork = Task { [weak self] in
+            guard let self else { return }
+            defer { if epoch == self.backendEpoch { self.mailWork = nil } }
+            while epoch == self.backendEpoch, !Task.isCancelled, self.wantsMailRefresh || self.wantsCredentialRestore {
+                let refresh = self.wantsMailRefresh
+                self.wantsMailRefresh = false
+                self.wantsCredentialRestore = false
+                if refresh { await self.mail.refreshStatus() }
+                else { await self.mail.restoreCredentialIfNeeded() }
+            }
+        }
+    }
+
+    func handle(_ event: BackendEvent) async {
+        receiveStreamEvent(event)
+        await mailWork?.value
+    }
+
+    private func beginStreamRecovery() {
+        isEventStreamConnected = true
+        mail.streamDidConnect()
+        requestMailWork(refresh: true)
+        wantsChatRefresh = true
+        guard chatWork == nil else { return }
+        let epoch = backendEpoch
+        chatWork = Task { [weak self] in
+            guard let self else { return }
+            defer { if epoch == self.backendEpoch { self.chatWork = nil } }
+            while epoch == self.backendEpoch, !Task.isCancelled, self.wantsChatRefresh {
+                self.wantsChatRefresh = false
+                let version = self.chatStatusRevision
+                if let client = self.connection.client {
+                    do {
+                        let new = try await client.status()
+                        guard epoch == self.backendEpoch, !Task.isCancelled else { return }
+                        if version == self.chatStatusRevision { self.receiveStreamEvent(.status(new)) }
+                    } catch {
+                        self.log.warning("failed to refresh backend status")
+                    }
+                }
+                guard epoch == self.backendEpoch, !Task.isCancelled else { return }
+                await self.messages.refreshAfterConnect()
+            }
+        }
+    }
+
+    /// 唯一 SSE 的恢复入口；消费循环只启动有界任务，不等待 HTTP。
+    func refreshAfterEventStreamConnected() async {
+        beginStreamRecovery()
+        await chatWork?.value
+        await mailWork?.value
     }
 
     func reevaluateViewing() {

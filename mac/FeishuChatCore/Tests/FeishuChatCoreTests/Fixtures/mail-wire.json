@@ -1,0 +1,389 @@
+{
+  "GET /status": {
+    "state": "logged_out",
+    "user": null,
+    "last_error": null,
+    "features": [
+      "mail"
+    ]
+  },
+  "GET /mail/status (unconfigured)": {
+    "mail_account_id": null,
+    "address": null,
+    "state": "unconfigured",
+    "generation": 0,
+    "uidvalidity": null,
+    "last_sync_at": null,
+    "unread_count": 0,
+    "unread_stale": true,
+    "pending": [],
+    "error": null
+  },
+  "POST /mail/account/test": {
+    "writable": true,
+    "supports_idle": true
+  },
+  "PUT /mail/account": {
+    "account": {
+      "id": "20f6b077-155c-4b34-8c86-cd4c88c337f8",
+      "address": "synthetic@example.invalid"
+    },
+    "removed_account_id": null
+  },
+  "POST /mail/sync": {
+    "mail_account_id": "20f6b077-155c-4b34-8c86-cd4c88c337f8",
+    "address": "synthetic@example.invalid",
+    "state": "online",
+    "generation": 1,
+    "uidvalidity": 77,
+    "last_sync_at": 10000,
+    "unread_count": 2,
+    "unread_stale": false,
+    "pending": [],
+    "error": null
+  },
+  "PUT /mail/account/credential": {
+    "mail_account_id": "20f6b077-155c-4b34-8c86-cd4c88c337f8",
+    "address": "synthetic@example.invalid",
+    "state": "online",
+    "generation": 1,
+    "uidvalidity": 77,
+    "last_sync_at": 10000,
+    "unread_count": 2,
+    "unread_stale": false,
+    "pending": [],
+    "error": null
+  },
+  "GET /mail/folders": [
+    {
+      "id": "INBOX",
+      "name": "收件箱",
+      "delimiter": null,
+      "flags": [],
+      "selectable": true,
+      "supported": true
+    },
+    {
+      "id": "分类/中文",
+      "name": "中文",
+      "delimiter": "/",
+      "flags": [],
+      "selectable": true,
+      "supported": false
+    }
+  ],
+  "GET /mail/messages": {
+    "items": [
+      {
+        "subject": "Synthetic 22",
+        "sender": [],
+        "to": [],
+        "cc": [],
+        "date": "",
+        "message_id": "",
+        "key": {
+          "account_id": "20f6b077-155c-4b34-8c86-cd4c88c337f8",
+          "folder_id": "INBOX",
+          "uidvalidity": 77,
+          "uid": 22
+        },
+        "received_at": 10000,
+        "size": 0,
+        "flags": [
+          "\\Flagged",
+          "\\Seen"
+        ],
+        "unread": false,
+        "attachments": [],
+        "body_part": {
+          "section": "1",
+          "media_type": "text/html",
+          "params": {},
+          "content_id": null,
+          "encoding": "7bit",
+          "encoded_size": 0,
+          "disposition": null,
+          "filename": "",
+          "children": []
+        },
+        "error": null,
+        "id": "WzEsIm1lc3NhZ2UiLCIyMGY2YjA3Ny0xNTVjLTRiMzQtOGM4Ni1jZDRjODhjMzM3ZjgiLCJJTkJPWCIsNzcsMjJd"
+      },
+      {
+        "subject": "Synthetic 9",
+        "sender": [],
+        "to": [],
+        "cc": [],
+        "date": "",
+        "message_id": "",
+        "key": {
+          "account_id": "20f6b077-155c-4b34-8c86-cd4c88c337f8",
+          "folder_id": "INBOX",
+          "uidvalidity": 77,
+          "uid": 9
+        },
+        "received_at": 10000,
+        "size": 0,
+        "flags": [
+          "\\Flagged"
+        ],
+        "unread": true,
+        "attachments": [],
+        "body_part": {
+          "section": "1",
+          "media_type": "text/html",
+          "params": {},
+          "content_id": null,
+          "encoding": "7bit",
+          "encoded_size": 0,
+          "disposition": null,
+          "filename": "",
+          "children": []
+        },
+        "error": null,
+        "id": "WzEsIm1lc3NhZ2UiLCIyMGY2YjA3Ny0xNTVjLTRiMzQtOGM4Ni1jZDRjODhjMzM3ZjgiLCJJTkJPWCIsNzcsOV0"
+      },
+      {
+        "subject": "Synthetic 3",
+        "sender": [],
+        "to": [],
+        "cc": [],
+        "date": "",
+        "message_id": "",
+        "key": {
+          "account_id": "20f6b077-155c-4b34-8c86-cd4c88c337f8",
+          "folder_id": "INBOX",
+          "uidvalidity": 77,
+          "uid": 3
+        },
+        "received_at": 10000,
+        "size": 0,
+        "flags": [
+          "\\Flagged"
+        ],
+        "unread": true,
+        "attachments": [],
+        "body_part": {
+          "section": "1",
+          "media_type": "text/html",
+          "params": {},
+          "content_id": null,
+          "encoding": "7bit",
+          "encoded_size": 0,
+          "disposition": null,
+          "filename": "",
+          "children": []
+        },
+        "error": null,
+        "id": "WzEsIm1lc3NhZ2UiLCIyMGY2YjA3Ny0xNTVjLTRiMzQtOGM4Ni1jZDRjODhjMzM3ZjgiLCJJTkJPWCIsNzcsM10"
+      }
+    ],
+    "next_cursor": null
+  },
+  "GET /mail/messages/{id}": {
+    "kind": "html",
+    "content": "<b>synthetic</b>"
+  },
+  "POST /mail/messages/{id}/read": {
+    "read_ids": [
+      "WzEsIm1lc3NhZ2UiLCIyMGY2YjA3Ny0xNTVjLTRiMzQtOGM4Ni1jZDRjODhjMzM3ZjgiLCJJTkJPWCIsNzcsOV0"
+    ]
+  },
+  "SSE": [
+    [
+      "status",
+      {
+        "state": "logged_out",
+        "user": null,
+        "last_error": null,
+        "features": [
+          "mail"
+        ]
+      }
+    ],
+    [
+      "mail.status",
+      {
+        "type": "mail.status",
+        "account_id": "20f6b077-155c-4b34-8c86-cd4c88c337f8",
+        "generation": 1,
+        "folder_id": "INBOX",
+        "uidvalidity": 77,
+        "status": {
+          "mail_account_id": "20f6b077-155c-4b34-8c86-cd4c88c337f8",
+          "address": "synthetic@example.invalid",
+          "state": "online",
+          "generation": 1,
+          "uidvalidity": 77,
+          "last_sync_at": 10000,
+          "unread_count": 1,
+          "unread_stale": false,
+          "pending": [],
+          "error": null
+        },
+        "notification": null,
+        "read_ids": [],
+        "deleted_ids": [],
+        "reset": false
+      }
+    ],
+    [
+      "mail.updated",
+      {
+        "type": "mail.updated",
+        "account_id": "20f6b077-155c-4b34-8c86-cd4c88c337f8",
+        "generation": 1,
+        "folder_id": "INBOX",
+        "uidvalidity": 77,
+        "status": null,
+        "notification": null,
+        "read_ids": [],
+        "deleted_ids": [],
+        "reset": false
+      }
+    ],
+    [
+      "mail.arrived",
+      {
+        "type": "mail.arrived",
+        "account_id": "20f6b077-155c-4b34-8c86-cd4c88c337f8",
+        "generation": 1,
+        "folder_id": "INBOX",
+        "uidvalidity": 77,
+        "status": null,
+        "notification": {
+          "id": "individual:0c8de86fd5fb44e488db7bb2b6dd6db2",
+          "account_id": "20f6b077-155c-4b34-8c86-cd4c88c337f8",
+          "folder_id": "INBOX",
+          "uidvalidity": 77,
+          "mode": "individual",
+          "items": [
+            {
+              "subject": "Synthetic 25",
+              "sender": [],
+              "to": [],
+              "cc": [],
+              "date": "",
+              "message_id": "",
+              "key": {
+                "account_id": "20f6b077-155c-4b34-8c86-cd4c88c337f8",
+                "folder_id": "INBOX",
+                "uidvalidity": 77,
+                "uid": 25
+              },
+              "received_at": 10000,
+              "size": 0,
+              "flags": [
+                "\\Flagged"
+              ],
+              "unread": true,
+              "attachments": [],
+              "body_part": {
+                "section": "1",
+                "media_type": "text/html",
+                "params": {},
+                "content_id": null,
+                "encoding": "7bit",
+                "encoded_size": 0,
+                "disposition": null,
+                "filename": "",
+                "children": []
+              },
+              "error": null,
+              "id": "WzEsIm1lc3NhZ2UiLCIyMGY2YjA3Ny0xNTVjLTRiMzQtOGM4Ni1jZDRjODhjMzM3ZjgiLCJJTkJPWCIsNzcsMjVd"
+            }
+          ]
+        },
+        "read_ids": [],
+        "deleted_ids": [],
+        "reset": false
+      }
+    ],
+    [
+      "mail.status",
+      {
+        "type": "mail.status",
+        "account_id": "20f6b077-155c-4b34-8c86-cd4c88c337f8",
+        "generation": 1,
+        "folder_id": "INBOX",
+        "uidvalidity": 77,
+        "status": {
+          "mail_account_id": "20f6b077-155c-4b34-8c86-cd4c88c337f8",
+          "address": "synthetic@example.invalid",
+          "state": "online",
+          "generation": 1,
+          "uidvalidity": 77,
+          "last_sync_at": 10000,
+          "unread_count": 2,
+          "unread_stale": false,
+          "pending": [
+            {
+              "id": "individual:0c8de86fd5fb44e488db7bb2b6dd6db2",
+              "account_id": "20f6b077-155c-4b34-8c86-cd4c88c337f8",
+              "folder_id": "INBOX",
+              "uidvalidity": 77,
+              "mode": "individual",
+              "items": [
+                {
+                  "subject": "Synthetic 25",
+                  "sender": [],
+                  "to": [],
+                  "cc": [],
+                  "date": "",
+                  "message_id": "",
+                  "key": {
+                    "account_id": "20f6b077-155c-4b34-8c86-cd4c88c337f8",
+                    "folder_id": "INBOX",
+                    "uidvalidity": 77,
+                    "uid": 25
+                  },
+                  "received_at": 10000,
+                  "size": 0,
+                  "flags": [
+                    "\\Flagged"
+                  ],
+                  "unread": true,
+                  "attachments": [],
+                  "body_part": {
+                    "section": "1",
+                    "media_type": "text/html",
+                    "params": {},
+                    "content_id": null,
+                    "encoding": "7bit",
+                    "encoded_size": 0,
+                    "disposition": null,
+                    "filename": "",
+                    "children": []
+                  },
+                  "error": null,
+                  "id": "WzEsIm1lc3NhZ2UiLCIyMGY2YjA3Ny0xNTVjLTRiMzQtOGM4Ni1jZDRjODhjMzM3ZjgiLCJJTkJPWCIsNzcsMjVd"
+                }
+              ]
+            }
+          ],
+          "error": null
+        },
+        "notification": null,
+        "read_ids": [],
+        "deleted_ids": [],
+        "reset": false
+      }
+    ]
+  ],
+  "POST /mail/notifications/ack": {
+    "mail_account_id": "20f6b077-155c-4b34-8c86-cd4c88c337f8",
+    "address": "synthetic@example.invalid",
+    "state": "online",
+    "generation": 1,
+    "uidvalidity": 77,
+    "last_sync_at": 10000,
+    "unread_count": 2,
+    "unread_stale": false,
+    "pending": [],
+    "error": null
+  },
+  "DELETE /mail/account": {
+    "account": null,
+    "removed_account_id": "20f6b077-155c-4b34-8c86-cd4c88c337f8"
+  }
+}

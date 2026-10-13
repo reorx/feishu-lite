@@ -21,6 +21,12 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate, Mes
 
     private var center: UNUserNotificationCenter { UNUserNotificationCenter.current() }
     @ObservationIgnored private let log = Logger(subsystem: "com.reorx.FeishuChat", category: "notification")
+    @ObservationIgnored private let badgeWriter: ((Int) -> Void)?
+
+    init(badgeWriter: ((Int) -> Void)? = nil) {
+        self.badgeWriter = badgeWriter
+        super.init()
+    }
 
     func activate() {
         center.delegate = self
@@ -86,6 +92,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate, Mes
     }
 
     func setBadge(_ count: Int) {
+        if let badgeWriter { badgeWriter(count); return }
         let label = UnreadCounts.label(for: count)
         if NSApp.dockTile.badgeLabel != label {
             NSApp.dockTile.badgeLabel = label

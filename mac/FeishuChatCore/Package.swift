@@ -21,6 +21,7 @@ let package = Package(
         .testTarget(
             name: "FeishuChatCoreTests",
             dependencies: ["FeishuChatCore"],
+            exclude: ["Fixtures"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]

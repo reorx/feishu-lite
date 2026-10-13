@@ -5,6 +5,7 @@ public enum BackendEvent: Equatable, Sendable {
     case messageNew(message: Message, chat: Chat)
     case chatUpdated(Chat)
     case status(BackendStatus)
+    case mail(MailEvent)
 
     private struct MessageNewPayload: Decodable {
         var message: Message
@@ -27,6 +28,10 @@ public enum BackendEvent: Equatable, Sendable {
             return .chatUpdated(try decoder.decode(ChatUpdatedPayload.self, from: data).chat)
         case "status":
             return .status(try decoder.decode(BackendStatus.self, from: data))
+        case "mail.status", "mail.updated", "mail.arrived":
+            let payload = try decoder.decode(MailEvent.self, from: data)
+            guard payload.type.rawValue == event.event else { return nil }
+            return .mail(payload)
         default:
             return nil
         }

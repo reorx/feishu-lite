@@ -38,6 +38,8 @@ final class BackendSupervisor {
         self.config = config
     }
 
+    var isExternalBackend: Bool { config.externalEndpoint != nil }
+
     func start() {
         guard loop == nil else { return }
         if let external = config.externalEndpoint {
