@@ -24,7 +24,6 @@ struct LoginView: View {
         }
         .padding(40)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear { login.begin() }
     }
 
     @ViewBuilder

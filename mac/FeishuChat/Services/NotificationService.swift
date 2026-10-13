@@ -6,9 +6,8 @@ import os
 /// 本地通知和 Dock 角标
 @MainActor
 @Observable
-final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
-    private nonisolated static let chatIDKey = "chat_id"
-    private static let sessionExpiredID = "session-expired"
+final class NotificationService: NSObject, UNUserNotificationCenterDelegate, MessageNotifications {
+    private nonisolated static let sessionExpiredID = "messages:session-expired"
     static let settingsURL = URL(
         string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension?id=com.reorx.FeishuChat")!
 
@@ -16,11 +15,11 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
     private(set) var isDenied = false
 
     /// 用户点了某个会话的通知
-    @ObservationIgnored var onOpenChat: ((String) -> Void)?
+    @ObservationIgnored var onOpenRoute: ((NotificationRoute) -> Void)?
     /// 用户点了"登录已失效"的通知
     @ObservationIgnored var onOpenApp: (() -> Void)?
 
-    @ObservationIgnored private let center = UNUserNotificationCenter.current()
+    private var center: UNUserNotificationCenter { UNUserNotificationCenter.current() }
     @ObservationIgnored private let log = Logger(subsystem: "com.reorx.FeishuChat", category: "notification")
 
     func activate() {
@@ -53,9 +52,10 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         content.title = text.title
         content.body = text.body
         content.sound = .default
-        content.threadIdentifier = chat.id
-        content.userInfo = [Self.chatIDKey: chat.id]
-        post(id: message.id, content: content)
+        let route = NotificationRoute.messages(chatID: chat.id)
+        content.threadIdentifier = route.threadIdentifier
+        content.userInfo = route.userInfo
+        post(id: route.notificationIdentifier(itemID: message.id), content: content)
     }
 
     func notifySessionExpired() {
@@ -63,6 +63,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         content.title = "FeishuChat"
         content.body = "飞书登录已失效，请重新扫码"
         content.sound = .default
+        content.threadIdentifier = "messages:session"
         post(id: Self.sessionExpiredID, content: content)
     }
 
@@ -70,7 +71,10 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
     func clearNotifications(chatID: String) {
         Task {
             let delivered = await center.deliveredNotifications()
-            let ids = delivered.filter { $0.request.content.threadIdentifier == chatID }.map(\.request.identifier)
+            // 通过领域目标清理，兼容升级前已递送的 chat_id 通知；不会清掉邮箱通知。
+            let ids = delivered.filter {
+                NotificationRoute(userInfo: $0.request.content.userInfo) == .messages(chatID: chatID)
+            }.map(\.request.identifier)
             if !ids.isEmpty {
                 center.removeDeliveredNotifications(withIdentifiers: ids)
             }
@@ -78,11 +82,11 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
     }
 
     func clearSessionExpired() {
-        center.removeDeliveredNotifications(withIdentifiers: [Self.sessionExpiredID])
+        center.removeDeliveredNotifications(withIdentifiers: [Self.sessionExpiredID, "session-expired"])
     }
 
     func setBadge(_ count: Int) {
-        let label: String? = count <= 0 ? nil : count > 99 ? "99+" : String(count)
+        let label = UnreadCounts.label(for: count)
         if NSApp.dockTile.badgeLabel != label {
             NSApp.dockTile.badgeLabel = label
         }
@@ -110,11 +114,12 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             didReceive response: UNNotificationResponse) async {
-        let chatID = response.notification.request.content.userInfo[Self.chatIDKey] as? String
+        let route = NotificationRoute(userInfo: response.notification.request.content.userInfo)
+        let isSessionExpired = [Self.sessionExpiredID, "session-expired"].contains(response.notification.request.identifier)
         await MainActor.run {
-            if let chatID {
-                onOpenChat?(chatID)
-            } else {
+            if let route {
+                onOpenRoute?(route)
+            } else if isSessionExpired {
                 onOpenApp?()
             }
         }

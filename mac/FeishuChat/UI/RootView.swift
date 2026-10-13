@@ -1,3 +1,4 @@
+import FeishuChatCore
 import SwiftUI
 
 struct RootView: View {
@@ -8,22 +9,105 @@ struct RootView: View {
 
     var body: some View {
         content
-            .frame(minWidth: 720, minHeight: 460)
+            .frame(minWidth: 800, minHeight: 460)
             .background(WindowReader { windows.window = $0 })
             .onAppear { windows.openWindow = openWindow }
-            .modifier(LogoutConfirmation(appState: appState))
+            .modifier(LogoutConfirmation(messages: appState.messages))
     }
 
     @ViewBuilder
     private var content: some View {
-        if let status = appState.status {
-            if status.state == .loggedOut {
-                LoginView(login: appState.login, sessionExpired: status.lastError != nil)
-            } else {
-                MainView(appState: appState)
+        if appState.status != nil {
+            HStack(spacing: 0) {
+                ModuleNavigation(appState: appState)
+                Divider()
+                // 条件分支销毁旧工作区，避免隐藏的 NSTextView 接收回车。
+                switch appState.activeModule {
+                case .messages:
+                    MessagesWorkspace(appState: appState)
+                case .email:
+                    EmailWorkspace()
+                }
             }
+            .onAppear { appState.reevaluateViewing() }
         } else {
             BackendStartupView(state: appState.backendState, retry: appState.retryBackendInstallation)
+        }
+    }
+}
+
+private struct MessagesWorkspace: View {
+    let appState: AppState
+
+    var body: some View {
+        if let status = appState.messages.status, status.state == .loggedOut {
+            LoginView(login: appState.messages.login, sessionExpired: status.lastError != nil)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .navigationTitle("Messages")
+        } else {
+            MainView(appState: appState)
+        }
+    }
+}
+
+private struct ModuleNavigation: View {
+    @Bindable var appState: AppState
+
+    var body: some View {
+        VStack(spacing: 8) {
+            moduleButton(.messages, title: "Messages", icon: "bubble.left.and.bubble.right",
+                         count: appState.unreadCounts.messages)
+            moduleButton(.email, title: "Email", icon: "envelope", count: appState.unreadCounts.email)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 6)
+        .padding(.top, 12)
+        .frame(width: 76)
+        .background(.bar)
+    }
+
+    private func moduleButton(_ module: AppModule, title: String, icon: String, count: Int) -> some View {
+        Button { appState.activeModule = module } label: {
+            VStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .frame(height: 24)
+                Text(title)
+                    .font(.system(size: 10, weight: .medium))
+                if count > 0 { UnreadBadge(count: count, muted: false) }
+            }
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity)
+            .foregroundStyle(appState.activeModule == module ? Color.accentColor : Color.secondary)
+            .background(appState.activeModule == module ? Color.accentColor.opacity(0.12) : .clear,
+                        in: .rect(cornerRadius: 8))
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityValue(count > 0 ? "\(count) 条未读" : "没有未读")
+        .accessibilityAddTraits(appState.activeModule == module ? [.isSelected] : [])
+    }
+}
+
+/// B 阶段只交付模块外壳；邮箱配置与后端接入由后续阶段实现。
+private struct EmailWorkspace: View {
+    var body: some View {
+        NavigationSplitView {
+            VStack(alignment: .leading, spacing: 10) {
+                Label("Email", systemImage: "envelope")
+                    .font(.headline)
+                Text("邮箱尚未接入")
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 420)
+        } detail: {
+            ContentUnavailableView("邮箱阅读器待接入", systemImage: "envelope",
+                                   description: Text("当前提供模块切换。邮箱配置与收件阅读将在后续阶段加入。"))
+                .navigationTitle("Email")
         }
     }
 }
@@ -101,12 +185,12 @@ private struct DependencyInstallationView: View {
 }
 
 private struct LogoutConfirmation: ViewModifier {
-    @Bindable var appState: AppState
+    @Bindable var messages: MessagesState
 
     func body(content: Content) -> some View {
-        content.confirmationDialog("退出登录？", isPresented: $appState.isConfirmingLogout) {
+        content.confirmationDialog("退出聊天登录？", isPresented: $messages.isConfirmingLogout) {
             Button("退出登录", role: .destructive) {
-                Task { await appState.logout() }
+                Task { await messages.logout() }
             }
             Button("取消", role: .cancel) {}
         } message: {

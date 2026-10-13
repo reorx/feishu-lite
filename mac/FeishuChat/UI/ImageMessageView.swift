@@ -1,4 +1,5 @@
 import AppKit
+import FeishuChatCore
 import SwiftUI
 
 struct ImageMessageView: View {

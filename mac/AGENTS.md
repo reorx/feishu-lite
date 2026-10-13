@@ -23,7 +23,8 @@ FeishuChat 的 SwiftUI 客户端：拉起并守护 `../backend` 的 Python 后�
 ## App 怎么工作
 
 - `Services/BackendSupervisor` 在 Debug 下用 `uv run --project <backend> feishu-lite-backend --port P` 拉起源码后端；Release 直接运行用户用 uv 安装的 `feishu-lite-backend`，不依赖源码目录。启动前检查依赖，缺失时显示安装引导并等待用户重新检测。端口和 token 每次启动随机生成，子进程退出后按退避重启；日志在 `~/Library/Logs/FeishuChat/backend.log`。
-- `Model/AppState` 是唯一的状态入口：订阅后端的 SSE 事件流，维护登录状态、会话列表和当前会话（`Model/Conversation`）。事件流每次（重新）连上都会把会话列表和当前会话重新拉一遍，因为断开期间的变化不会补发。
+- `Model/AppState` 管后端、一条 SSE、模块选择、全局时间、汇总 badge 与类型化通知路由；`Model/MessagesState` 管扫码、会话、隐藏偏好、草稿和滚动锚点。工作区按模块重建，状态常驻；Email 当前仅有占位。事件流重连由 AppState 调 MessagesState 刷新聊天；后续 MailState 在同一入口独立刷新。
+- 已读与通知使用 Core 的 `ViewingContext`，必须包含当前模块；只看旧选中聊天会在 Email 下误清未读。`AppState.updateUnread` 是唯一 `setBadge` 调用点；通知按 `NotificationRoute` 的领域目标清理，不按裸 id 清理。行为说明见 `../kb/docs/module-shell.md`，后续接入点见 `../kb/sessions/2026-10-13-email-shell-phase-b.md`。
 - 接口模型、SSE 解析、通知策略、消息合并和排序都在 `FeishuChatCore`，改这些行为先改那里的测试。
 - **`@Observable` 类里标了 `@ObservationIgnored` 的属性，视图不能直接或间接依赖**（包括由它算出来的计算属性），否则视图收不到变化。给视图用的派生值要存成被观察的属性，参考 `Conversation.rows`。
 - 显示"今天/昨天"这类相对时间的视图，"现在"要从环境值 `\.today` 取（`AppState.today`，跨天、改时区、唤醒时更新），不要在视图里直接用 `Date()`，否则过了零点标签不会变。
@@ -46,7 +47,7 @@ FeishuChat 的 SwiftUI 客户端：拉起并守护 `../backend` 的 Python 后�
 make build       # xcodegen + xcodebuild Debug 构建（xcbeautify 美化输出）
 make build-release # Universal Release；默认 Developer ID 签名
 make dmg         # 将 Release App 打包到 dist/
-make test        # FeishuChatCore swift test
+make test        # Core 单测 + App Model/Services 隔离调用测试（无 UI）
 make run         # kill 旧实例并启动已构建的 app（不触发构建）
 make dev         # build + run
 make gen         # 仅重新生成 xcodeproj
@@ -55,6 +56,7 @@ make clean       # 清理构建产物与生成的 xcodeproj
 
 - 构建产物：`.build/DerivedData/Build/Products/Debug/FeishuChat.app`
 - 跑单个测试：`cd FeishuChatCore && swift test --filter <测试名>`
+- App 状态调用测试：`swift test --filter <测试名>`；`mac/Package.swift` 直接编译 App 的 Model/Services，测试网络用 URLProtocol、通知/窗口用 recorder，不启动 App 或真实后端。
 - 改了 `project.yml` 后必须 `make gen`（`make build` 已包含）
 - 直接调 xcodebuild 时固定参数：`-project FeishuChat.xcodeproj -scheme FeishuChat -destination 'platform=macOS' -derivedDataPath .build/DerivedData`，并 `set -o pipefail` 后接 `| xcbeautify`
 

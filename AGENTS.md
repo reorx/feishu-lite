@@ -26,7 +26,11 @@ MVP 功能已经做完并通过验收：扫码登录、会话列表、历史消�
 
 会话列表支持多选隐藏、隐藏列表和取消隐藏；偏好按账号保存在 App 的 UserDefaults，收到新消息不会解除隐藏，不改变未读和通知策略。验收见 `kb/sessions/2026-10-08-hidden-chats.md`。
 
-Messages / Email 双模块与 IMAP 邮箱阅读器尚未实现；真实 IMAP 只读探路已通过，后端库选定 IMAPClient（实施阶段引入）。首版列出全部文件夹、仅读取收件箱，并同步已读及汇总 badge；开发依据见 `kb/plans/2026-10-13-email-reader-plan.md`。实现 IMAP 前读 `kb/notes/2026-10-13-email-imap-probe.md`，其中记录 IDLE 中断/关停方案和仍需指定测试邮件的真实验收项。
+Messages / Email 双模块外壳已实现并通过自动测试与构建，独立 UI 验收待办；Email 当前是待接入占位，IMAP 阅读器尚未实现。真实 IMAP 只读探路已通过，后端库选定 IMAPClient（实施阶段引入）；首版列出全部文件夹、仅读取收件箱，开发依据见 `kb/plans/2026-10-13-email-reader-plan.md`。实现 IMAP 前读 `kb/notes/2026-10-13-email-imap-probe.md`；接续 App 开发的实际接口与 B 验收交接见 `kb/sessions/2026-10-13-email-shell-phase-b.md`。
+
+## 文档
+
+- `kb/docs/module-shell.md` — 双模块的切换、已读、通知与 badge 规则；修改模块外壳或跨模块行为前读。
 
 ## 运行和测试
 

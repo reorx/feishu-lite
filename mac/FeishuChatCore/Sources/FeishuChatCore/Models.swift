@@ -140,16 +140,26 @@ public struct BackendStatus: Codable, Equatable, Sendable {
     public var state: ConnectionState
     public var user: User?
     public var lastError: String?
+    public var features: [String]
 
     enum CodingKeys: String, CodingKey {
-        case state, user
+        case state, user, features
         case lastError = "last_error"
     }
 
-    public init(state: ConnectionState, user: User? = nil, lastError: String? = nil) {
+    public init(state: ConnectionState, user: User? = nil, lastError: String? = nil, features: [String] = []) {
         self.state = state
         self.user = user
         self.lastError = lastError
+        self.features = features
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        state = try c.decode(ConnectionState.self, forKey: .state)
+        user = try c.decodeIfPresent(User.self, forKey: .user)
+        lastError = try c.decodeIfPresent(String.self, forKey: .lastError)
+        features = try c.decodeIfPresent([String].self, forKey: .features) ?? []
     }
 }
 

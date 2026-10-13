@@ -22,6 +22,7 @@ final class LoginModel {
 
     @ObservationIgnored private let connection: BackendConnection
     @ObservationIgnored private var task: Task<Void, Never>?
+    @ObservationIgnored private var generation = 0
     @ObservationIgnored private let log = Logger(subsystem: "com.reorx.FeishuChat", category: "login")
 
     init(connection: BackendConnection) {
@@ -31,13 +32,17 @@ final class LoginModel {
     /// 进入未登录状态时调用；流程已经在跑就什么都不做
     func begin() {
         guard task == nil else { return }
+        generation += 1
+        let startedGeneration = generation
         task = Task {
             await run()
-            task = nil
+            // 快速切换模块后，旧任务的收尾不能清除新任务的句柄。
+            if generation == startedGeneration { task = nil }
         }
     }
 
     func end() {
+        generation += 1
         task?.cancel()
         task = nil
         phase = .idle
@@ -51,9 +56,11 @@ final class LoginModel {
     private func run() async {
         do {
             while true {
+                try Task.checkCancellation()
                 phase = .loading
                 let client = try connection.requireClient()
                 let content = try await client.startQRLogin()
+                try Task.checkCancellation()
                 phase = .waiting(qrContent: content)
                 switch try await waitForScan(client, qrContent: content) {
                 case .success:
@@ -80,6 +87,7 @@ final class LoginModel {
         while true {
             try await Task.sleep(for: Self.pollInterval)
             let status = try await client.qrLoginStatus()
+            try Task.checkCancellation()
             switch status {
             case .waiting, .idle:
                 continue

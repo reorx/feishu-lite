@@ -28,9 +28,9 @@ struct AppCommands: Commands {
                 set: { loginItem.setEnabled($0) }
             ))
             Button("退出登录…") {
-                appState.isConfirmingLogout = true
+                appState.messages.isConfirmingLogout = true
             }
-            .disabled(!appState.isLoggedIn)
+            .disabled(!appState.messages.isLoggedIn)
         }
     }
 }

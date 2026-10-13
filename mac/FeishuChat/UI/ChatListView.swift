@@ -2,35 +2,38 @@ import FeishuChatCore
 import SwiftUI
 
 struct ChatListView: View {
-    @Bindable var appState: AppState
+    @Bindable var messages: MessagesState
     @State private var isManaging = false
     @State private var selectedIDs: Set<String> = []
+    @State private var isRestoringScroll = true
 
     private var chats: [Chat] {
-        appState.showsHiddenChats ? appState.hiddenChats : appState.chats
+        messages.showsHiddenChats ? messages.hiddenChats : messages.chats
     }
 
     var body: some View {
         VStack(spacing: 0) {
             header
             Divider()
-            if isManaging {
-                List(chats) { chat in
-                    Toggle(isOn: Binding(
-                        get: { selectedIDs.contains(chat.id) },
-                        set: { selected in
-                            if selected { selectedIDs.insert(chat.id) }
-                            else { selectedIDs.remove(chat.id) }
+            GeometryReader { viewport in
+                ScrollViewReader { proxy in
+                    chatList
+                        .coordinateSpace(name: "chat-list")
+                        .onPreferenceChange(VisibleScrollRows.self) { frames in
+                            guard !isRestoringScroll,
+                                  let id = VisibleScrollRows.first(in: frames, height: viewport.size.height) else { return }
+                            messages.listScrollAnchors[messages.showsHiddenChats] = id
                         }
-                    )) {
-                        ChatRowView(chat: chat)
-                    }
-                    .toggleStyle(.checkbox)
-                    .accessibilityLabel("选择\(chat.displayName)")
-                }
-            } else {
-                List(chats, selection: $appState.selectedChatID) { chat in
-                    ChatRowView(chat: chat)
+                        .task(id: messages.showsHiddenChats) {
+                            isRestoringScroll = true
+                            await Task.yield()
+                            if let id = messages.listScrollAnchors[messages.showsHiddenChats] {
+                                proxy.scrollTo(id, anchor: .top)
+                            }
+                            await Task.yield()
+                            guard !Task.isCancelled else { return }
+                            isRestoringScroll = false
+                        }
                 }
             }
             if isManaging {
@@ -40,30 +43,57 @@ struct ChatListView: View {
         }
         .overlay {
             if chats.isEmpty {
-                Text(appState.showsHiddenChats ? "没有隐藏的会话" : "暂无会话")
+                Text(messages.showsHiddenChats ? "没有隐藏的会话" : "暂无会话")
                     .foregroundStyle(.secondary)
             }
         }
-        .onChange(of: appState.showsHiddenChats) { _, _ in endManagement() }
+        .onChange(of: messages.showsHiddenChats) { _, _ in endManagement() }
         .onChange(of: chats.map(\.id)) { _, ids in selectedIDs.formIntersection(ids) }
+    }
+
+    @ViewBuilder
+    private var chatList: some View {
+        if isManaging {
+            List(chats) { chat in
+                Toggle(isOn: Binding(
+                    get: { selectedIDs.contains(chat.id) },
+                    set: { selected in
+                        if selected { selectedIDs.insert(chat.id) }
+                        else { selectedIDs.remove(chat.id) }
+                    }
+                )) {
+                    ChatRowView(chat: chat)
+                }
+                .toggleStyle(.checkbox)
+                .accessibilityLabel("选择\(chat.displayName)")
+                .id(chat.id)
+                .trackScrollRow(chat.id, space: "chat-list")
+            }
+        } else {
+            List(chats, selection: $messages.selectedChatID) { chat in
+                ChatRowView(chat: chat)
+                    .id(chat.id)
+                    .trackScrollRow(chat.id, space: "chat-list")
+            }
+        }
     }
 
     private var header: some View {
         HStack(spacing: 8) {
-            if appState.showsHiddenChats {
-                Button { appState.showChatList(hidden: false) } label: {
+            if messages.showsHiddenChats {
+                Button { messages.showChatList(hidden: false) } label: {
                     Label("返回", systemImage: "chevron.left")
                 }
                 .help("返回会话列表")
             }
-            Text(appState.showsHiddenChats ? "隐藏会话" : "会话")
+            Text(messages.showsHiddenChats ? "隐藏会话" : "会话")
                 .font(.headline)
             Spacer(minLength: 4)
             if isManaging {
                 Menu("管理") {
-                    if !appState.showsHiddenChats {
-                        Button("查看隐藏会话（\(appState.hiddenChats.count)）") {
-                            appState.showChatList(hidden: true)
+                    if !messages.showsHiddenChats {
+                        Button("查看隐藏会话（\(messages.hiddenChats.count)）") {
+                            messages.showChatList(hidden: true)
                         }
                     }
                     Button("全选") { selectedIDs = Set(chats.map(\.id)) }
@@ -85,7 +115,7 @@ struct ChatListView: View {
 
     private var managementFooter: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(appState.showsHiddenChats ? "取消隐藏后，会话会回到主列表。" : "隐藏后，新消息也不会让会话回到主列表。")
+            Text(messages.showsHiddenChats ? "取消隐藏后，会话会回到主列表。" : "隐藏后，新消息也不会让会话回到主列表。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -95,11 +125,11 @@ struct ChatListView: View {
                     .foregroundStyle(.secondary)
                 Spacer()
                 Button("完成") { endManagement() }
-                Button(appState.showsHiddenChats ? "取消隐藏" : "隐藏") {
-                    appState.setChatsHidden(selectedIDs, hidden: !appState.showsHiddenChats)
+                Button(messages.showsHiddenChats ? "取消隐藏" : "隐藏") {
+                    messages.setChatsHidden(selectedIDs, hidden: !messages.showsHiddenChats)
                     selectedIDs.removeAll()
                 }
-                .disabled(selectedIDs.isEmpty || appState.status?.user == nil)
+                .disabled(selectedIDs.isEmpty || messages.status?.user == nil)
                 .buttonStyle(.borderedProminent)
             }
             .controlSize(.small)
@@ -154,12 +184,12 @@ private struct ChatRowView: View {
     }
 }
 
-private struct UnreadBadge: View {
+struct UnreadBadge: View {
     let count: Int
     let muted: Bool
 
     var body: some View {
-        Text(count > 99 ? "99+" : String(count))
+        Text(UnreadCounts.label(for: count) ?? "")
             .font(.caption2.weight(.semibold).monospacedDigit())
             .foregroundStyle(.white)
             .padding(.horizontal, 5)

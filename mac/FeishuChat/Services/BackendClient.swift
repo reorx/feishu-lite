@@ -1,19 +1,6 @@
 import FeishuChatCore
 import Foundation
 
-enum BackendError: LocalizedError {
-    /// 凭证失效（HTTP 409），后端同时会把状态切到 logged_out
-    case loggedOut
-    case http(status: Int, detail: String)
-
-    var errorDescription: String? {
-        switch self {
-        case .loggedOut: "登录已失效"
-        case let .http(status, detail): "请求失败（\(status)）\(detail)"
-        }
-    }
-}
-
 /// 后端 REST + SSE 接口的客户端，接口定义见 backend/src/feishu_lite/api.py
 struct BackendClient {
     static let pageSize = 30
@@ -31,6 +18,12 @@ struct BackendClient {
         // 本地回环不该走系统代理
         configuration.connectionProxyDictionary = [:]
         session = URLSession(configuration: configuration)
+    }
+
+    /// 隔离行为测试注入 URLProtocol；生产仍使用上面的回环配置。
+    init(endpoint: BackendEndpoint, session: URLSession) {
+        self.endpoint = endpoint
+        self.session = session
     }
 
     func status() async throws -> BackendStatus {
@@ -140,11 +133,8 @@ struct BackendClient {
 
     private static func check(_ response: URLResponse, body: Data) throws {
         guard let http = response as? HTTPURLResponse else { return }
-        if http.statusCode == 409 {
-            throw BackendError.loggedOut
-        }
-        guard (200..<300).contains(http.statusCode) else {
-            throw BackendError.http(status: http.statusCode, detail: String(decoding: body.prefix(200), as: UTF8.self))
+        if let error = BackendError.responseError(status: http.statusCode, body: body) {
+            throw error
         }
     }
 }

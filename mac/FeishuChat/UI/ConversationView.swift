@@ -4,10 +4,11 @@ import SwiftUI
 struct ConversationView: View {
     let conversation: Conversation
     let title: String
+    let messages: MessagesState
 
     var body: some View {
         VStack(spacing: 0) {
-            MessageListView(conversation: conversation)
+            MessageListView(conversation: conversation, messages: messages)
             Divider()
             ComposerView(conversation: conversation)
         }
@@ -17,11 +18,12 @@ struct ConversationView: View {
 
 private struct MessageListView: View {
     let conversation: Conversation
+    let messages: MessagesState
 
     var body: some View {
         // 首页加载完再渲染列表：内容在列表出现之后才到的话，初始位置会停在最上面而不是最新消息
         if conversation.hasLoaded, !conversation.rows.isEmpty {
-            MessageScrollView(conversation: conversation)
+            MessageScrollView(conversation: conversation, messages: messages)
         } else {
             EmptyStateView(conversation: conversation)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -31,43 +33,69 @@ private struct MessageListView: View {
 
 private struct MessageScrollView: View {
     let conversation: Conversation
+    let messages: MessagesState
 
     private static let bottomID = "bottom"
     @State private var isAtBottom = true
+    @State private var isRestoringScroll = true
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    HistoryHeader(conversation: conversation)
-                    ForEach(conversation.rows) { row in
-                        MessageRowView(row: row, conversation: conversation)
-                            .id(row.id)
+        GeometryReader { viewport in
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        HistoryHeader(conversation: conversation)
+                        ForEach(conversation.rows) { row in
+                            MessageRowView(row: row, conversation: conversation)
+                                .id(row.id)
+                                .trackScrollRow(row.id, space: "message-list")
+                        }
+                        Color.clear
+                            .frame(height: 8)
+                            .id(Self.bottomID)
+                            .trackScrollRow(Self.bottomID, space: "message-list")
                     }
-                    Color.clear
-                        .frame(height: 8)
-                        .id(Self.bottomID)
-                        .onAppear { isAtBottom = true }
-                        .onDisappear { isAtBottom = false }
+                    .padding(.horizontal, 16)
                 }
-                .padding(.horizontal, 16)
-            }
-            .defaultScrollAnchor(.bottom)
-            .onChange(of: conversation.latestMessageID) {
-                // 正在翻历史时不打断；停在底部时跟着新消息走
-                if isAtBottom {
-                    proxy.scrollTo(Self.bottomID, anchor: .bottom)
+                .defaultScrollAnchor(.bottom)
+                .coordinateSpace(name: "message-list")
+                .onPreferenceChange(VisibleScrollRows.self) { frames in
+                    guard !isRestoringScroll else { return }
+                    isAtBottom = frames[Self.bottomID].map {
+                        $0.minY >= 0 && $0.maxY <= viewport.size.height + 1
+                    } ?? false
+                    if isAtBottom {
+                        messages.detailScrollAnchors[conversation.chatID] = Self.bottomID
+                    } else if let id = VisibleScrollRows.first(in: frames.filter { $0.key != Self.bottomID },
+                                                             height: viewport.size.height) {
+                        messages.detailScrollAnchors[conversation.chatID] = id
+                    }
                 }
-            }
-            .onChange(of: conversation.prependAnchor) { _, anchor in
-                guard let anchor else { return }
-                // 刚打开会话时，首次布局会短暂渲染出顶部的加载行，触发一次翻页；这时用户还停在底部，
-                // 要留在最新消息那里，不能跳到翻页前的第一条
-                if isAtBottom {
-                    proxy.scrollTo(Self.bottomID, anchor: .bottom)
-                } else {
-                    // 用户往上翻出了更早的一页：回到翻页之前最上面的那条消息
-                    proxy.scrollTo(anchor.messageID, anchor: .top)
+                .task {
+                    let anchor = messages.detailScrollAnchors[conversation.chatID] ?? Self.bottomID
+                    isAtBottom = anchor == Self.bottomID
+                    await Task.yield()
+                    proxy.scrollTo(anchor, anchor: isAtBottom ? .bottom : .top)
+                    await Task.yield()
+                    guard !Task.isCancelled else { return }
+                    isRestoringScroll = false
+                }
+                .onChange(of: conversation.latestMessageID) {
+                    // 正在翻历史时不打断；停在底部时跟着新消息走
+                    if isAtBottom, !isRestoringScroll {
+                        proxy.scrollTo(Self.bottomID, anchor: .bottom)
+                    }
+                }
+                .onChange(of: conversation.prependAnchor) { _, anchor in
+                    guard let anchor else { return }
+                    // 刚打开会话时，首次布局会短暂渲染出顶部的加载行，触发一次翻页；这时用户还停在底部，
+                    // 要留在最新消息那里，不能跳到翻页前的第一条
+                    if isAtBottom {
+                        proxy.scrollTo(Self.bottomID, anchor: .bottom)
+                    } else {
+                        // 用户往上翻出了更早的一页：回到翻页之前最上面的那条消息
+                        proxy.scrollTo(anchor.messageID, anchor: .top)
+                    }
                 }
             }
         }

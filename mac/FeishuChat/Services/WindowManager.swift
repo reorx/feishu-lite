@@ -1,10 +1,17 @@
 import AppKit
 import SwiftUI
 
+@MainActor
+protocol AppWindows: AnyObject {
+    var window: NSWindow? { get }
+    var isShowingContent: Bool { get }
+    func show()
+}
+
 /// 主窗口的显示状态，以及在窗口被关掉之后把它重新打开。
 /// 关掉窗口 App 不退出，所以点通知或 Dock 图标时窗口可能不存在。
 @MainActor
-final class WindowManager {
+final class WindowManager: AppWindows {
     static let mainWindowID = "main"
 
     /// 主窗口出现时由 RootView 登记

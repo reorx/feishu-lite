@@ -2,11 +2,11 @@ import FeishuChatCore
 import SwiftUI
 
 struct MainView: View {
-    @Bindable var appState: AppState
+    let appState: AppState
 
     var body: some View {
         NavigationSplitView {
-            ChatListView(appState: appState)
+            ChatListView(messages: appState.messages)
                 .safeAreaInset(edge: .top, spacing: 0) {
                     ConnectionStatusBar(appState: appState)
                 }
@@ -15,8 +15,9 @@ struct MainView: View {
                 }
                 .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 420)
         } detail: {
-            if let conversation = appState.conversation {
-                ConversationView(conversation: conversation, title: appState.selectedChatName)
+            if let conversation = appState.messages.conversation {
+                ConversationView(conversation: conversation, title: appState.messages.selectedChatName,
+                                 messages: appState.messages)
                     .id(conversation.chatID)
             } else {
                 ContentUnavailableView("选择一个会话", systemImage: "bubble.left.and.bubble.right")
@@ -31,7 +32,7 @@ private struct ConnectionStatusBar: View {
     let appState: AppState
 
     var body: some View {
-        let display = appState.connectionDisplay
+        let display = appState.messages.connectionDisplay(isEventStreamConnected: appState.isEventStreamConnected)
         HStack(spacing: 6) {
             Circle()
                 .fill(display.isHealthy ? Color.green : Color.orange)
@@ -78,14 +79,14 @@ struct ConnectionDisplay: Equatable {
     var isHealthy: Bool
 }
 
-extension AppState {
+extension MessagesState {
     var selectedChatName: String {
         guard let id = selectedChatID,
               let chat = (chats + hiddenChats).first(where: { $0.id == id }) else { return "" }
         return chat.displayName
     }
 
-    var connectionDisplay: ConnectionDisplay {
+    func connectionDisplay(isEventStreamConnected: Bool) -> ConnectionDisplay {
         guard isEventStreamConnected, let status else {
             return ConnectionDisplay(text: "正在连接本地后端…", isHealthy: false)
         }

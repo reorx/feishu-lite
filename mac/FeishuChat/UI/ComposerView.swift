@@ -113,6 +113,15 @@ struct ComposerTextView: NSViewRepresentable {
         }
     }
 
+    static func dismantleNSView(_ scrollView: NSScrollView, coordinator: Coordinator) {
+        if let textView = scrollView.documentView as? NSTextView {
+            if textView.window?.firstResponder === textView {
+                textView.window?.makeFirstResponder(nil)
+            }
+            textView.delegate = nil
+        }
+    }
+
     @MainActor
     final class Coordinator: NSObject, NSTextViewDelegate {
         var parent: ComposerTextView

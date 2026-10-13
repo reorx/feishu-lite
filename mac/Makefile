@@ -21,9 +21,10 @@ build-release: gen
 dmg:
 	bash scripts/make-dmg.sh "$(RELEASE_APP)" dist
 
-# FeishuChatCore 纯逻辑单测
+# Core 纯逻辑 + App 原始 Model/Services 的隔离调用测试
 test:
 	cd FeishuChatCore && swift test
+	swift test
 
 # kill 后等旧进程退出，再用 open -n 强制新实例启动：
 # 普通 open 在进程刚退出时会撞上 LaunchServices 的滞留注册而报 -600。
