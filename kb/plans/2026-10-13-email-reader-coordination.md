@@ -156,7 +156,7 @@ tags:
 - 允许对 C1/C2 做有失败复现的必要接续修正，但不随意重写或改变契约；记录实际差异供 C3b/D。共享 Pydantic 模型放 mail/types，API 命名按原计划预备但不让 FastAPI 混入服务。
 - 写 `kb/sessions/2026-10-13-email-sync-c3a.md`，明确生产方法/数据/事件、C3b 接线示例、持久化策略、测试红绿日志、未验项与决策；必要文档和实现同次提交，不修改本文、不 push、不发布、不开始 C3b、不委派；清理资源，在 tab 汇报 commit、测试、报告和工作区状态。
 
-### 当前任务 C3b：API/SSE 与进程生命周期接线
+### 任务 C3b：API/SSE 与进程生命周期接线（已签收）
 
 执行者：新的 Herdr tab 中 Codex，当前 master。先读根 AGENTS.md、原计划全文、C1/C2/C3a session，尤其 `kb/sessions/2026-10-13-email-sync-c3a.md` 的生产方法、事件、停止限制；再读现有 api/main/service 的实际接线方式。C3a 基线 `3f755b7`，全量 221 项通过。此 brief 由 coordinator 编写，拆分顺序不改变原计划。
 
@@ -177,6 +177,29 @@ tags:
 - 只修改本阶段后端及必要文档，协调文档只读。写 `kb/sessions/2026-10-13-email-api-c3b.md`，留 D1/D2/E 可直接消费的完整 wire 示例、字段与错误映射、事件/通知确认规则、生命周期证据、红绿日志、偏离、自主决策及「交给协调者」。合成样本/日志放 `tmp/2026-10-13-email-api-c3b/`，不用真实邮件。
 - 更新 AGENTS.md/README/原计划有证据的状态，范围外问题记报告或按 kb 规则登记；实现与文档一起提交，仅暂存自己文件。关闭自建服务器/连接/进程，保留用户资源。在 tab 最终报告 commit、测试、报告路径、清理与工作区状态；coordinator 会等待稳定结束并审核后派 D1。
 
+### 当前任务 D1：邮箱配置、MailState 与钥匙串恢复
+
+执行者：新 Herdr tab 的 Codex，当前 master。必读根/mac AGENTS.md、原计划全文、B 实现及独立验收 session、C3a/C3b session，尤其 `kb/sessions/2026-10-13-email-api-c3b.md` 的全部 wire/错误/SSE 契约。C3b 基线 `f48e5ed`，297项后端测试和真实HTTP/IMAP/完整退出验证通过。使用适用 SwiftUI、impeccable、kb 技能。本 brief 由 coordinator 编写，D1/D2 分界为实施拆分，不改变用户产品范围。
+
+目标：Email 模块可配置独立邮箱、测试连接、保存/更新专用密码、移除账号，正确处理旧后端、钥匙串状态、后台同步及重启凭证恢复。为 D2 阅读器和 E 通知提供经过行为测试的 MailState/模型/调用接口。
+
+完成条件与范围：
+
+- 先写逻辑失败行为测试，再实现 Core 邮件模型/事件/错误编解码和 App 状态调用。使用 C3b 合成 wire 样本交叉校验；Unix时间、可空字段、错误占位、id/cursor、attachments、pending整批结构准确；不要由 Swift 自行重编后端 id。Core 不依赖 AppKit/Security/WebKit。
+- BackendClient 加 typed 邮件 API 和安全 mail 错误映射；保留仅409 detail=logged_out触发聊天登出，401本机token与403邮箱凭证错误分开。URL路径/查询安全编码，密码仅请求体、不出现在日志/错误/描述/UserDefaults。客户端超时留出后端30秒请求加约1.5秒清理，超时后重新取状态，不推断 configure/STORE 没发生。
+- 建立 @Observable MailState 及清楚的账号/连接世代防护，接入 AppState 唯一SSE：mail.* 独立分派，连上后分别刷新聊天/邮箱，不受聊天登出限制。后端更换/重启重置 generation 比较基线；账号切换、移除、旧请求晚到不得覆盖新状态。不要新增第二条 SSE 或把全部逻辑塞回 AppState。
+- 实施 file-based SecItem 钥匙串，不设 kSecUseDataProtectionKeychain；以 mail_account_id 精确存取，邮箱地址仅附加属性。区分找不到、用户拒绝/认证失败、锁定与其他错误。用可注入包装测试这些结果；不得为了测试读取/覆盖/删除真实条目或触发用户授权弹框，不回落明文。
+- App启动对当前账号自动读钥匙串一次，随后密码只驻内存；后端 ready 且本次SSE已连上才注入，重复状态/重连幂等，后端崩溃重启复用内存凭证不反复读钥匙串。缺失/拒绝/锁定提供清楚提示和用户重试入口，显式重试可以重新访问钥匙串；不得后台忙重试或反复注入同一失效密码。
+- 外部后端模式 FEISHU_LITE_BACKEND_URL 不自动读取/注入钥匙串；配置页允许手动输入。测试账号 UUID、独立UserDefaults/假Keychain；不读取 tmp/feishu-mail.env，本阶段不接真实邮箱。环境操作先 envops。
+- 配置 UI 使用当前原生风格：邮箱地址、SecureField专用密码、测试连接、保存、修改凭证、移除；飞书主机/端口预设不做通用邮件工具。测试连接不保存，显示 writable/只读限制；保存返回不冒充online。合理禁用重复提交、显示进度/可恢复失败，避免把底层错误码原样当产品文案。
+- 配置与聊天账号明确独立。首次保存取得后端 UUID 后写对应钥匙串；写失败必须保留可重试的准确状态，不能声称已安全保存。更换地址/移除根据 removed_account_id 清理旧钥匙串及内存/选择，只匹配旧账号；清理失败不得静默丢失追踪。通知清理接入现有命名空间能力或留经过测试的 E 接口，报告准确边界，不大范围删除钥匙串。
+- unconfigured/credential_missing/connecting/online/offline/auth_failed分别展示；断线/认证失败保留计数与缓存状态，呈现最后同步及过期提示。features不含mail时显示现有后端安装命令及重新检测，不显示成普通网络失败，不对旧后端请求邮箱端点。未知/加载中能力不能提前读钥匙串。
+- 将MailStatus整箱计数接入唯一 AppState.updateUnread，配置/移除更新归零而普通离线不清零；这是D1状态接线，E仍负责完整通知/唤醒联动与回归。保留 pending 并提供E入口，本阶段不提前 ack 未投递/未按可见性抑制的批次。
+- D1不实现完整邮件列表/正文/WebKit/可见性已读，配置后可显示准确同步状态与后续阅读器占位。为D2留实际选择/滚动锚点/正文加载状态的接入接口，B 的 pendingMailRoute 不能作为邮件已显示/已读证据；此阶段不得意外调用 read。
+- 自动测试覆盖真实调用点：两模块独立、ready/SSE顺序、重启只注入不重新读钥匙串、旧后端、外部模式、凭证三类异常、重复保存/晚到试连/账号切换、钥匙串写删失败、无凭证泄漏、badge与pending不误ack。运行 cd mac && make test && make build；不要只测没有被调用的纯函数。必要后端变更须有复现与相应测试，不重新探路/主动格式化。
+- 本tab不启动实机UI验收；用户要求验收开独立tab，配置UI及真实SecItem/权限证据留独立验收。不运行会杀用户App的make run，不改变签名/bundle id，不push/发布/开始D2/自行委派。测试假资源结束清理。
+- session写 `kb/sessions/2026-10-13-email-configuration-d1.md`，证据 `tmp/2026-10-13-email-configuration-d1/`；完整记录接口、凭证状态机、自动测试红绿、真实未验、自主决策、D2/E接续及「交给协调者」。更新必要AGENTS/README/原计划有证据条目，代码文档同次提交，仅暂存自己的文件；不改本文。在tab回报commit、测试、报告路径、清理和工作区状态，coordinator签收后另派D2。
+
 ### 状态
 
 - [x] A：已签收 `3cbc23d`；7 个测试、42 次计时通过；真实已读/通知等仍按原计划待验。
@@ -184,7 +207,7 @@ tags:
 - [x] C1：`2efd0be`，后端全量 123 项通过；按协调审阅保留合法 HTTP(S) 内网链接，未接通 API/同步。
 - [x] C2：`b1dd3ce`，后端全量 179 项通过；36 次时限测量全部 <2秒。DNS stop_timeout/closed/failure 等接续约束必须由 C3a 实施。
 - [x] C3a：`3f755b7`，后端全量 221 项通过（新增42项）；4个完整进程停止场景最大1.524秒。服务层已签收，API/App/真实验证尚未完成。
-- [ ] C3b
+- [x] C3b：`f48e5ed`，后端全量297项通过；真实HTTP→IMAP FETCH 0.110秒，5个完整进程退出最大1.685秒，独立wheel安装/CLI冒烟通过。App接入及真实邮箱尚待验证。
 - [ ] D1
 - [ ] D2
 - [ ] E
