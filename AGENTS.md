@@ -9,6 +9,15 @@ FeishuChat：不依赖飞书官方客户端的轻量飞书聊天客户端（macO
 - `kb/`：计划、笔记、session 总结；`kb/known-issues.md` 是已知问题的唯一清单，`kb/next-up.md` 是到期要做的检查。
 - `tmp/`：探路脚本、验收脚本和截图，已 gitignore。
 
+## 架构与后端生命周期
+
+通信关系：`SwiftUI App ↔ 本机 REST + SSE ↔ Python backend ↔ 飞书网页版协议（HTTP + WebSocket）↔ 飞书服务器`。
+
+- Python 是由 App 启动并守护的常驻本地服务子进程，负责登录凭证、飞书通信、实时连接与重连、消息同步和 SQLite 缓存；Swift 负责界面、本地通知和 Dock 角标。后端用 FastAPI + Uvicorn，仅监听 `127.0.0.1`，App 每次启动后端分配随机端口和访问 token。
+- App 启动时拉起后端，关闭窗口后继续运行，退出 App 时终止后端；后端崩溃由 App 自动重启，App 异常退出则由后端检查父进程 PID 后自行关闭。它不注册为独立的 launchd daemon，也不会为每次聊天操作重新执行命令。
+- Debug 通过 `uv run --project <backend目录> feishu-lite-backend --port P` 运行源码；Release 直接运行用户通过 `uv tool install` 安装的后端。`feishu-lite-backend login` 是额外的终端扫码排障命令，登录完成后退出。
+- 本机服务就绪与飞书在线是两回事：后端连接状态为 `logged_out` / `connecting` / `online` / `reconnecting`；未登录或凭证失效时，本机服务仍运行，等待重新登录。生命周期入口见 `backend/src/feishu_lite/main.py`、`service.py` 和 `mac/FeishuChat/Services/BackendSupervisor.swift`。
+
 ## 当前状态
 
 MVP 功能已经做完并通过验收：扫码登录、会话列表、历史消息和翻页、发文本、实时消息、本地通知、Dock 角标、开机启动。计划和验收清单在 `kb/plans/2026-09-29-feishu-chat-mvp-plan.md`，逐项的验收结果和证据在 `kb/sessions/2026-10-01-feishu-chat-app-and-acceptance.md`。
@@ -16,6 +25,8 @@ MVP 功能已经做完并通过验收：扫码登录、会话列表、历史消�
 独立图片消息已实现缩略图、点击预览/缩放和失败重试；通过鉴权接口 `GET /messages/{message_id}/image` 按需下载，兼容旧缓存，不支持发送图片或富文本内嵌图片。自动测试和隔离界面验收通过，真实飞书下载待验证，详见 `kb/sessions/2026-10-06-image-messages.md`。
 
 会话列表支持多选隐藏、隐藏列表和取消隐藏；偏好按账号保存在 App 的 UserDefaults，收到新消息不会解除隐藏，不改变未读和通知策略。验收见 `kb/sessions/2026-10-08-hidden-chats.md`。
+
+Messages / Email 双模块与 IMAP 邮箱阅读器尚未实现；真实 IMAP 只读探路已通过，后端库选定 IMAPClient（实施阶段引入）。首版列出全部文件夹、仅读取收件箱，并同步已读及汇总 badge；开发依据见 `kb/plans/2026-10-13-email-reader-plan.md`。实现 IMAP 前读 `kb/notes/2026-10-13-email-imap-probe.md`，其中记录 IDLE 中断/关停方案和仍需指定测试邮件的真实验收项。
 
 ## 运行和测试
 
