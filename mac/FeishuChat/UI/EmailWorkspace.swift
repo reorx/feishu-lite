@@ -26,12 +26,23 @@ struct EmailWorkspace: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             case .supported:
                 NavigationSplitView {
-                    MailSyncStatusView(mail: mail)
-                        .padding(16)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    MailInboxList(mail: mail)
                         .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 420)
                 } detail: {
-                    MailConfigurationView(mail: mail)
+                    if mail.status?.mailAccountID == nil || mail.showsConfiguration {
+                        VStack(spacing: 0) {
+                            if mail.status?.mailAccountID != nil {
+                                HStack {
+                                    Button("返回阅读器", systemImage: "chevron.left") { mail.showsConfiguration = false }
+                                    Spacer()
+                                }.padding(12)
+                                Divider()
+                            }
+                            MailConfigurationView(mail: mail)
+                        }
+                    } else {
+                        MailMessageDetail(mail: mail)
+                    }
                 }
             }
         }
@@ -39,34 +50,31 @@ struct EmailWorkspace: View {
     }
 }
 
-private struct MailSyncStatusView: View {
+struct MailSyncStatusView: View {
     let mail: MailState
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("收件箱", systemImage: "tray").font(.headline)
-            Text(mail.stateDescription)
+            Text(mail.stateDescription).font(.caption)
             if let status = mail.status, status.mailAccountID != nil {
-                Text(status.address ?? "").textSelection(.enabled)
-                Text("\(status.unreadCount) 封未读")
+                Text(status.address ?? "").font(.caption).lineLimit(1).textSelection(.enabled)
                 if status.unreadStale {
-                    Label("计数尚未同步", systemImage: "clock").font(.callout).foregroundStyle(.secondary)
+                    Label("显示上次同步的缓存与未读数", systemImage: "clock").font(.caption).foregroundStyle(.secondary)
                 }
                 if let time = status.lastSyncAt {
                     Text("最后同步：\(Date(timeIntervalSince1970: TimeInterval(time)).formatted(date: .abbreviated, time: .shortened))")
                         .font(.caption).foregroundStyle(.secondary)
                 }
-                Button("刷新同步状态") { Task { await mail.sync() } }
-                    .disabled(!mail.canSubmit || status.state == .credentialMissing || status.state == .authFailed)
+                if status.state == .credentialMissing || status.state == .authFailed || mail.credentialIssue != nil || mail.hasUnsavedCredential {
+                    Button("检查邮箱配置") { mail.showsConfiguration = true; mail.invalidatePresentation() }
+                }
             }
-            Divider()
-            Text("邮件列表与正文将在后续阶段接入。")
-                .foregroundStyle(.secondary)
+            if let error = mail.errorMessage { Text(error).font(.caption).foregroundStyle(.red) }
         }
     }
 }
 
-private struct MailConfigurationView: View {
+struct MailConfigurationView: View {
     @Bindable var mail: MailState
     @State private var confirmsRemoval = false
 

@@ -511,6 +511,10 @@ class MailService:
             raise MailError('message_missing')
         return key, summary
 
+    def summary(self, message_id):
+        """Exact cached route metadata, with the same identity checks as body/read."""
+        return self._key(message_id)[1]
+
     async def messages(self, *, folder='INBOX', cursor=None) -> MailPage:
         self._require_account()
         epoch = self.epoch

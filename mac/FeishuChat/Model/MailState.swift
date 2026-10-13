@@ -23,12 +23,28 @@ final class MailState: CustomReflectable {
     var addressInput = "" { didSet { if addressInput != oldValue { connectionTest = nil } } }
     var passwordInput = "" { didSet { if passwordInput != oldValue { connectionTest = nil } } }
 
-    // D2 接入位置：真实选择/正文成功状态与通知路由分开；D1 从不 read。
+    // State survives workspace reconstruction; presentation proof never does.
     var selectedMessageID: String?
     var selectedFolderID = "INBOX"
     var listScrollAnchor: String?
     var detailScrollAnchors: [String: String] = [:]
+    @ObservationIgnored var htmlInteractions: [String: MailHTMLInteraction] = [:]
     var bodyLoadState: BodyLoadState = .idle
+    var folders: [MailFolder] = []
+    var items: [MailSummary] = []
+    var selectedSummary: MailSummary?
+    var nextCursor: String?
+    var hasLoadedList = false
+    var isRefreshingReader = false
+    var isPaging = false
+    var listError: String?
+    var routeError: String?
+    var readError: String?
+    var isReading = false
+    var renderToken: MailRenderToken?
+    var displayedToken: MailRenderToken?
+    var readerGeneration = 0
+    var showsConfiguration = false
     private(set) var pending: [MailNotification] = []
     var selectedRoute: NotificationRoute? {
         guard let accountID = status?.mailAccountID, let selectedMessageID else { return nil }
@@ -57,6 +73,23 @@ final class MailState: CustomReflectable {
     /// E 在此处理精确账号通知清理；不隐式 ack。
     @ObservationIgnored var onAccountRemoved: ((String) -> Void)?
     @ObservationIgnored var onEvent: ((MailEvent) -> Void)?
+    @ObservationIgnored var viewingContext: (() -> ViewingContext)?
+    @ObservationIgnored var readerTask: Task<Void, Never>?
+    @ObservationIgnored var readerTaskID = UUID()
+    @ObservationIgnored var readTask: Task<Void, Never>?
+    @ObservationIgnored var wantsReaderRefresh = false
+    @ObservationIgnored var readerRevision = 0
+    @ObservationIgnored var selectionRevision = 0
+    @ObservationIgnored var readAttempts: Set<MailReaderIdentity> = []
+    @ObservationIgnored var readTaskID = UUID()
+    var readerWorkCount: Int { readerTask == nil ? 0 : 1 }
+    var readerClient: BackendClient? { connection.client }
+    var readerIdentity: MailReaderIdentity? {
+        guard capability == .supported, isBackendReady, let id = status?.mailAccountID,
+              let validity = status?.uidvalidity else { return nil }
+        return MailReaderIdentity(epoch: backendEpoch, accountID: id, generation: readerGeneration,
+                                  uidvalidity: validity, messageID: nil)
+    }
     @ObservationIgnored private let connection: BackendConnection
     @ObservationIgnored private let credentials: any MailCredentialStore
     @ObservationIgnored private let externalBackend: Bool
@@ -83,6 +116,9 @@ final class MailState: CustomReflectable {
 
     /// 每次 supervisor 状态变化使旧进程请求失效；密码/一次性读取记录保留在 App 内存。
     func backendChanged(ready: Bool) {
+        stopReader()
+        invalidateReaderConnection()
+        readerGeneration = 0
         backendEpoch += 1
         revision += 1
         operationID += 1
@@ -153,7 +189,9 @@ final class MailState: CustomReflectable {
         } else {
             guard event.accountID == status?.mailAccountID,
                   event.uidvalidity == status?.uidvalidity else { return }
+            if readerGeneration != event.generation { invalidateReaderConnection() }
             generationBaseline = event.generation
+            readerGeneration = event.generation
             revision += 1
             if let batch = event.notification {
                 guard batch.accountID == event.accountID, batch.folderID == event.folderID,
@@ -162,10 +200,16 @@ final class MailState: CustomReflectable {
                 pending.append(batch)
             }
             if event.reset {
+                resetReader()
                 clearSelection()
             } else if let selectedMessageID, event.deletedIDs.contains(selectedMessageID) {
                 clearSelection()
             }
+        }
+        if event.folderID == "INBOX" {
+            applyReadIDs(event.readIDs)
+            items.removeAll { event.deletedIDs.contains($0.id) }
+            if event.type != .status { requestReaderRefresh() }
         }
         onEvent?(event)
     }
@@ -179,17 +223,27 @@ final class MailState: CustomReflectable {
     private func apply(_ new: MailStatus) {
         guard new.generation >= generationBaseline,
               new.mailAccountID.map({ !retiredAccounts.contains($0) }) ?? true else { return }
+        let old = status
+        let oldReaderGeneration = readerGeneration
         generationBaseline = new.generation
+        readerGeneration = new.generation
         if status?.mailAccountID != new.mailAccountID {
             if let oldID = status?.mailAccountID {
                 retiredAccounts.insert(oldID)
                 secrets.removeValue(forKey: oldID)
             }
             clearSelection()
+            resetReader()
             credentialIssue = nil
             hasUnsavedCredential = false
             addressInput = new.address ?? ""
             passwordInput = ""
+        }
+        if old?.mailAccountID == new.mailAccountID, old?.uidvalidity != new.uidvalidity {
+            clearSelection()
+            resetReader()
+        } else if old?.generation != new.generation {
+            invalidateReaderConnection()
         }
         revision += 1
         status = new
@@ -201,14 +255,23 @@ final class MailState: CustomReflectable {
         }
         if new.state == .authFailed, let id = new.mailAccountID { rejectedAccounts.insert(id) }
         onUnreadCountChange?(status?.unreadCount ?? 0)
+        if readerIdentity != nil,
+           old?.mailAccountID != new.mailAccountID || old?.uidvalidity != new.uidvalidity || oldReaderGeneration != new.generation {
+            requestReaderRefresh()
+        } else if hasLoadedList, old?.state != .online, new.state == .online { requestReaderRefresh() }
+        reevaluateViewing()
     }
 
     private func clearSelection() {
+        invalidatePresentation()
+        selectionRevision += 1
         selectedMessageID = nil
+        selectedSummary = nil
         selectedFolderID = "INBOX"
         bodyLoadState = .idle
         listScrollAnchor = nil
         detailScrollAnchors.removeAll()
+        htmlInteractions.removeAll()
     }
 
     /// 自动恢复一账号每次 App 生命周期最多读一次；不在未知能力/外部模式访问钥匙串。
@@ -236,6 +299,7 @@ final class MailState: CustomReflectable {
             guard epoch == backendEpoch, status?.mailAccountID == id, !Task.isCancelled,
                   version == revision || new.generation > generationBaseline else { return }
             apply(new)
+            requestReaderRefresh()
         } catch {
             guard epoch == backendEpoch, status?.mailAccountID == id, !Task.isCancelled else { return }
             errorMessage = safeMessage(error)

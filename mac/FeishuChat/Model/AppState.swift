@@ -32,7 +32,7 @@ final class AppState {
     var viewingContext: ViewingContext {
         ViewingContext(activeModule: activeModule, isAppActive: NSApp.isActive,
                        isWindowVisible: windows.isShowingContent, selectedChatID: messages.selectedChatID,
-                       selectedMail: mail.selectedRoute)
+                       selectedMail: mail.displayedBodyRoute)
     }
 
     private static let modulePreferenceKey = "active-module"
@@ -70,6 +70,10 @@ final class AppState {
                                                   isWindowVisible: false, selectedChatID: nil)
         }
         messages.onUnreadCountChange = { [weak self] count in self?.updateUnread(messages: count) }
+        mail.viewingContext = { [weak self] in
+            self?.viewingContext ?? ViewingContext(activeModule: .email, isAppActive: false,
+                                                  isWindowVisible: false, selectedChatID: nil)
+        }
         mail.onUnreadCountChange = { [weak self] count in self?.updateUnread(email: count) }
         mail.onAccountRemoved = { [weak self] id in
             if case let .email(accountID, _, _) = self?.pendingMailRoute, accountID == id { self?.pendingMailRoute = nil }
@@ -245,6 +249,7 @@ final class AppState {
     private func beginStreamRecovery() {
         isEventStreamConnected = true
         mail.streamDidConnect()
+        mail.requestReaderRefresh()
         requestMailWork(refresh: true)
         wantsChatRefresh = true
         guard chatWork == nil else { return }
@@ -279,7 +284,7 @@ final class AppState {
 
     func reevaluateViewing() {
         messages.markReadIfViewing(onlyIfUnread: true)
-        // D 阶段在同一入口补 MailState 的成功正文可见性判断。
+        mail.reevaluateViewing()
     }
 
     /// 两个领域上报真实总数；Dock badge 只从此处写入。
@@ -295,6 +300,16 @@ final class AppState {
         case let .messages(chatID): messages.openChat(chatID)
         case .email: pendingMailRoute = route
         }
+        reevaluateViewing()
+    }
+
+    /// E can consume a notification route after capability/account recovery.
+    /// This is loading only; delivery/ack stay with the notification integration.
+    func loadPendingMailRoute() async {
+        guard let route = pendingMailRoute, mail.capability == .supported,
+              mail.status != nil else { return }
+        await mail.openRoute(route)
+        if pendingMailRoute == route { pendingMailRoute = nil }
         reevaluateViewing()
     }
 

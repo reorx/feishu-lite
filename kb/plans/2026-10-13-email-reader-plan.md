@@ -267,6 +267,7 @@ C3b API/SSE 与实际退出证据见 [C3b session](../sessions/2026-10-13-email-
 
 ### 阶段 D：邮箱配置与阅读 UI
 
+- [x] D2 自动实现与验证：原生收件箱/全部文件夹菜单、100/50 不透明分页与已加载前缀刷新、头部/纯文本/HTML/附件信息、当前渲染证据与统一可见性已读、首载前 HTML 规则门与导航/_blank 策略、页外目标缓存摘要 API、E 路由加载入口；后端 301、Core 72、App 46 测试与 Debug 构建通过。见 [D2 session](../sessions/2026-10-13-email-reader-d2.md)；实际 UI/WebKit 资源/脚本/链接/滚动及真实跨端 Seen 未验，下方完整 D 项保持未勾选。
 - [x] D1 自动实现与验证：Core wire 模型、typed API、安全错误、独立 MailState、原生配置/同步状态、file-based SecItem 可注入包装、ready/SSE 恢复与内存重启、外部/旧后端隔离、整箱 badge/pending、旧账号精确清理及跨重建待删记录、有界按序 SSE 工作；`make test` 与 Debug `make build` 通过。见 [D1 session](../sessions/2026-10-13-email-configuration-d1.md)；不包含配置 UI/真实钥匙串验收，也不代表下方完整 D 项通过。
 - [ ] 实现钥匙串存储（按 `mail_account_id`）、测试连接/保存/后端重启后注入/App 重启恢复、密码失效后停止重试与移除账号；验证凭证不出现在磁盘配置及日志；钥匙串无条目、拒绝访问、锁定分别给出 §3 的提示。
 - [ ] 验证隔离：设 `FEISHU_LITE_HOME` 的实例读不到、覆盖不了、删不掉真实条目；外部后端模式不自动注入。实测 Debug 与 Release 构建访问对方创建的条目是否弹授权框，会弹就按构建配置区分钥匙串 service 名。

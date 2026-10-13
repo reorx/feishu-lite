@@ -2,6 +2,12 @@
 
 > 当前 app 已知、待后续处理的问题：缺陷、简化实现、未验收项、待建流程。只反映最新状态——解决了就删掉条目，经过记到 `kb/sessions/`。
 
+## 邮箱阅读器：实际 WebKit 隔离与界面仍未独立验收
+
+- 记录：2026-10-14（`kb/sessions/2026-10-13-email-reader-d2.md`）
+- 收件箱分页、正文渲染身份/可见性已读、HTML 首载规则门及导航策略通过自动测试与 Debug 构建，但真实 WebKit 零资源请求、脚本不执行、链接/_blank 外开、滚动恢复和最小窗口布局未验。自动测试不能作为实际浏览器安全证据。
+- coordinator 另派隔离 UI/WebKit 验收；合成邮箱、恶意 HTML 与资源计数端点在 `tmp/2026-10-13-email-reader-d2/safety_fixture.py`。不读取真实凭证/缓存或写工作邮件 flags，真实跨端 Seen 仍需指定测试邮件。
+
 ## 双模块通知：实际系统投递与点击仍未独立验收
 
 - 记录：2026-10-13（`kb/sessions/2026-10-13-email-shell-b-acceptance.md`）

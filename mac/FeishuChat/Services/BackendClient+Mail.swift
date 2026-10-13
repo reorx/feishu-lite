@@ -23,6 +23,7 @@ extension BackendClient {
         return try await mailRequest("GET", ["mail", "messages"], query: query)
     }
     func mailBody(id: String) async throws -> MailBody { try await mailRequest("GET", ["mail", "messages", id]) }
+    func mailSummary(id: String) async throws -> MailSummary { try await mailRequest("GET", ["mail", "messages", id, "summary"]) }
     func readMail(id: String) async throws -> MailReadResult { try await mailRequest("POST", ["mail", "messages", id, "read"]) }
     func syncMail(reconnect: Bool = false, wait: Bool = false) async throws -> MailStatus {
         try await mailRequest("POST", ["mail", "sync"], query: [URLQueryItem(name: "reconnect", value: String(reconnect)), URLQueryItem(name: "wait", value: String(wait))])

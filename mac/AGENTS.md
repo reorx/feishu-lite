@@ -23,9 +23,10 @@ FeishuChat 的 SwiftUI 客户端：拉起并守护 `../backend` 的 Python 后�
 ## App 怎么工作
 
 - `Services/BackendSupervisor` 在 Debug 下用 `uv run --project <backend> feishu-lite-backend --port P` 拉起源码后端；Release 直接运行用户用 uv 安装的 `feishu-lite-backend`，不依赖源码目录。启动前检查依赖，缺失时显示安装引导并等待用户重新检测。端口和 token 每次启动随机生成，子进程退出后按退避重启；日志在 `~/Library/Logs/FeishuChat/backend.log`。
-- `Model/AppState` 管后端、一条 SSE、模块选择、全局时间、汇总 badge 与类型化通知路由；`Model/MessagesState` 管扫码、会话、隐藏偏好、草稿和滚动锚点，`Model/MailState` 管配置、凭证恢复、邮箱状态与待提醒。工作区按模块重建，状态常驻；Email 已有原生配置页，阅读器留 D2。SSE 事件同步按序分派，两领域各一个合并 HTTP 恢复任务，不为每事件创建 Task；重启取消旧工作并重置世代。
+- `Model/AppState` 管后端、一条 SSE、模块选择、全局时间、汇总 badge 与类型化通知路由；`Model/MessagesState` 管扫码、会话、隐藏偏好、草稿和滚动锚点，`Model/MailState` 管配置、凭证恢复、邮箱状态与待提醒，`MailState+Reader` 接续列表/分页/正文/显示与已读。工作区按模块重建，状态常驻；Email 已有原生配置页和收件箱阅读器。SSE 事件同步按序分派，每领域恢复任务和邮件列表任务各自合并，不为每事件创建 Task；重启取消旧工作并重置世代。
 - 邮件接续先读 `../kb/sessions/2026-10-13-email-configuration-d1.md`。`BackendClient+Mail` 提供全部 typed API，邮件错误不进入聊天登出；`MailKeychain` 以 UUID 精确查询 file-based SecItem，自动读取一次，ready + SSE 后才注入。外部后端不自动读取/注入，写失败只保留内存；删除失败的账号 id 存 UserDefaults，重建后显式清理。测试使用假 Keychain/URLProtocol，禁止触碰真实条目。配置 UI、真实 SecItem 及 Debug/Release 授权尚待独立验收。
-- 已读与通知使用 Core 的 `ViewingContext`，必须包含当前模块；只看旧选中聊天会在 Email 下误清未读。`AppState.updateUnread` 是唯一 `setBadge` 调用点；邮件计数来自整箱快照，离线不归零。通知按 `NotificationRoute` 的领域目标清理，不按裸 id 清理；`pendingMailRoute` 仅是待消费路由，真实选择来自 `mail.selectedRoute`，正文成功可见判定留 D2，D1 从不 read/ack。行为说明见 `../kb/docs/module-shell.md`。
+- 已读与通知使用 Core 的 `ViewingContext`，必须包含当前模块；只看旧选中聊天会在 Email 下误清未读。`AppState.updateUnread` 是唯一 `setBadge` 调用点；邮件计数来自整箱快照，离线不归零。`pendingMailRoute` 仅是待消费路由；ViewingContext 邮件目标必须来自 `mail.displayedBodyRoute`（当前渲染完成），不能用 `selectedRoute`/HTTP 成功代替。E 可调用 `loadPendingMailRoute()` / `mail.openRoute()`，本阶段不自动消费通知或 ack。行为说明见 `../kb/docs/module-shell.md`。
+- 阅读器接续先读 `../kb/sessions/2026-10-13-email-reader-d2.md`。HTML 使用非持久 WKWebView、禁 JS、CSP 和首载前编译挂载 block-all 规则；`MailHTMLLoadGate` 与两 WK delegate 的 router 是生产调用链。规则失败不得加载；只用户 HTTP(S) 点击外开。纯文本段落锚点、HTML 公开 `interactionState` 仅存内存。实际 WebKit 网络/脚本/链接及 UI 滚动仍待独立验收。
 - 接口模型、SSE 解析、通知策略、消息合并和排序都在 `FeishuChatCore`，改这些行为先改那里的测试。
 - **`@Observable` 类里标了 `@ObservationIgnored` 的属性，视图不能直接或间接依赖**（包括由它算出来的计算属性），否则视图收不到变化。给视图用的派生值要存成被观察的属性，参考 `Conversation.rows`。
 - 显示"今天/昨天"这类相对时间的视图，"现在"要从环境值 `\.today` 取（`AppState.today`，跨天、改时区、唤醒时更新），不要在视图里直接用 `Date()`，否则过了零点标签不会变。

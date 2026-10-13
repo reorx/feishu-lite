@@ -26,9 +26,9 @@ MVP 功能已经做完并通过验收：扫码登录、会话列表、历史消�
 
 会话列表支持多选隐藏、隐藏列表和取消隐藏；偏好按账号保存在 App 的 UserDefaults，收到新消息不会解除隐藏，不改变未读和通知策略。验收见 `kb/sessions/2026-10-08-hidden-chats.md`。
 
-Messages / Email 双模块外壳已实现并通过自动测试与构建；独立隔离 UI 已验证草稿、两处首可见行恢复、键盘隔离和模拟聊天回归，系统通知与部分完整回归仍未验，见 `kb/sessions/2026-10-13-email-shell-b-acceptance.md`。Email 已实现配置、试连、精确账号钥匙串、MailState 与重启恢复并通过自动测试/Debug 构建；配置 UI、真实 SecItem 和 Debug/Release 授权仍待独立验收，阅读器尚未实现，见 `kb/sessions/2026-10-13-email-configuration-d1.md`。真实 IMAP 只读探路已通过，后端库使用 IMAPClient；首版列出全部文件夹、仅读取收件箱，开发依据见 `kb/plans/2026-10-13-email-reader-plan.md`。实现 IMAP 前读 `kb/notes/2026-10-13-email-imap-probe.md`。
+Messages / Email 双模块外壳已实现并通过自动测试与构建；独立隔离 UI 已验证草稿、两处首可见行恢复、键盘隔离和模拟聊天回归，系统通知与部分完整回归仍未验，见 `kb/sessions/2026-10-13-email-shell-b-acceptance.md`。Email 配置、试连、精确账号钥匙串与重启恢复见 `kb/sessions/2026-10-13-email-configuration-d1.md`；配置 UI、真实 SecItem 和 Debug/Release 授权仍待独立验收。D2 已实现收件箱 100/50 分页、原生详情、隔离 HTML 与成功显示后的可见性已读，通过自动测试和 Debug 构建；实际 UI、WebKit 网络/脚本/链接及滚动恢复仍待独立验收，接续先读 `kb/sessions/2026-10-13-email-reader-d2.md`。真实 IMAP 只读探路已通过，后端库使用 IMAPClient；首版列出全部文件夹、仅读取收件箱，开发依据见 `kb/plans/2026-10-13-email-reader-plan.md`。实现 IMAP 前读 `kb/notes/2026-10-13-email-imap-probe.md`。
 
-邮件后端已接通独立 mail.db、MailService、全部 `/mail/*` API、双领域 SSE 和进程生命周期；App 已有 typed 邮件调用、独立状态和整箱 badge，阅读与通知投递留 D2/E。SQLite/emit 只在事件循环线程使用，IMAP/MIME 工作线程不能访问 Store；App 接续先读 C3b 和 D1 报告的 wire/错误/重启/确认契约。DNS stop_timeout 后必须等待旧所有者 closed 才新建网络实例；后端密码只留内存，正文 GET 没有已读副作用，邮件错误不使用聊天 409。SSE 队列满会结束慢流，重连读取两领域状态及持久 pending；App 同步按序应用事件，每领域至多一个合并 HTTP 恢复任务，后端重启重置 generation。密码写失败只留 App 内存；旧钥匙串删除失败仅持久化账号 id，重建后可精确重试，不存密码。
+邮件后端已接通独立 mail.db、MailService、全部 `/mail/*` API、双领域 SSE 和进程生命周期；App 已有 typed 邮件调用、独立状态和整箱 badge，通知投递/ack/唤醒留 E。页外路由可通过鉴权 `GET /mail/messages/{id}/summary` 取得当前缓存摘要，不联网或写 Seen；正文可见证据来自 `mail.displayedBodyRoute`，不是 pending 或裸选择。SQLite/emit 只在事件循环线程使用，IMAP/MIME 工作线程不能访问 Store；App 接续先读 C3b、D1 和 D2 报告的 wire/错误/重启/显示契约。DNS stop_timeout 后必须等待旧所有者 closed 才新建网络实例；后端密码只留内存，正文 GET 没有已读副作用，邮件错误不使用聊天 409。SSE 队列满会结束慢流，重连读取两领域状态及持久 pending；App 同步按序应用事件，每领域恢复任务合并有界，邮件阅读器另一个合并列表任务不阻塞事件消费，后端重启重置 generation。密码写失败只留 App 内存；旧钥匙串删除失败仅持久化账号 id，重建后可精确重试，不存密码。
 
 ## 文档
 

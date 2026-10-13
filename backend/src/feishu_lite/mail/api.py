@@ -11,7 +11,7 @@ from starlette.exceptions import HTTPException
 from .types import (MailAccountChange, MailAccountRequest, MailAckRequest,
                     MailAPIError, MailBody, MailConnectionTest,
                     MailCredentialRequest, MailError, MailFolder, MailPage,
-                    MailReadResult, MailStatus)
+                    MailReadResult, MailStatus, MailSummary)
 
 log = logging.getLogger(__name__)
 MAIL_REQUEST_TIMEOUT = 30.0
@@ -128,6 +128,11 @@ async def messages(request: Request, folder: str = 'INBOX', cursor: str | None =
 @router.get('/messages/{message_id}')
 async def body(request: Request, message_id: str) -> MailBody:
     return await request.app.state.mail.body(message_id)
+
+
+@router.get('/messages/{message_id}/summary')
+async def summary(request: Request, message_id: str) -> MailSummary:
+    return request.app.state.mail.summary(message_id)
 
 
 @router.post('/messages/{message_id}/read')
