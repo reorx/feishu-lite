@@ -2,11 +2,12 @@
 
 > 当前 app 已知、待后续处理的问题：缺陷、简化实现、未验收项、待建流程。只反映最新状态——解决了就删掉条目，经过记到 `kb/sessions/`。
 
-## 邮箱阅读器：实际 WebKit 隔离与界面仍未独立验收
+## 邮箱阅读器：HTML 切模块后丢失阅读位置；F1 部分项目待接续
 
-- 记录：2026-10-14（`kb/sessions/2026-10-13-email-reader-d2.md`）
-- 收件箱分页、正文渲染身份/可见性已读、HTML 首载规则门及导航策略通过自动测试与 Debug 构建，但真实 WebKit 零资源请求、脚本不执行、链接/_blank 外开、滚动恢复和最小窗口布局未验。自动测试不能作为实际浏览器安全证据。
-- coordinator 另派隔离 UI/WebKit 验收；合成邮箱、恶意 HTML 与资源计数端点在 `tmp/2026-10-13-email-reader-d2/safety_fixture.py`。不读取真实凭证/缓存或写工作邮件 flags，真实跨端 Seen 仍需指定测试邮件。
+- 记录：2026-10-14，独立报告 `kb/sessions/2026-10-14-email-reader-f1-acceptance.md`。
+- **P2**：HTML 正文滚到段落008后切 Messages 再切 Email，选择不变但正文回到页顶；两次独立复现。资源计数没有增加，没有发现相关错误已读。普通产品 renderer 的证据在 `tmp/2026-10-14-email-reader/f1-acceptance/03-html-scroll-before.*` 与 `04-html-scroll-restored.*`；交协调者派返修，不由验收者修产品代码。
+- F1 已验证主要配置、100/50 分页、阅读/附件、最小内容窗口、真实 WebKit 资源/脚本隔离、HTTP/_blank/localhost 外开、规则延迟/失败封闭和主要可见性已读。浅色/鼠标拖宽/旧 cursor 完整恢复、未知能力和假钥匙串失败 UI、账号/UIDVALIDITY/连接变化的旧渲染归因等仍未验；81的额外read无法区分新世代合法展示，不能记为第二个产品缺陷。
+- 真正 SecItem/Debug-Release 授权和系统集成留 F2；配置成功只使用 fake SecItem。真实邮箱 Seen/跨端验证仍需用户指定测试邮件，不读取工作凭证或缓存。返修后从最新源码重新编译隔离 App 复验，不能使用本次旧构建签收新修复。
 
 ## 双模块通知：实际系统投递与点击仍未独立验收
 

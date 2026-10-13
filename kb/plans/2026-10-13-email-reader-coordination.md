@@ -222,7 +222,7 @@ tags:
 - 运行 cd mac && make test && make build；若有后端接续修改，先行为测试再实现并跑后端全量。网页资源零请求/JS不执行等真实WebKit证据不能只靠纯函数冒充，留明确独立验收清单和可复用合成样本/计数端点；本tab不启动实机UI，coordinator另派。不得读取真实env/邮箱/缓存，不改真实flags，不make run、不改签名或bundle id、不push/发布/开始E/自行委派。
 - 报告 `kb/sessions/2026-10-13-email-reader-d2.md`，证据 `tmp/2026-10-13-email-reader-d2/`；写清生产接口、异步/渲染/已读契约、安全策略与自动测试边界、E接续、独立UI/WebKit检查、自主决策及「交给协调者」。必要文档随实现一起提交，只暂存自己的文件、不修改本文；清理自建测试资源，最终在tab回报commit/测试/报告/工作区状态。
 
-### 当前任务 E：通知、未读、路由与唤醒联动
+### 任务 E：通知、未读、路由与唤醒联动（自动交付已签收）
 
 执行者：新的 Herdr tab 中 Codex，当前 master。必读根/mac AGENTS.md、原计划全文尤其§5通知/已读与§6E/§7、B/C3a/C3b/D1/D2 session及实际接口。D2基线 `fedbc8b`，后端301/Core72/App46测试及构建通过。D2报告 `kb/sessions/2026-10-13-email-reader-d2.md` 的 displayedBodyRoute/openRoute/loadPendingMailRoute 是准确接续入口；C3b通知批次与ack是后端契约。本文由coordinator编写，任务仅E，完成后交独立F验收。
 
@@ -244,6 +244,51 @@ tags:
 - 运行cd mac && make test && make build；必要后端接续须先测试再实现，并跑后端全量。不主动formatter/linter、不改变bundle/signature、不make run、不读真实env、不真实发信/flags、不push/发布/委派/开始F。范围外问题记「交给协调者」，不顺手扩展产品范围。
 - 报告 `kb/sessions/2026-10-14-email-notifications-e.md`，证据 `tmp/2026-10-14-email-notifications-e/`；列出投递/去重/ack/清理状态机、真实与模拟边界、无法原子化的残余风险、F可用合成入口与逐项检查、测试红绿和自主决策。必要AGENTS/README/原计划等与实现同次提交，仅暂存自己的文件，不修改本文。清理本任务资源，在tab回报commit、测试、报告、清理与工作区状态；coordinator等待签收后另开F。
 
+### 任务 F1：独立阅读器/UI/WebKit 验收（报告已收，存在返修）
+
+执行者：新 Herdr tab 的 Codex，当前 master，基线 `d1af9b1`。先读根/mac AGENTS.md、原计划全文/§7、B独立验收与D1/D2/E session、`~/.claude/docs/DESKTOP_APP_TESTING.md`，使用适用桌面/SwiftUI/impeccable/kb技能。本任务为coordinator组织的独立验收，不是继续开发；F拆成F1阅读/安全、F2系统集成两个串行关卡以保持上下文与证据清楚。F1不改产品代码，发现缺陷交coordinator派返修。
+
+目标：证明实际App界面的配置、收件箱阅读、滚动、首封HTML隔离、可见性已读与聊天切换可用；按通过/失败/未验给出独立证据，不将自动测试或实现代码当实机行为结论。
+
+执行与完成条件：
+
+- 实机前运行agent-inspect-session.sh；若超过40%先报告coordinator换新验收tab，不自行委派。读桌面测试文档后wake-screen，必要时有限caffeinate。用户已提前获知会出现隔离测试窗口/可能的权限框或模拟登录页，无需扫码。
+- 先检查用户正在运行的App，保护正式进程/数据/UserDefaults/钥匙串/通知。不能make run或广泛kill；复用B隔离副本方法，固定合成账号UUID、隔离偏好/数据、外部本地假后端，不读取或复制真实邮箱/聊天数据/env。任何env操作先envops。生产bundle/signature配置不改；若隔离副本需调整标识，记录它与正式构建的差异及证据边界。
+- 验收实际当前生产源码编译的App；工具/harness可在tmp调整，但不得修改产品逻辑掩盖缺陷。测试专用注入（如规则编译失败）仅放隔离副本并准确说明，成功路径优先不修改的渲染器。不要绕开失败的安全门使页面显示。
+- 使用D2 `tmp/2026-10-13-email-reader-d2/safety_fixture.py` 和E fixture按需要；D2端口18874、E端口18875，启动前检查占用，仅停止自己创建的进程。允许改进合成测试服务来支持所需UI状态，不将fixture错误冒充产品缺陷，修工具后重验对应项。全部输出/截图仅合成信息。
+- 配置UI：未配置引导、测试连接不保存、保存后同步状态、修改密码、移除确认、独立聊天账号提示；未知/旧后端安装命令和重新检测，credential_missing/auth_failed/offline/只读试连/可恢复失败文案，长中文地址与窄窗口。不要用真实密码；真实SecItem写读/权限及Debug/Release互访留F2，F1假凭证/外部模式不能冒充钥匙串验证。
+- 邮件UI：全部文件夹中文层级/Noselect/非INBOX禁用；100/50分页、长主题与空字段、未读/附件、UID顺序；纯文本字面<script>、HTML、附件未知/约数、空正文、正文失败重试、离线已缓存/未缓存、删除/旧cursor恢复。后台新信插入后保留已加载最旧边界及当前选择，不以页数作为整箱badge。
+- 实际800×460和拖宽、深浅色、两栏/配置来回、Messages↔Email反复切换；验证列表首可见行、纯文本段落、HTML位置恢复。Email回车不发聊天，聊天草稿/列表/详情滚动和旧选中聊天未读不被清掉。使用合成read/send计数和AX/截图支撑，不点击真实工作会话。
+- WebKit必须真实运行并统计资源：D2 adversarial.html绕过后端净化直接进App、sanitized.html、纯文本分别验证；首封、第二封、切回资源自动请求均零，JS/handler标记不执行、CSS URL/stylesheet、远程/CID/file图片、iframe/object、meta导航、form、local URL均不能执行/加载。网络计数与可读文本同时确认；单纯源代码检查或函数测试不算通过。
+- 验证普通用户HTTP(S)与target=_blank外开，合法内网/IP不额外拦截；自动导航及非HTTP(S)不能打开；浏览器用户请求与自动resource计数分开。先检查自动零请求再点击链接，以免混淆。只打开本机合成页面；结束清理自己启动的browser会话，不关用户浏览器。
+- 验证规则编译/挂载完成前没有第一封加载，失败时封闭且可重试。若只能通过隔离harness注入延迟/失败，应仍走生产MailHTMLLoadGate/Controller并明确证据。旧navigation.didFinish/视图拆除/连接变化不得产生错误displayed证明。
+- 用实际UI和后台计数验已读：HTTP加载本身不read；纯文本当前视图或HTMLdidFinish且Email/前台/可见后read一次；慢/失败正文、快切目标/模块、关闭窗口/后台、旧回调不read；返回前台/离线恢复且仍显示时补判，已发STORE结果不确定保留明确重试。测试只改合成内存Seen。
+- 运行本阶段必要自动检查，按风险可引用E已有全量结果，最终整体验收F2会复核全套；不要无意义重复耗时检查。用截图、AX、请求计数和计时给逐项预期/实际。对失败尽可能最小复现、严重度、影响、证据路径与建议；继续完成不依赖该缺陷的检查，不直接修产品。
+- 截图及脚本/日志归档 `tmp/2026-10-14-email-reader/f1-acceptance/`；报告 `kb/sessions/2026-10-14-email-reader-f1-acceptance.md`。列出完整通过/失败/未验矩阵、隔离差异、F2交接与「交给协调者」。必要known-issues/next-up/原计划有证据项更新与报告一起提交，仅暂存自己的文档，不改协调文档/产品代码，不push/发布/开始F2/委派。
+- 收尾停止自建App/服务/caffeinate、浏览器等，按项目定向mac-dev-cleanup并保护他人资源；清理合成偏好/测试数据，保留证据。最终在tab回报commit、缺陷/能否签收、截图路径、资源与工作区；coordinator保持等待并派返修或F2。
+
+F2 预留：真实系统通知与点击/清理/ack恢复、测试UUID的实际SecItem/Debug-Release互访、Dock、关窗/唤醒/退出、聊天完整回归和全套检查。真实邮箱读写/新信需要用户指定邮件与来源，当前不扩大授权；先完成能做的隔离验证。
+
+### 当前任务 R1：修复 HTML 正文切换后的滚动恢复
+
+执行者：新 Herdr tab 的 Codex，当前 master，基线 `d4e202d`。本文由 coordinator 编写。必读根/mac AGENTS.md、原计划、D2 session、F1 完整报告 `kb/sessions/2026-10-14-email-reader-f1-acceptance.md`，尤其 P2 最小复现、隔离差异和证据归因限制；使用适用 SwiftUI/kb 技能。
+
+背景与目标：独立验收两次证明 HTML 正文滚动后切 Messages 再回 Email，会回到页顶；纯文本和列表锚点已有通过证据。修复实际 HTML 滚动恢复，保持正文安全和可见性已读契约。F1 报告提交已签收，但关卡未通过。根协调者已查看03/04前后截图，不推断根因。
+
+完成条件：
+
+- 按 TDD 先建立能复现当前缺陷的失败测试，再修产品。不能仅测试保存一个从未实际恢复的状态变量；覆盖实际 WK/视图生命周期相关调用。若正常自动测试不能证明实际像素/段落落点，明确限制并留可重用的独立实机复验入口。
+- 定位 `interactionState` 保存/恢复、页面重建和布局时机；使用 macOS 公开 API，以同一账号/UIDVALIDITY/目标/正文身份隔离。恢复必须在安全内容规则已挂载的前提下工作；不启用页面 JavaScript、不放开网络/file/CID、不增加私有 API，不以旧视图迟到回调认定当前正文显示。
+- 覆盖同邮件切模块、切另一封再返回、快速切换/视图拆除/旧保存回调、账号与正文身份变更不能串位置。保留纯文本/列表位置与聊天草稿/键盘契约；不要把后端或通知重构纳入返修。
+- 避免无界保留 WKWebView 或每封完整 DOM。如果选择保留视图，请明确有界生命周期、内存和失效清理；不能仅掩盖重建失败。自主选择最小可靠方案，报告依据与取舍。
+- 运行必要针对性测试和 `cd mac && make test && make build`，不主动格式化/lint。若确有必须的后端变更，先向协调者说明接口限制；当前缺陷预期仅 App，不扩大范围。
+- 本 tab 负责修复与自动交付，不自行启动实机验收或委派；coordinator另开独立tab复验。测试资源只用合成数据、假钥匙串；不读真实 env/邮箱/缓存，不 make run、不改正式 bundle/signature、不动用户 App、不发真实消息、不push/发布、不创建分支/worktree。
+- 不把 F1 的工具定位失败、浅色未验或连接变化归因不足登记成新产品缺陷；其他真正发现的问题记录「交给协调者」。不要将F1/F整体标成通过。
+- 报告 `kb/sessions/2026-10-14-email-html-scroll-r1.md`，工具/日志 `tmp/2026-10-14-email-reader/r1-scroll/`：根因、红绿证据、方案/资源边界、独立复验步骤、潜在影响与未验项。代码与必要文档同次提交，仅暂存自己的文件；不修改本文。known-issues中该项注明修复待独立复验，不提前清除验收限制。
+- 清理自建测试资源，在tab最终回报 commit、测试、报告路径、工作区及清理结果。完成后停在本阶段；coordinator消费稳定结束信号、审阅后派F1接续，不要求用户中途确认。
+
+R1 后的独立 F1 接续将用最新源码重建隔离 App，复验 HTML 滚动及首载规则/自动资源/可见性已读；补浅色、鼠标拖宽、旧cursor恢复、未知能力与凭证错误UI、账号/UIDVALIDITY/连接变化回调归因。F2系统集成仍另派。
+
 ### 状态
 
 - [x] A：已签收 `3cbc23d`；7 个测试、42 次计时通过；真实已读/通知等仍按原计划待验。
@@ -254,5 +299,7 @@ tags:
 - [x] C3b：`f48e5ed`，后端全量297项通过；真实HTTP→IMAP FETCH 0.110秒，5个完整进程退出最大1.685秒，独立wheel安装/CLI冒烟通过。App接入及真实邮箱尚待验证。
 - [x] D1：`bf490b8`，Core70+App26项测试及Debug构建通过；配置/钥匙串包装/重启恢复/有界SSE自动交付签收。真实SecItem与UI保留F独立验收。
 - [x] D2：`fedbc8b`，后端301/Core72/App46项与Debug构建通过；阅读/渲染可见已读自动交付签收。真实UI/WebKit/滚动与安全资源计数留F；合成工具在tmp/2026-10-13-email-reader-d2/。
-- [ ] E
-- [ ] F
+- [x] E：`d1af9b1`，后端301/Core74/App67项及Debug构建通过；通知/路由/唤醒自动交付签收。未知投递intent不得ack，保留显式再次提醒；实际系统行为留F2。
+- [ ] F1：报告 `d4e202d` 已收；主要 UI/WebKit/可见性已读通过，HTML滚动恢复 P2 返修R1；具体未验矩阵见F1 session。
+- [ ] R1：HTML正文滚动返修，完成后独立复验。
+- [ ] F2：系统集成与整体复核，尚未派发。
