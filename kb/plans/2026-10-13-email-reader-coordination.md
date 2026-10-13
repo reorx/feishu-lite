@@ -134,7 +134,7 @@ tags:
 - 跑后端全量 `uv run pytest`；已有 C1/聊天行为不回退，不跑 formatter/style linter。限额/超时/资源清理等失败先复现再修。测试必须使用合成脱敏协议样本。
 - session 写 `kb/sessions/2026-10-13-email-imap-executor-c2.md`，列出真实生产接口、错误/世代/取消契约、C3 接续示例、计时、脚本服务端覆盖、残余限制与红绿证据。必要文档随代码提交，不修改本文、不 push、不发布、不开始 C3、不委派。最终回报 commit、测试、清理与报告路径。
 
-### 当前任务 C3a：独立同步与账号服务
+### 任务 C3a：独立同步与账号服务（已签收）
 
 执行者：新 Herdr tab 中 Codex，当前 master。先读原计划全文尤其 §4/§5/§6C、A 笔记、C1/C2 session 与相关实际源码/测试。C2 报告 `kb/sessions/2026-10-13-email-imap-executor-c2.md` 是身份、stop_timeout、closed/failure、线程及离线 render 接口的依据。本次只做服务层，不新增 HTTP 路由、不接进程生命周期、不改 App、不宣布 /status mail feature、不访问真实账号。
 
@@ -156,13 +156,34 @@ tags:
 - 允许对 C1/C2 做有失败复现的必要接续修正，但不随意重写或改变契约；记录实际差异供 C3b/D。共享 Pydantic 模型放 mail/types，API 命名按原计划预备但不让 FastAPI 混入服务。
 - 写 `kb/sessions/2026-10-13-email-sync-c3a.md`，明确生产方法/数据/事件、C3b 接线示例、持久化策略、测试红绿日志、未验项与决策；必要文档和实现同次提交，不修改本文、不 push、不发布、不开始 C3b、不委派；清理资源，在 tab 汇报 commit、测试、报告和工作区状态。
 
+### 当前任务 C3b：API/SSE 与进程生命周期接线
+
+执行者：新的 Herdr tab 中 Codex，当前 master。先读根 AGENTS.md、原计划全文、C1/C2/C3a session，尤其 `kb/sessions/2026-10-13-email-sync-c3a.md` 的生产方法、事件、停止限制；再读现有 api/main/service 的实际接线方式。C3a 基线 `3f755b7`，全量 221 项通过。此 brief 由 coordinator 编写，拆分顺序不改变原计划。
+
+目标：将已有 MailService 接入现有本机服务，让后续 App 执行者有经过真实 HTTP/SSE 验证的稳定契约。保持聊天兼容、独立故障域，完成后仍不宣称 App 邮箱功能可用。
+
+完成条件与范围：
+
+- 先写失败行为测试，再接原计划本地接口表的全部 `/mail/*` 路由；请求/响应使用共享 Pydantic 类型，密码 SecretStr。明确 HTTP 方法、字段、默认值、响应和错误码，供 D1/D2 直接编解码。接口草案可按实际服务合理调整但须逐项说明，不能遗漏功能。
+- `/status` 原字段兼容，features 包含 mail。邮箱全部端点与 SSE 沿用现有 token 鉴权；没有/错误 token 拒绝，包括试连和凭证注入。正文 GET 不触发 Seen；只允许 INBOX 内容，校验不透明 id/cursor/账号/UIDVALIDITY；过期或错账号返回安全 mail 域错误。
+- 邮件错误 `{domain: "mail", code}`，不使用 409，不转聊天 AuthExpired；HTTP 映射区分无配置/离线/失效凭证/不存在/过期/超限等且不给客户端原始库 cause。保留聊天 detail=logged_out 的既有语义。
+- `/mail/account*` 的请求校验错误不得回显 body、input、密码或含密码的 ctx； malformed JSON、嵌套错误、错类型、额外字段都要有合成秘密测试。安全错误模型不含 SecretStr 本身；日志、traceback、HTTP 错误前200字节均不能泄漏凭证。修改全局 validation handler 时保留其他端点兼容。
+- 生命周期中在事件循环创建独立 mail.db/Store，start 邮件服务与聊天登录无关；启动恢复 credential_missing，App 注入不重置水位。stop 先停止邮件任务再关闭 Store，网络/render/试连并行收敛。邮件网络/认证故障不阻止 HTTP、聊天启动、登录或 SSE；不复用聊天在线专属定时器。
+- 单一 SSE 分发两领域事件，MailService emit 非阻塞不抛异常，有界队列满和订阅取消可收敛；无订阅者或丢事件不能 ack/丢 pending。每次重连由客户端 GET status 恢复，文档说明 generation 仅本进程内有效，后端重启需要重置比较基线。邮件数据不得错误封装成聊天事件或触发登出。
+- 配置/修改地址响应交付新账号及 removed_account_id；删除、注入、试连、手动同步/reconnect、分页、正文、read、ack 按 C3a 调用，异步取消不泄漏试连/所有者。不要把测试连接成功当配置保存，不把 configure 返回当 online。端点合理处理同步等待和状态可见性，说明耗时与可重试契约。
+- 用真实本机 HTTP/SSE 服务 + 合成 IMAP/可控适配器 + 隔离临时数据进行端到端测试：聊天未登录仍能配置和同步、mail auth_failed 不影响聊天、token、422 防泄漏、重启注入/pending、客户端断开/队列背压、read 与 GET 区别、旧账号/世代拒绝。只 ASGI 模拟不能冒充真实监听/流式连接证据。
+- 在进程生命周期实际接线后验证完整进程停止，包括阻塞邮件 I/O 和进行中的试连；复用 C2/C3a 工具，明确实际父进程计时是否满足2秒。对 DNS stop_timeout 保持有界退役，不重建无限 daemon。必要接续修复先复现，再修，记录契约变化。
+- 跑 backend 全量 uv run pytest，必要的独立后端安装/入口冒烟按变更选择；不改 App，不跑 formatter/style linter，不读取真实 env/账号、不发送或修改真实邮件、不启动用户 App、不 push/发布/开始 D、不委派其他 agent。
+- 只修改本阶段后端及必要文档，协调文档只读。写 `kb/sessions/2026-10-13-email-api-c3b.md`，留 D1/D2/E 可直接消费的完整 wire 示例、字段与错误映射、事件/通知确认规则、生命周期证据、红绿日志、偏离、自主决策及「交给协调者」。合成样本/日志放 `tmp/2026-10-13-email-api-c3b/`，不用真实邮件。
+- 更新 AGENTS.md/README/原计划有证据的状态，范围外问题记报告或按 kb 规则登记；实现与文档一起提交，仅暂存自己文件。关闭自建服务器/连接/进程，保留用户资源。在 tab 最终报告 commit、测试、报告路径、清理与工作区状态；coordinator 会等待稳定结束并审核后派 D1。
+
 ### 状态
 
 - [x] A：已签收 `3cbc23d`；7 个测试、42 次计时通过；真实已读/通知等仍按原计划待验。
 - [ ] B：实现 `66312a9`；独立验收 `a05dcb8`，核心外壳可进入 C，无产品缺陷待返修。系统通知/点击、Dock 实际显示、真实输入法及 supervisor 启动回归留 F，故全项未勾选。截图 `tmp/2026-10-13-email-reader/b-acceptance/`。
 - [x] C1：`2efd0be`，后端全量 123 项通过；按协调审阅保留合法 HTTP(S) 内网链接，未接通 API/同步。
 - [x] C2：`b1dd3ce`，后端全量 179 项通过；36 次时限测量全部 <2秒。DNS stop_timeout/closed/failure 等接续约束必须由 C3a 实施。
-- [ ] C3a
+- [x] C3a：`3f755b7`，后端全量 221 项通过（新增42项）；4个完整进程停止场景最大1.524秒。服务层已签收，API/App/真实验证尚未完成。
 - [ ] C3b
 - [ ] D1
 - [ ] D2
