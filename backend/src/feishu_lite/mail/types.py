@@ -227,3 +227,48 @@ class SelectedMailbox(MailModel):
 class FetchedBody(MailModel):
     raw: RawBody
     body: MailBody
+
+
+class MailNotification(MailModel):
+    id: str
+    account_id: str
+    folder_id: str = 'INBOX'
+    uidvalidity: UID
+    mode: Literal['individual', 'summary']
+    items: list[MailSummary]
+
+
+class MailStatus(MailModel):
+    mail_account_id: str | None = None
+    address: str | None = None
+    state: Literal['unconfigured', 'credential_missing', 'connecting', 'online', 'offline', 'auth_failed']
+    generation: int = 0
+    uidvalidity: UID | None = None
+    last_sync_at: int | None = None
+    unread_count: int = 0
+    unread_stale: bool = True
+    pending: list[MailNotification] = Field(default_factory=list)
+    error: str | None = None
+
+
+class MailEvent(MailModel):
+    type: Literal['mail.status', 'mail.updated', 'mail.arrived']
+    account_id: str | None
+    generation: int
+    folder_id: str = 'INBOX'
+    uidvalidity: UID | None = None
+    status: MailStatus | None = None
+    notification: MailNotification | None = None
+    read_ids: list[str] = Field(default_factory=list)
+    deleted_ids: list[str] = Field(default_factory=list)
+    reset: bool = False
+
+
+class MailAccountChange(MailModel):
+    account: MailAccount | None = None
+    removed_account_id: str | None = None
+
+
+class MailConnectionTest(MailModel):
+    writable: bool
+    supports_idle: bool

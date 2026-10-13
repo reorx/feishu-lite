@@ -112,6 +112,13 @@ class MailStore:
         row = self.db.execute('SELECT * FROM accounts WHERE id=?', (account_id,)).fetchone()
         return MailAccount(**dict(row)) if row else None
 
+    def accounts(self) -> list[MailAccount]:
+        return [MailAccount(**dict(row)) for row in self.db.execute('SELECT * FROM accounts ORDER BY id')]
+
+    def has_folder(self, account_id: str, folder_id: str) -> bool:
+        return self.db.execute('SELECT 1 FROM folders WHERE account_id=? AND folder_id=?',
+                               (account_id, folder_id)).fetchone() is not None
+
     def remove_account(self, account_id: str):
         with self.db:
             self.db.execute('DELETE FROM accounts WHERE id=?', (account_id,))
