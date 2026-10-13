@@ -7,70 +7,79 @@ struct EmailWorkspace: View {
     let redetect: () -> Void
 
     var body: some View {
-        Group {
-            switch mail.capability {
-            case .unknown:
-                VStack(spacing: 12) {
-                    ProgressView()
-                    Text("正在检测邮箱功能…").foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .unsupported:
-                VStack(alignment: .leading, spacing: 16) {
-                    Label("请更新邮箱后端", systemImage: "shippingbox").font(.title2)
-                    Text("当前后端未提供邮箱功能。在终端重新安装后，再重新检测。")
-                    BackendCommandView(value: BackendConfig.installationCommand)
-                    Button("已安装，重新检测", action: redetect).buttonStyle(.borderedProminent)
-                }
-                .padding(24)
-                .frame(maxWidth: 580)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .supported:
-                NavigationSplitView {
-                    MailInboxList(mail: mail)
-                        .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 420)
-                } detail: {
-                    if mail.status?.mailAccountID == nil || mail.showsConfiguration {
-                        VStack(spacing: 0) {
-                            if mail.status?.mailAccountID != nil {
-                                HStack {
-                                    Button("返回阅读器", systemImage: "chevron.left") { mail.showsConfiguration = false }
-                                    Spacer()
-                                }.padding(12)
-                                Divider()
+        // NavigationSplitView's native sidebar does not reserve an outer
+        // safeAreaInset consistently. Give notices their own layout space.
+        VStack(spacing: 0) {
+            notificationNotice
+                .fixedSize(horizontal: false, vertical: true)
+            Group {
+                switch mail.capability {
+                case .unknown:
+                    VStack(spacing: 12) {
+                        ProgressView()
+                        Text("正在检测邮箱功能…").foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .unsupported:
+                    VStack(alignment: .leading, spacing: 16) {
+                        Label("请更新邮箱后端", systemImage: "shippingbox").font(.title2)
+                        Text("当前后端未提供邮箱功能。在终端重新安装后，再重新检测。")
+                        BackendCommandView(value: BackendConfig.installationCommand)
+                        Button("已安装，重新检测", action: redetect).buttonStyle(.borderedProminent)
+                    }
+                    .padding(24)
+                    .frame(maxWidth: 580)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .supported:
+                    NavigationSplitView {
+                        MailInboxList(mail: mail)
+                            .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 420)
+                    } detail: {
+                        if mail.status?.mailAccountID == nil || mail.showsConfiguration {
+                            VStack(spacing: 0) {
+                                if mail.status?.mailAccountID != nil {
+                                    HStack {
+                                        Button("返回阅读器", systemImage: "chevron.left") { mail.showsConfiguration = false }
+                                        Spacer()
+                                    }.padding(12)
+                                    Divider()
+                                }
+                                MailConfigurationView(mail: mail)
                             }
-                            MailConfigurationView(mail: mail)
+                        } else {
+                            MailMessageDetail(mail: mail)
                         }
-                    } else {
-                        MailMessageDetail(mail: mail)
                     }
                 }
             }
         }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            if mail.capability == .supported, notifications.uncertainDeliveryCount > 0 {
-                VStack(spacing: 0) {
-                    HStack(alignment: .center, spacing: 16) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("有 \(notifications.uncertainDeliveryCount) 条邮件提醒的投递结果未确认")
-                            Text("已保留待提醒邮件。再次提醒可能重复显示同一通知。")
-                                .font(.caption).foregroundStyle(.secondary)
-                        }
-                        Spacer(minLength: 0)
-                        Button("再次提醒", action: notifications.retryUncertainDeliveries)
-                            .disabled(!mail.isBackendReady)
-                    }.padding(12)
-                    Divider()
-                }
-            } else if mail.capability == .supported, let failure = notifications.lastFailure {
-                HStack(spacing: 16) {
-                    Text(failure).font(.callout)
-                    Spacer(minLength: 0)
-                    Button("重试提醒", action: notifications.request).disabled(!mail.isBackendReady)
-                }.padding(12)
-            }
-        }
         .navigationTitle("Email")
+    }
+
+    @ViewBuilder private var notificationNotice: some View {
+        if mail.capability == .supported, notifications.uncertainDeliveryCount > 0 {
+            VStack(spacing: 0) {
+                HStack(alignment: .center, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("有 \(notifications.uncertainDeliveryCount) 条邮件提醒的投递结果未确认")
+                        Text("已保留待提醒邮件。再次提醒可能重复显示同一通知。")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                    Button("再次提醒", action: notifications.retryUncertainDeliveries)
+                        .fixedSize()
+                        .disabled(!mail.isBackendReady)
+                }.padding(12)
+                Divider()
+            }
+        } else if mail.capability == .supported, let failure = notifications.lastFailure {
+            HStack(spacing: 16) {
+                Text(failure).font(.callout).fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+                Button("重试提醒", action: notifications.request).fixedSize().disabled(!mail.isBackendReady)
+            }.padding(12)
+        }
     }
 }
 

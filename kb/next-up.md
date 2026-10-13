@@ -19,6 +19,6 @@
 
 ## F2a 报告审阅后，协调者另派返修与 F2 接续时
 
-- **返修未知投递提示布局P2并独立复验**：最小及正常窗口均与收件箱工具栏重叠。补稳定账号运行中关闭测试通知权限（不能恢复已移除旧UUID）、410/旧账号真实点击、遗留聊天payload及系统add失败等精确未验项；主要真实系统投递/点击/清理/跨进程ack/Dock已验，无需重跑整个矩阵。
+- **独立复验R3未知投递提示布局**：布局自动修复已交付，下一独立tab先按[R3报告](sessions/2026-10-14-email-notice-layout-r3.md)验证最小/正常窗口的提示、工具栏、换行和按钮键盘操作。补稳定账号运行中关闭测试通知权限（不能恢复已移除旧UUID）、410/旧账号真实点击、遗留聊天payload及系统add失败等精确未验项；主要真实系统投递/点击/清理/跨进程ack/Dock已验，无需重跑整个矩阵。
 - **F2b另派**：真实SecItem/Debug–Release互访、supervisor生命周期/唤醒、有限聊天回归与全量交付审计；chat合成历史接口先改成生产要求的数组。实际睡眠需适当安排，不能伪装已验。
   → [F2a报告](sessions/2026-10-14-email-system-notifications-f2a.md)保存通过/失败/未验及disabled首败，证据在 `tmp/2026-10-14-email-reader/f2a-acceptance/`；崩溃窗口参考 [E报告](sessions/2026-10-14-email-notifications-e.md)。继续保护正式App/数据，不自行开始F2b。
