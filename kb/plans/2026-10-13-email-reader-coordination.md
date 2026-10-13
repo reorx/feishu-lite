@@ -308,7 +308,7 @@ R1 后的独立 F1 接续将用最新源码重建隔离 App，复验 HTML 滚动
 - 报告 `kb/sessions/2026-10-14-email-reader-f1b-acceptance.md`，明确R1通过/失败及完整新增矩阵、与F1合并后剩余项、隔离差异。仅更新必要known-issues/next-up/原计划/文档有证据状态，不把F2或整体F提前关闭；报告和文档同次提交，只暂存自己文件，不改本文，不push/发布/换branch/worktree。
 - 收尾清理自己的App/listener/preferences/caffeinate/浏览器测试tab，保护用户/其他会话资源，按项目定向mac-dev-cleanup。最终tab回报commit、能否签收R1/F1、未验/缺陷、截图、资源和工作区。coordinator保持监控，审阅后再派F2或返修。
 
-### 当前任务 R2：纯文本正文滚动恢复返修
+### 任务 R2：纯文本正文滚动恢复返修（自动交付已签收）
 
 执行者：新 Herdr tab 的 Codex，当前master，基线 `7281388`，coordinator编写。必读根/mac AGENTS、原计划滚动/已读要求、D2/R1报告、F1b完整报告 `kb/sessions/2026-10-14-email-reader-f1b-acceptance.md` 及其10/11截图、known-issues。使用适用SwiftUI/kb技能。HTML R1已独立通过，本任务只处理纯文本P2，不重做HTML恢复。
 
@@ -324,6 +324,51 @@ R1 后的独立 F1 接续将用最新源码重建隔离 App，复验 HTML 滚动
 - 报告 `kb/sessions/2026-10-14-email-plain-scroll-r2.md`；脚本/日志 `tmp/2026-10-14-email-reader/r2-plain-scroll/`。写明实际根因、红绿复现、旧通过与当前失败的解释（无法证明则标未知）、资源/身份边界、独立复验最小步骤。其他范围问题写交给协调者，不顺手修。
 - 代码与必要文档同次提交，known-issues保留修复待独立复验，不提前勾F1/F；仅暂存自己文件，不改本文。清理自建测试资源，最终tab回报commit、测试、报告、清理及工作区后停在R2。coordinator签收后新tab复验并继续F2。
 
+### 任务 F1c：独立验收 R2 原生纯文本视图（R2已独立签收）
+
+执行者：新 Herdr tab 的Codex，当前master，产品基线 `9559a3a`。coordinator编写。必读根/mac AGENTS、桌面测试约定、R2报告 `kb/sessions/2026-10-14-email-plain-scroll-r2.md`（尤其独立复验8步）、F1b报告的纯文本P2证据与本文件F1/F1b隔离规则。任务仅R2独立复验，不补所有历史余项、不展开F2、不修产品或自行委派。
+
+目标：在最新源码的正常隔离App实际证明纯文本恢复及新原生视图行为，决定能否关闭纯文本P2。Core74/App90和构建已通过，不能代替屏幕证据。R2使用NSTextView/NSScrollView，AX结构和字体可能变，不要求与旧SwiftUI逐段节点/像素一致，只比较新版本同条件前后。
+
+- GUI前context/桌面约定检查，超过40%停止新增GUI形成交接；有限唤醒。当前目录/分支，不make run、不改正式签名、保护用户进程/数据/偏好；不读取env/真实邮件/钥匙串、不真实Seen/发信。env操作先envops。用户已获知隔离测试窗口。
+- 从当前源码建立新副本，仅独立bundle/ad-hoc/fake SecItem与测试外观设置；正常视图不观察注入先验关键落点。独立bundle可用com.reorx.FeishuChat.f1c-acceptance，HOME/数据/偏好独立；18874先确认空闲，复用F1b fixture，更新AX定位。截图/脚本/日志 `tmp/2026-10-14-email-reader/f1c-acceptance/`，保留源码差异清单，旧App不能验新修复。
+- 按R2报告步骤2–8实际验收：159正文滚动750→Messages→Email至少两轮；159→158→159及快速切换；新renderer同首可见文字与几何、列表选择、请求计数；鼠标拖宽/窄后同一文字附近恢复及换行；800×460、深浅色、空正文、6000行合成长文正常响应。HTML160只做简短切模块恢复回归，HTML生产代码未改，不重复整套scheme安全。
+- 真实选择/复制，正文只读；普通字符、中文组字、粘贴、Return不能改正文或向聊天发送。保护用户剪贴板，复制只处理合成内容并恢复原剪贴板，不输出用户剪贴板。聊天草稿切换保持，实际键盘与AX SetValue结果分别注明；无法切换输入法时报告限制，不强改用户设置。
+- 字面script/img/HTTP URL/日期无富文本/自动链接/检测附件，无自动资源增量。新layout完成且当前Email可见才read；离开/后台/关窗与旧layout不read，恢复当前目标合法read一次。用对应请求时间/目标与截图关联，不仅看累计数；合成身份/UIDVALIDITY/正文变更不串位置。
+- 发现缺陷最小复现/截图/AX/请求证据后继续独立项，不改产品。工具节点不匹配先修tmp工具，仍无法判定则未验，不能把脚本exit0等同通过。未知能力、旧HTML乱序、真实SecItem/系统通知和真实邮件留后续，不因本次未覆盖登记成新缺陷。
+- 报告 `kb/sessions/2026-10-14-email-reader-f1c-acceptance.md`，明确R2通过/失败、各新原生视图行为、工具/隔离边界、剩余项目。更新必要known-issues/next-up/文档有证据状态，与报告同次提交，仅暂存自己文档，不改本文，不push/发布/branch/worktree。
+- 停止自建App/fixture/caffeinate并清隔离偏好，定向清理浏览器且保护其他资源。最终tab回报commit、能否关闭R2、缺陷/未验、截图、资源和干净工作区；coordinator审阅后另派F2。
+
+### 任务 F2a：真实系统通知、路由与 Dock 独立验收（报告已收，布局P2待返修）
+
+执行者：新 Herdr tab Codex，当前master，基线 `35c699e`，产品基线 `9559a3a`。coordinator编写。必读根/mac AGENTS、桌面测试文档、原计划§5通知/§7、E报告 `kb/sessions/2026-10-14-email-notifications-e.md`、D1/D2接口、F1b/F1c隔离边界。本任务只系统通知/Dock，不写产品、不自行委派；F2b另做SecItem/生命周期/整体检查。
+
+目标：用合成邮件/聊天和隔离App，验证真实 UNUserNotificationCenter 的投递、点击/清理、持久去重/ack恢复、未知intent入口与实际Dock计数。不得以recorders通过替代实际系统证据，权限/签名/系统行为无法覆盖的路径准确列未验。
+
+- GUI前context及桌面约定，超过40%停止新增GUI形成交接，有限wake/caffeinate。用户已提前获知会出现合成系统通知与测试App权限框，无需扫描任何登录页。使用独立bundle com.reorx.FeishuChat.f2a-acceptance、独立HOME/数据/偏好、fake SecItem、最新源码副本；正式App/签名/TCC/通知/数据不动，不make run或广泛kill。不读真实env/邮箱/凭证，不发真实消息/邮件、不改真实Seen。
+- 先审查隔离副本是否能合法使用真实通知中心，保留生产通知coordinator/router/LocalNotificationCenter.system。可给副本签可用的测试签名并记录差异，不修改正式工程签名、不替换系统center为fake来冒充实测。测试应用首次通知允许属于本测试设置；若涉及用户系统密码、正式App设置或Herdr识别审批/问题则报告协调者，不代用户输入。不改全局勿扰/Focus或清全中心通知。
+- 用E `tmp/2026-10-14-email-notifications-e/notification_fixture.py`（18875确认空闲）和必要B/F1合成聊天接续；fixture可改进tmp，记录接口与reset/计数基数。所有标题正文标明合成测试。捕获请求时间、batch/ack/receipt身份、真实系统delivered/pending查询及可见banner/通知中心截图；只记录自身bundle的系统通知，不采其他人的通知内容。
+- 首批individual及summary（含>3/旧批次模式由后端fixture给定）实际投递，正文不下载；Email看另一封仍提醒，当前同封成功显示才抑制；关闭窗口后台仍可投递。用户通知关闭/权限拒绝与系统add失败分开，若只能模拟后者明确注入边界，不宣称真实失败模拟已完全证明。
+- ack失败后重连/同批重复/重启隔离App：查询真实center与持久receipt，已成功处理不得再次add/banner，wholebatch满足才ack。至少一次停止再启动隔离App的跨进程证据；不得仅稳定identifier就宣称exactly-once。用户清除系统条目后handled receipt仍可只重试ack；未知intent+无center匹配不可自动ack/补投，显式“再次提醒”才允许重试，必要tmp精确状态注入单列边界。
+- 点击真实系统单封通知：从Messages或关窗开窗口切Email定位；页外目标用summary，过期404/410及旧账号回列表而不串UID；汇总点进INBOX。不能用直接调用route冒充真实点击。若系统没有实际banner但center可查询/点击，分别记录。聊天兼容/邮件命名空间隔离至少用合成聊天通知验证精确清理。
+- 对read/delete/reset/account remove清理本账号相关已递送/待递送，聊天条目保留；摘要成员变化策略按E实际契约验证。断线漏事件后重新连接/重启能清失效邮件提醒。不得removeAllDeliveredNotifications影响用户或其他bundle；本测试结束可精确清理自己的全部synthetic identifiers。
+- 实际Dock：合成聊天+邮件计数合计、0/99+、offline/auth_failed保留、移除邮件只减邮箱；用Dock画面/本实例badge属性相互验证，不拿侧栏数字当Dock截图通过。可能多个测试App图标混淆时先确认bundle/PID，不能碰正式App。
+- 首先做可用的真实路径，遇权限/系统限制保留证据并继续不依赖项，不无限尝试同一路径或擅改系统数据库。问题最小复现/严重度/证据，工具失败与产品缺陷分开，交coordinator另派返修。真实邮箱通知/跨端已读仍需要用户指定测试邮件和来源，本任务合成不冒充真实接入。
+- 报告 `kb/sessions/2026-10-14-email-system-notifications-f2a.md`，证据 `tmp/2026-10-14-email-reader/f2a-acceptance/`；逐项通过/失败/未验、签名/权限/注入差异、实际center证据、F2b接续。必要文档与报告同次提交，只暂存自己文档、不改本文、不改产品、不push/发布/branch/worktree。不重复已通过的无关全量测试，整体全量F2b复核。
+- 清理自己的App/listener/preferences/caffeinate/通知测试条目和浏览器，保护用户资源；定向mac-dev-cleanup。保留截图/请求日志/源码差异。最终tab明确回报commit、系统真实与模拟边界、缺陷/未验、清理与工作区后停在F2a。
+
+F2b预留：实际SecItem测试UUID/Debug-Release互访、backend supervisor独立生命周期、唤醒路径与有限聊天回归、必要F1精确剩余证据、全量测试与整体交付审计。真实系统睡眠不能无提示让用户机器睡眠；优先测试事件路径，实际睡醒需合适用户安排，不伪装成已验。
+
+### 当前任务 R3：未知投递提示栏布局返修
+
+执行者：新 Herdr tab Codex，当前master，基线 `7c12278`。coordinator编写。必读根/mac AGENTS、F2a报告 `kb/sessions/2026-10-14-email-system-notifications-f2a.md` 及18/18b截图/AX、原计划通知恢复语义。目标仅修提示栏与收件箱工具栏重叠，保留真实通知/receipt/ack/再次提醒语义，不改后端或产品范围。
+
+- 先查看已落盘的两次失败UI用例：最小800×460和正常980×680，提示与收件箱菜单同y坐标，coordinator已看图确认。定位实际容器布局/安全区与split view关系；建立最小可重复布局回归（如无窗口宿主几何断言）再修。已有失败截图是视觉红证据，不编写只镜像VStack实现的测试；自动宿主不可证明真实布局的边界明确留独立屏幕复验。
+- 提示占独立空间，文字和工具栏不重叠，“再次提醒”可见可操作；最小宽度下长计数/说明能换行，纵向布局合理，不覆盖列表/详情或缩到不可用。无提示时保持原布局；切模块/配置/选中正文时也合理。使用正常原生布局，不写固定窗口尺寸补丁，不改文案含义、不移除警告掩盖问题。
+- 不改MailNotificationCoordinator/receipt/ack/重试接口，不额外触发通知、read或网络；用户显式重试行为保持。开发tab仅自动验证，实机独立tab另派，不启动正式App、不改签名/bundle、不make run、不真实env/数据/通知/钥匙串、不委派。
+- 运行必要针对性检查和 `cd mac && make test && make build`，不主动formatter/linter，不重复无关验证。范围小，报告简明说明根因、具体布局变化、验证与下一tab复现入口即可，不扩展历史余项。
+- 报告 `kb/sessions/2026-10-14-email-notice-layout-r3.md`，日志 `tmp/2026-10-14-email-reader/r3-notice-layout/`。代码和必要文档同次提交，known-issues标修复待独立复验；不改本文、不push/发布/branch/worktree。只暂存自己文件，清理资源，最终tab回报commit/测试/报告/工作区后停在R3。下一个独立F2b先复验R3，再执行系统剩余项。
+
 ### 状态
 
 - [x] A：已签收 `3cbc23d`；7 个测试、42 次计时通过；真实已读/通知等仍按原计划待验。
@@ -338,5 +383,8 @@ R1 后的独立 F1 接续将用最新源码重建隔离 App，复验 HTML 滚动
 - [ ] F1：报告 `d4e202d` 已收；主要 UI/WebKit/可见性已读通过，HTML滚动恢复 P2 返修R1；具体未验矩阵见F1 session。
 - [x] R1：`f148274` 自动交付已签收，Core74/App81及Debug构建通过；有界会话缓存与精确内存文档恢复，屏幕落点/新增scheme安全留F1b独立复验。
 - [x] F1b：报告 `7281388` 已收；HTML R1屏幕/新增scheme安全通过，浅色/拖宽/cursor及fake凭证错误补齐。新发现纯文本回顶P2，故F1整体未通过；精确未验矩阵见报告。
-- [ ] R2：纯文本正文回顶返修，完成后独立验收。
-- [ ] F2：系统集成与整体复核，尚未派发。
+- [x] R2：`9559a3a` 自动交付签收，Core74/App90及Debug构建通过；原生只读文本按实际布局恢复，屏幕/键盘等留F1c。
+- [x] F1c：`35c699e`报告签收；R2两轮屏幕及邮件往返、换行、长文、选择复制/只读通过，纯文本P2关闭；IME及精确回调边界保留报告。
+- [x] F2a：`7c12278`报告已收；真实通知/5次点击/跨进程去重与ack/精确清理/Dock子项签收；未知提示重叠P2转R3，权限运行中切换等精确未验保留报告。
+- [ ] R3：未知投递提示布局返修，独立复验安排在F2b开头。
+- [ ] F2b：SecItem、生命周期、聊天/全量与整体复核，尚未派发。

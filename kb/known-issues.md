@@ -2,25 +2,23 @@
 
 > 当前 app 已知、待后续处理的问题：缺陷、简化实现、未验收项、待建流程。只反映最新状态——解决了就删掉条目，经过记到 `kb/sessions/`。
 
-## P2：纯文本邮件滚动恢复已自动修复，待独立复验
-
-- 记录：2026-10-14，[F1b独立验收](sessions/2026-10-14-email-reader-f1b-acceptance.md)，产品基线f148274；正常隔离副本仅fake Keychain，无renderer注入。
-- 合成纯文本159实际滚动后，首完整段落026在y311；只切Messages再Email，返回约1秒采证，首完整段落000在y333、026移到y1061。选择/窗口/config不变，无新增正文GET/read或资源请求。截图及AX为 `tmp/2026-10-14-email-reader/f1b-acceptance/10-plain-before.*`、`11-plain-after.*`，脚本scroll_checks.py。
-- [R2自动返修](sessions/2026-10-14-email-plain-scroll-r2.md)已用无窗口SwiftUI宿主复现保存非顶部位置后重建仍为0；改为只读、可选择的原生TextKit正文，在实际布局后恢复文字位置。自动覆盖重建/快速切换、窄宽换行、临时顶部/旧回调、身份/正文隔离、空/长正文和检测开关；Core74/App90及Debug构建通过。
-- 保留修复待独立实机复验：用最新源码重建假Keychain/合成后端副本，比较段落落点；同时复验原生视图的深浅色、鼠标拖宽、文字选择/复制、输入与回车不改正文/不发聊天、字面HTML与链接零自动资源行为。原F1b的单次屏幕失败仍有效，R2无窗口结果不能替代新屏幕验收；HTML已通过契约不变。
-
 ## 邮箱阅读器：少量 UI 与精确竞态仍未独立验收
 
 - 记录：2026-10-14，原[F1报告](sessions/2026-10-14-email-reader-f1-acceptance.md)；接续[F1b报告](sessions/2026-10-14-email-reader-f1b-acceptance.md)。
 - HTML滚动P2已通过最新源码独立复验，新增内存scheme的首载/恢复、精确URL子资源/frame/用户链接拒绝及资源零增量通过；浅色/鼠标拖宽/旧cursor完整恢复/fake凭证错误UI亦已补齐。
-- 仍待：未知能力稳定加载UI；精确旧didFinish/新navigation乱序及已发STORE期间账号/UIDVALIDITY变化；HTTPS/单标签内网实际外开、跨邮件/token动态访问探测。F1b已证明待编译退役与generation/账号/UIDVALIDITY重置不read，当前新navigation才read；不能扩大成所有竞态通过。尚无这些路径的确认新缺陷。
-- 真正SecItem/Debug-Release授权和系统集成留F2，真实邮箱Seen/跨端仍须用户指定邮件。隔离副本必须假Keychain、外部合成服务，不能读取真实env/缓存或沿用旧二进制验新修复。
+- 仍待：未知能力稳定加载UI；精确旧didFinish/新navigation乱序及已发STORE期间账号/UIDVALIDITY变化；HTTPS/单标签内网实际外开、跨邮件/token动态访问探测。F1b已证明待编译退役与generation/账号/UIDVALIDITY重置不read，当前新navigation才read；不能扩大成所有竞态通过。尚无这些路径的确认新缺陷。纯文本R2滚动P2已由 [F1c](sessions/2026-10-14-email-reader-f1c-acceptance.md)关闭；真实中文组字、精确旧layout回放及少量交互时序证据仍未验，见该报告的准确范围。
+- 真正SecItem/Debug-Release授权、生命周期/实际睡眠及整体检查留F2b；F2a主要真实系统通知/点击/Dock已验，准确边界见下项。真实邮箱Seen/跨端仍须用户指定邮件。隔离副本必须假Keychain、外部合成服务，不能读取真实env/缓存或沿用旧二进制验新修复。
 
-## 双模块通知：实际系统投递与点击仍未独立验收
+## 邮件通知：未知投递提示与收件箱工具栏重叠（P2）
 
-- 记录：2026-10-13；更新：2026-10-14（`kb/sessions/2026-10-14-email-notifications-e.md`）
-- B 草稿/滚动/键盘已独立验证；E 邮件逐封/汇总、ack/部分失败/重启、精确清理、最新点击路由、badge 与唤醒合并通过 recorder/合成 HTTP 自动测试。但 B 测试副本权限被拒绝，实际系统投递/跨模块点击、升级前聊天通知兼容、未知投递恢复提示布局及真实睡眠仍未验，不能用自动测试代替。
-- coordinator 在有可用隔离权限时另派 F，接续 E 合成入口和清单，不改变正式 App 权限；只用合成目标或已授权测试会话，不清工作消息未读。
+- 记录：2026-10-14，[F2a报告](sessions/2026-10-14-email-system-notifications-f2a.md)，证据 `tmp/2026-10-14-email-reader/f2a-acceptance/18*.png`。
+- 隔离副本播种未知receipt后，提示与收件箱标题/工具栏在最小800×512窗口（内容800×460）及980×680正常窗口都重叠，两轮重建复现；恢复按钮仍可用，实际再提醒/ack通过。交coordinator另派布局返修与独立复验，F2a整体不能签收。
+
+## 双模块通知：少量系统边界与完整集成仍未独立验收
+
+- 记录：2026-10-13；更新：2026-10-14，[F2a报告](sessions/2026-10-14-email-system-notifications-f2a.md)。
+- F2a已用真实UN中心验证逐封/汇总、五次实际点击（页外/关窗/汇总/404/当前聊天）、跨进程receipt与ack去重、已递送及播种待递送的精确清理、实际Dock；合成数据不等于真实IMAP接入。
+- 稳定账号运行中关闭通知权限未验：首轮disabled_check.py的ack断言失败因fixture恢复已移除的旧UUID，被当前进程retiredAccounts拒绝；原始41证据保留。重启后的42只证明已拒绝权限下启动恢复pending，不能覆盖运行中切换。另待真实410/旧账号点击、升级前聊天payload、系统add/部分失败与未知提示键盘操作；真实SecItem/生命周期/睡眠、完整聊天回归和全量审计留F2b。只用隔离测试目标，不改正式权限或清工作未读。
 
 ## 会话列表：只显示聊天，会话盒子、文档、应用消息等 feed 卡片被跳过
 
