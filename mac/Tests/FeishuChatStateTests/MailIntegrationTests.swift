@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import Security
 import Testing
 import FeishuChatCore
 @testable import FeishuChatState
@@ -85,6 +86,83 @@ private func mailConnection() -> BackendConnection {
 @Suite(.serialized)
 @MainActor
 struct MailIntegrationTests {
+    @Test func configurationMissingCredentialRequiresInputWithoutReadingPeer() async {
+        MailHTTP.reset()
+        let suite = "r4-mail-test-" + UUID().uuidString
+        let preferences = UserDefaults(suiteName: suite)!
+        defer {
+            preferences.removePersistentDomain(forName: suite)
+            preferences.synchronize()
+        }
+        let items = RecordingMailSecItems()
+        items.seed(service: RecordingMailSecItems.peerService, accountID: MailHTTP.account, value: "peer-only")
+        let store = MailKeychain(operations: items.operations)
+        let mail = MailState(connection: mailConnection(), credentials: store, externalBackend: false, preferences: preferences)
+        mail.backendChanged(ready: true)
+        await mail.setCapability(features: ["mail"])
+        await mail.streamConnected()
+        await mail.streamConnected()
+        #expect(mail.credentialIssue == .notFound)
+        #expect(mail.credentialIssue?.errorDescription?.contains("重新输入") == true)
+        #expect(MailHTTP.count("/mail/account/credential") == 0)
+        #expect(items.queries.map(\.operation) == ["copy"])
+        await mail.retryKeychain()
+        #expect(mail.credentialIssue == .notFound)
+        #expect(items.queries.map(\.operation) == ["copy", "copy"])
+        mail.addressInput = "synthetic@example.invalid"
+        mail.passwordInput = "reentered-current"
+        await mail.saveAccount()
+        #expect(mail.credentialIssue == nil)
+        #expect(!mail.hasUnsavedCredential)
+        #expect(items.value(service: RecordingMailSecItems.currentService, accountID: MailHTTP.account) == "reentered-current")
+        #expect(items.value(service: RecordingMailSecItems.peerService, accountID: MailHTTP.account) == "peer-only")
+        #expect(items.queries.map(\.operation) == ["copy", "copy", "update", "add"])
+        #expect(items.queries.allSatisfy { $0.query[kSecAttrService as String] as? String == RecordingMailSecItems.currentService })
+        #expect(items.queries.allSatisfy { $0.query[kSecAttrAccount as String] as? String == MailHTTP.account })
+    }
+
+    @Test(arguments: [true, false])
+    func configurationDeferredDeletionAfterReconstructionOnlyCleansCurrentService(_ currentItemExists: Bool) async {
+        MailHTTP.reset()
+        let suite = "r4-mail-test-" + UUID().uuidString
+        let preferences = UserDefaults(suiteName: suite)!
+        defer {
+            preferences.removePersistentDomain(forName: suite)
+            preferences.synchronize()
+        }
+        let items = RecordingMailSecItems()
+        let canary = UUID().uuidString
+        for service in [RecordingMailSecItems.currentService, RecordingMailSecItems.peerService] {
+            if currentItemExists || service == RecordingMailSecItems.peerService {
+                items.seed(service: service, accountID: MailHTTP.account, value: "synthetic-secret")
+            }
+            items.seed(service: service, accountID: canary, value: "canary")
+        }
+        let store = MailKeychain(operations: items.operations)
+        let mail = MailState(connection: mailConnection(), credentials: store, externalBackend: false, preferences: preferences)
+        mail.backendChanged(ready: true)
+        await mail.setCapability(features: ["mail"])
+        items.deleteStatus = errSecAuthFailed
+        await mail.removeAccount()
+        #expect(mail.pendingCredentialDeletions == [MailHTTP.account])
+        #expect(items.value(service: RecordingMailSecItems.currentService, accountID: MailHTTP.account) == (currentItemExists ? "synthetic-secret" : nil))
+        let rebuilt = MailState(connection: mailConnection(), credentials: MailKeychain(operations: items.operations), externalBackend: false, preferences: preferences)
+        #expect(rebuilt.pendingCredentialDeletions == [MailHTTP.account])
+        #expect(!String(describing: preferences.persistentDomain(forName: suite)).contains("synthetic-secret"))
+        items.deleteStatus = errSecSuccess
+        await rebuilt.retryCredentialCleanup()
+        #expect(rebuilt.pendingCredentialDeletions.isEmpty)
+        #expect(items.value(service: RecordingMailSecItems.currentService, accountID: MailHTTP.account) == nil)
+        #expect(items.value(service: RecordingMailSecItems.peerService, accountID: MailHTTP.account) == "synthetic-secret")
+        #expect(items.value(service: RecordingMailSecItems.currentService, accountID: canary) == "canary")
+        #expect(items.value(service: RecordingMailSecItems.peerService, accountID: canary) == "canary")
+        let again = MailState(connection: mailConnection(), credentials: store, externalBackend: false, preferences: preferences)
+        #expect(again.pendingCredentialDeletions.isEmpty)
+        #expect(items.queries.map(\.operation) == ["copy", "delete", "delete"])
+        #expect(items.queries.allSatisfy { $0.query[kSecAttrService as String] as? String == RecordingMailSecItems.currentService })
+        #expect(items.queries.allSatisfy { $0.query[kSecAttrAccount as String] as? String == MailHTTP.account })
+    }
+
     @Test func readyAndSSEAreBothRequiredAndRestartReusesMemory() async {
         MailHTTP.reset()
         let keychain = FakeMailKeychain()

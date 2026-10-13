@@ -19,6 +19,10 @@
 
 ## F2b 报告签收后，协调者安排最小接续时
 
-- **按原计划实现 configuration service 隔离**：不同签名 Debug→Release 互访已出现 login 钥匙串密码授权框并20秒超时，触发原计划 §D「互访会弹授权框就按构建配置区分 service 名」的既定条件。协调者下一阶段直接按原计划处理并安排验证，无需等待用户密码；本验收tab不改产品。未输入密码或放宽ACL，反向仍未验，自身CRUD成功不代替互访。
 - **有限 GUI 余项**：在稳定合成连接下补取消隐藏/扫码状态、邮箱auth_failed/timeout期间聊天，以及可用键盘设置下R3 Tab/Return。运行中通知权限切换、410/旧账号点击、旧聊天payload和系统add部分失败按F2a边界少量接续，不重跑整个矩阵。R3布局P2、生产Supervisor生命周期、合成唤醒及全量已验；机器真实睡眠另行安排。
   → [F2b报告](sessions/2026-10-14-email-system-integration-f2b.md)保留矩阵、授权阻塞/首败和清理；[F2a报告](sessions/2026-10-14-email-system-notifications-f2a.md)保留系统精确未验。继续保护正式App/权限/数据。
+
+## R4 自动交付签收后，协调者安排独立 SecItem 复验时
+
+- **验证构建配置隔离**：用最新源码编译不同签名 Debug/Release helper，仅对新测试 UUID 验同 UUID 两配置独立读/写/删、缺失不回退及 canary；分别由创建方清理，不探测用户旧共享条目，不输入系统密码或修改 ACL。旧 Debug 缺失密码重新输入边界与旧待删记录精确重试按 R4 最小步骤接续。
+  → [R4 报告](sessions/2026-10-14-email-keychain-services-r4.md)保留红绿、编译配置与步骤；自动 fake SecItem 不代替真实 OS 验收，整体 F 仍未完成。

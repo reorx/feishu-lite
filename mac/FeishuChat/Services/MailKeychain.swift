@@ -49,7 +49,12 @@ struct MailSecItemOperations {
 
 @MainActor
 struct MailKeychain: MailCredentialStore {
+    // Release 保留既有凭证；Debug 不回退旧共享 service，缺失时由用户重新输入。
+    #if DEBUG
+    static let service = "com.reorx.FeishuChat.mail.debug"
+    #else
     static let service = "com.reorx.FeishuChat.mail"
+    #endif
     var operations: MailSecItemOperations = .system
 
     private func query(_ accountID: String) -> [String: Any] {

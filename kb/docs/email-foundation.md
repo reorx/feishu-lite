@@ -15,9 +15,9 @@ tags:
 
 邮箱配置与聊天身份独立。地址第一次配置或更换时生成新的 UUID；更换地址和移除邮箱先撤销任务，删除旧邮箱缓存，并返回旧账号 id 供 App 清理钥匙串和通知。地址/账号保存在 mail.db，密码仅在内存 SecretStr 中；服务重建后等待密码注入，缓存和水位保持。相同密码的重复注入没有连接或水位副作用，已被拒绝的相同密码也不重试。
 
-App 使用 file-based SecItem，service 为 `com.reorx.FeishuChat.mail`，account 为后端 UUID，地址仅附加属性。能力未知/旧后端时不读；启动时每账号自动读一次，只有自管后端 ready 且当前 SSE 已连接才注入。重连幂等，后端重启复用 App 内存，外部后端模式只能手动输入。找不到、拒绝/认证失败、锁定或不可交互分别提示，显式重试可重读，后台不反复提示或注入失效密码。
+App 使用 file-based SecItem，Release service 保持 `com.reorx.FeishuChat.mail`，Debug（`#if DEBUG`）使用 `com.reorx.FeishuChat.mail.debug`，account 为后端 UUID，地址仅附加属性。读取、添加、更新、删除及延后删除重试都只匹配当前配置 service + 精确 UUID，不探测、回退、迁移或删除另一 service。能力未知/旧后端时不读；启动时每账号自动读一次，只有自管后端 ready 且当前 SSE 已连接才注入。重连幂等，后端重启复用 App 内存，外部后端模式只能手动输入。找不到、拒绝/认证失败、锁定或不可交互分别提示，显式重试可重读，后台不反复提示或注入失效密码。
 
-写钥匙串失败时密码仅保留 App 内存，可重试写入，提示退出后需重新输入；不声称已保存。删除旧账号条目前先把精确 id 写到 UserDefaults 的 `mail-keychain-pending-deletions`，成功后移除记录；失败跨 App 重建保留，可显式重试。该列表仅保存非秘密 UUID，密码不进 UserDefaults。Debug/Release 互访授权与真实系统分类仍待独立验收，自动测试不触碰真实条目。
+写钥匙串失败时密码仅保留 App 内存，可重试写入，提示退出后需重新输入；不声称已保存。删除旧账号条目前先把精确 id 写到 UserDefaults 的 `mail-keychain-pending-deletions`，成功后移除记录；失败跨 App 重建保留，可显式重试。该列表仅保存非秘密 UUID，密码不进 UserDefaults。F2b 旧共享 service 跨签名互访的 login 密码授权框触发了 [R4 隔离修复](../sessions/2026-10-14-email-keychain-services-r4.md)，自动测试与双配置构建通过，真实双配置 SecItem 隔离及系统错误分类仍待独立复验。升级前 Debug 的账号在新 service 无条目时沿现有缺失提示重新输入；旧共享条目保留，旧待删 UUID 在当前 service 缺失时按现有幂等语义消除，不触及旧 service。Release 沿用既有条目，不修改 ACL；若旧条目由另一签名创建，仍可能需要系统授权，不能据此承诺历史 ACL 问题消失。此修复仅隔离 service，不隔离 mail.db/UserDefaults，测试仍须独立 UUID 与假系统调用，不能只靠 HOME。
 
 本机邮件服务分为未配置、缺凭证、连接中、在线、离线和认证失败。断网保留旧未读数和最后检查时间，并标记计数过期；认证失败等待凭证变更。网络重连采用最长 60 秒的退避。一个后台循环合并手动刷新、IDLE 信号和默认 45 秒整箱对账；无 IDLE 时也用这个周期检查新信。持续推送留出至少 100ms 合并窗口，避免忙等。强制重连的刷新会等待新连接对账后才返回成功。
 
