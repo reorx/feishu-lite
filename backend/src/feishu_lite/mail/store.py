@@ -186,7 +186,7 @@ class MailStore:
     def _save_summary(self, summary: MailSummary):
         self._require_generation(*_scope(summary.key))
         self.db.execute('INSERT INTO summaries VALUES (?, ?, ?, ?, ?) ON CONFLICT DO UPDATE SET data=excluded.data',
-                        (*_identity(summary.key), summary.model_dump_json()))
+                        (*_identity(summary.key), summary.model_dump_json(exclude_computed_fields=True)))
 
     def save_summaries(self, summaries: list[MailSummary]):
         with self.db:

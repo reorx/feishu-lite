@@ -17,6 +17,7 @@ log = logging.getLogger(__name__)
 
 PREVIEW_MAX = 120
 BACKFILL_MAX = 50
+SSE_QUEUE_SIZE = 256
 
 
 class ChatNotFound(LookupError):
@@ -74,7 +75,7 @@ class Service:
     # ---- events ----
 
     def subscribe(self) -> asyncio.Queue:
-        queue = asyncio.Queue()
+        queue = asyncio.Queue(maxsize=SSE_QUEUE_SIZE)
         self._subscribers.add(queue)
         return queue
 
@@ -83,7 +84,25 @@ class Service:
 
     def _emit(self, event: str, data: dict):
         for queue in list(self._subscribers):
-            queue.put_nowait((event, data))
+            if queue.full():
+                # End the slow stream so its client reconnects and reloads both
+                # snapshots. Mail pending is durable; emitting never acks it.
+                self.unsubscribe(queue)
+                while not queue.empty():
+                    queue.get_nowait()
+                queue.put_nowait(None)
+            else:
+                queue.put_nowait((event, data))
+
+    def emit_mail(self, event):
+        self._emit(event.type, event.model_dump(mode='json'))
+
+    def close_subscribers(self):
+        for queue in list(self._subscribers):
+            self.unsubscribe(queue)
+            while not queue.empty():
+                queue.get_nowait()
+            queue.put_nowait(None)
 
     def _set_state(self, state: State):
         if state != self.state:

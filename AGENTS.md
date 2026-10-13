@@ -28,7 +28,7 @@ MVP 功能已经做完并通过验收：扫码登录、会话列表、历史消�
 
 Messages / Email 双模块外壳已实现并通过自动测试与构建；独立隔离 UI 已验证草稿、两处首可见行恢复、键盘隔离和模拟聊天回归，系统通知与部分完整回归仍未验，见 `kb/sessions/2026-10-13-email-shell-b-acceptance.md`。Email 当前是待接入占位，IMAP 阅读器尚未实现。真实 IMAP 只读探路已通过，后端库使用 IMAPClient；首版列出全部文件夹、仅读取收件箱，开发依据见 `kb/plans/2026-10-13-email-reader-plan.md`。实现 IMAP 前读 `kb/notes/2026-10-13-email-imap-probe.md`；接续 App 开发的实际接口见 `kb/sessions/2026-10-13-email-shell-phase-b.md`。
 
-邮件领域已有独立 mail.db、UID 标识/分页、MIME/HTML 净化、IMAPClient INBOX 串行 daemon，以及独立 MailService 的账号生命周期、同步、pending/ack 和离线读取；尚未接 HTTP/SSE 或进程生命周期。SQLite/emit 只在事件循环线程使用，IMAP/MIME 工作线程不能访问 Store；接线先读 `kb/sessions/2026-10-13-email-sync-c3a.md`，C1/C2 细节由该报告索引。DNS stop_timeout 后必须等待旧所有者 closed 才新建网络实例；密码只留内存，正文读取没有已读副作用。
+邮件后端已接通独立 mail.db、MailService、全部 `/mail/*` API、双领域 SSE 和进程生命周期；App 邮件配置/阅读仍待接入。SQLite/emit 只在事件循环线程使用，IMAP/MIME 工作线程不能访问 Store；App 接续先读 `kb/sessions/2026-10-13-email-api-c3b.md` 的 wire/错误/重启/确认契约，服务与 C1/C2 细节由 C3a 报告索引。DNS stop_timeout 后必须等待旧所有者 closed 才新建网络实例；密码只留内存，正文 GET 没有已读副作用，邮件错误不使用聊天 409。SSE 队列满会结束慢流，重连须读取两领域状态及持久 pending，generation 只在本进程有效。
 
 ## 文档
 
@@ -41,7 +41,7 @@ Messages / Email 双模块外壳已实现并通过自动测试与构建；独立
 
 - 后端测试：`cd backend && uv run pytest`。App：`cd mac && make test && make build && make run`。
 - App 自己拉起后端，不需要单独启动。正式数据在 `~/Library/Application Support/FeishuChat/`，后端日志在 `~/Library/Logs/FeishuChat/backend.log`。
-- 接口约定以 `backend/src/feishu_lite/api.py` 和 `types.py` 为准；App 这边对应的模型在 `mac/FeishuChatCore/Sources/FeishuChatCore/Models.swift`，两边要一起改。
+- 聊天接口以 `backend/src/feishu_lite/api.py` 和 `types.py` 为准；邮件接口/共享模型在 `mail/api.py`、`mail/types.py`。App 聊天模型在 `mac/FeishuChatCore/Sources/FeishuChatCore/Models.swift`，邮件 Swift 解码尚待接入；改已接入接口时两边要一起改。
 
 ## 不变量
 

@@ -246,7 +246,7 @@ C1 基础已独立实现，交接见 [C1 session](../sessions/2026-10-13-email-f
 - [x] C1 MIME：RFC2047/2231、UTF-8→GB18030 与 gb2312/gbk、alternative/related 正文 section、附件元数据及转发子树跳过；真实 IMAPClient FETCH parser 的合成 BodyData 契约验证通过。
 - [x] C1 安全基础：响应/头部/正文/深度/部分数限额与单封错误隔离、nh3 HTML 允许列表和读取时重新净化；浏览器执行/网络隔离仍待 D2。
 
-C2 适配器已隔离验证，具体接口与限制见 [C2 session](../sessions/2026-10-13-email-imap-executor-c2.md)；C3a 独立同步服务已实现，HTTP/SSE 与进程生命周期尚未接线，下面的组合检查项继续保留。
+C2 适配器已隔离验证，具体接口与限制见 [C2 session](../sessions/2026-10-13-email-imap-executor-c2.md)；C3a 独立同步服务与 C3b HTTP/SSE/进程生命周期已接通，下方 C 组合项具有后端合成验证证据，不代表 App 或真实邮箱已验收。
 
 - [x] C2 使用真实 IMAPClient 4.1.0 配合 asyncio 脚本化 IMAP/TLS 服务端，验证完整 LIST、INBOX 限制、SELECT/EXAMINE 元数据、稀疏 UID 分页/搜索、摘要 PEEK、选定 section 正文与显式 Seen 的失败校验。
 - [x] C2 专用串行 daemon、有界取消/优先队列、世代结果、可中断/续订 IDLE、DONE 未确认断连、库解析前的响应/literal/结构限制和单封错误隔离；正文入队到 wire FETCH 与 FastAPI lifespan 子进程停止的 36 次重复计时均小于 2 秒。DNS 无句柄仅保证限时退役与进程退出，不冒充线程即时取消。
@@ -257,11 +257,13 @@ C3a 具体接口与红绿证据见 [C3a session](../sessions/2026-10-13-email-sy
 - [x] C3a 同步/提醒：首次静默与初始化间隙、稀疏 100/50 分页、全箱未读、n:* 过滤、分批存在查询、跨端 flags/删除、UIDVALIDITY 重建、稳定汇总/逐封 pending、重启/乱序 ack、显式 Seen 与离线正文净化。
 - [x] C3a 错误与停止：有界缩批/单封解析隔离、可重试摘要占位、退役期间取消仍完成清理、DNS stop_timeout 禁止新建所有者直到 closed；服务 + 真实 C2 + SQLite 的 4 个独立完整进程停止场景均 <2 秒，无默认线程池。
 
-- [ ] 测试分两层：服务层用 fake IMAP 适配器；IMAP 适配器本身用脚本化的最小 IMAP 服务端（asyncio TCP，支持 LOGIN/SELECT/EXAMINE/UID SEARCH/UID FETCH/UID STORE/IDLE/DONE，可注入延迟、断线和 IDLE 中的 EXPUNGE）测试选定的真实库。
-- [ ] 覆盖文件夹完整列举但只读 INBOX、中文名称、按 UID 列表分页、正文按需、附件仅元数据；脱敏 MIME 样本包含 RFC 2047/2231、未声明编码的 GBK 头部、gb2312 声明、转发的 message/rfc822、HTML 与纯文本 alternative。
-- [ ] 覆盖首次同步不通知、增量去重、无新邮件时 `n:*` 返回的最后一封不触发通知、重连补收与汇总规则、无订阅者时待提醒保留、ack 后才推进水位且重启不重复、UIDVALIDITY 重置、跨端 FLAGS 变化、删除/移动、全收件箱未读与加载页数独立。
-- [ ] 覆盖读取正文不自动 `\Seen`、显式已读失败不伪报成功、STORE 保留其他 flags、畸形/超大邮件及网络超时不阻塞聊天；IDLE 中到达的取正文请求 2 秒内开始执行；IDLE 进行中停止服务，进程 2 秒内退出。
-- [ ] 实现 `mail.db` 及 `user_version` 迁移、独立任务生命周期、邮件 API 和 SSE。测试缺失/错误 token 被拒绝、邮箱认证错误不触发聊天登出、`/mail/account*` 的 422 响应和日志不含密码、只注入密码的接口不重置水位、`mail_account_id` 不匹配时拒绝注入、`/status` 带 `features`。
+- [x] 测试分两层：服务层用 fake IMAP 适配器；IMAP 适配器本身用脚本化的最小 IMAP 服务端（asyncio TCP，支持 LOGIN/SELECT/EXAMINE/UID SEARCH/UID FETCH/UID STORE/IDLE/DONE，可注入延迟、断线和 IDLE 中的 EXPUNGE）测试选定的真实库。
+- [x] 覆盖文件夹完整列举但只读 INBOX、中文名称、按 UID 列表分页、正文按需、附件仅元数据；脱敏 MIME 样本包含 RFC 2047/2231、未声明编码的 GBK 头部、gb2312 声明、转发的 message/rfc822、HTML 与纯文本 alternative。
+- [x] 覆盖首次同步不通知、增量去重、无新邮件时 `n:*` 返回的最后一封不触发通知、重连补收与汇总规则、无订阅者时待提醒保留、ack 后才推进水位且重启不重复、UIDVALIDITY 重置、跨端 FLAGS 变化、删除/移动、全收件箱未读与加载页数独立。
+- [x] 覆盖读取正文不自动 `\Seen`、显式已读失败不伪报成功、STORE 保留其他 flags、畸形/超大邮件及网络超时不阻塞聊天；IDLE 中到达的取正文请求 2 秒内开始执行；IDLE 进行中停止服务，进程 2 秒内退出。
+- [x] 实现 `mail.db` 及 `user_version` 迁移、独立任务生命周期、邮件 API 和 SSE。测试缺失/错误 token 被拒绝、邮箱认证错误不触发聊天登出、`/mail/account*` 的 422 响应和日志不含密码、只注入密码的接口不重置水位、`mail_account_id` 不匹配时拒绝注入、`/status` 带 `features`。
+
+C3b API/SSE 与实际退出证据见 [C3b session](../sessions/2026-10-13-email-api-c3b.md)：真实 loopback HTTP/SSE、合成 IMAP/真实库、请求校验防泄漏、重启 pending/注入、断开/背压，以及阻塞 I/O/试连的完整 SIGTERM 子进程。C1/C2/C3a 的专项随全量回归通过；真实 Seen/新信/睡眠、App 和系统通知继续保留 A/D/E/F 待验。
 
 ### 阶段 D：邮箱配置与阅读 UI
 

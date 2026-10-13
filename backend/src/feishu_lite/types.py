@@ -53,3 +53,4 @@ class Status(BaseModel):
     state: State
     user: User | None = None
     last_error: str | None = None
+    features: list[str] = ['mail']

@@ -4,11 +4,15 @@ import asyncio
 import json
 import secrets
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 
+from .mail.api import router as mail_router
+from .mail.service import MailService
+from .mail.store import MailStore
 from .service import ChatNotFound, Service
 from .types import AuthExpired, Chat, Message, Status
 
@@ -23,20 +27,46 @@ def _sse(event: str, data: dict) -> str:
     return f'event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n'
 
 
-def create_app(service: Service, token: str) -> FastAPI:
-    expected = f'Bearer {token}'.encode()
+class TokenAuth:
+    """Authenticate before parsing JSON, including malformed credential bodies."""
+    def __init__(self, app, expected: bytes):
+        self.app, self.expected = app, expected
 
-    def require_token(authorization: str | None = Header(default=None)):
-        if not authorization or not secrets.compare_digest(authorization.encode(), expected):
-            raise HTTPException(status_code=401, detail='invalid token')
+    async def __call__(self, scope, receive, send):
+        if scope['type'] == 'http':
+            authorization = next((value for key, value in scope['headers'] if key == b'authorization'), b'')
+            if not secrets.compare_digest(authorization, self.expected):
+                await JSONResponse({'detail': 'invalid token'}, status_code=401)(scope, receive, send)
+                return
+        await self.app(scope, receive, send)
+
+
+def create_app(service: Service, token: str, *, mail_path: Path | None = None,
+               mail_factory=MailService) -> FastAPI:
+    expected = f'Bearer {token}'.encode()
 
     @asynccontextmanager
     async def lifespan(app):
-        await service.start()
-        yield
-        await service.stop()
+        # MailStore is constructed on the serving event loop, never in run_server
+        # before asyncio.run or on an IMAP owner thread.
+        store = MailStore(mail_path or service.store.path.with_name('mail.db'))
+        mail = mail_factory(store, emit=service.emit_mail)
+        app.state.mail = mail
+        try:
+            await mail.start()
+            await service.start()
+            yield
+        finally:
+            service.close_subscribers()
+            try:
+                await asyncio.gather(mail.stop(), service.stop())
+            finally:
+                store.close()
 
-    app = FastAPI(title='feishu-lite-backend', lifespan=lifespan, dependencies=[Depends(require_token)])
+    app = FastAPI(title='feishu-lite-backend', lifespan=lifespan)
+    app.state.chat = service
+    app.add_middleware(TokenAuth, expected=expected)
+    app.include_router(mail_router)
 
     @app.exception_handler(AuthExpired)
     async def _auth_expired(request: Request, exc: AuthExpired):
@@ -102,12 +132,17 @@ def create_app(service: Service, token: str) -> FastAPI:
         async def stream():
             try:
                 yield _sse('status', service.status().model_dump())
+                mail = app.state.mail
+                yield _sse('mail.status', mail._event('mail.status', status=mail.status()).model_dump(mode='json'))
                 while True:
                     try:
-                        event, data = await asyncio.wait_for(queue.get(), HEARTBEAT_SECONDS)
+                        item = await asyncio.wait_for(queue.get(), HEARTBEAT_SECONDS)
                     except TimeoutError:
                         yield ': ping\n\n'
                         continue
+                    if item is None:
+                        return
+                    event, data = item
                     yield _sse(event, data)
             finally:
                 service.unsubscribe(queue)

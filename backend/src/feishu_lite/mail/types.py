@@ -5,7 +5,7 @@ import json
 import re
 from typing import Annotated, Generic, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError, computed_field
 
 UID = Annotated[int, Field(strict=True, ge=1, le=4294967295)]
 UIDNext = Annotated[int, Field(strict=True, ge=1, le=4294967296)]
@@ -142,6 +142,12 @@ class MailSummary(MailHeaders):
     body_part: BodyPart | None = None
     error: str | None = None  # safe per-message error code; a bad row can still appear
 
+    @computed_field
+    @property
+    def id(self) -> str:
+        """Read-only wire id; clients need not reproduce canonical encoding."""
+        return self.key.id
+
 
 class RawBody(MailModel):
     kind: Literal['html', 'plain']
@@ -272,3 +278,28 @@ class MailAccountChange(MailModel):
 class MailConnectionTest(MailModel):
     writable: bool
     supports_idle: bool
+
+
+class MailAccountRequest(MailModel):
+    address: str = Field(strict=True, min_length=3, max_length=512, pattern=r'^[^\s@]+@[^\s@]+$')
+    password: SecretStr = Field(strict=True, min_length=1, max_length=4096, repr=False)
+
+
+class MailCredentialRequest(MailModel):
+    mail_account_id: Identifier
+    password: SecretStr = Field(strict=True, min_length=1, max_length=4096, repr=False)
+
+
+class MailAckRequest(MailModel):
+    mail_account_id: Identifier
+    uidvalidity: UID
+    batch_id: Identifier
+
+
+class MailReadResult(MailModel):
+    read_ids: list[str]
+
+
+class MailAPIError(MailModel):
+    domain: Literal['mail'] = 'mail'
+    code: str

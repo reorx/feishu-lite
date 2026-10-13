@@ -15,6 +15,18 @@ DEFAULT_HOME = Path.home() / 'Library' / 'Application Support' / 'FeishuChat'
 PARENT_CHECK_SECONDS = 2
 
 
+class BackendServer(uvicorn.Server):
+    async def shutdown(self, sockets=None):
+        # Uvicorn normally drains HTTP before lifespan shutdown. A blocked mail
+        # probe/body request cannot drain until its owner is stopped first.
+        app = self.config.app
+        for listener in self.servers:
+            listener.close()
+        app.state.chat.close_subscribers()
+        await asyncio.gather(app.state.mail.stop(), app.state.chat.stop())
+        await super().shutdown(sockets)
+
+
 def prepare_home() -> Path:
     """Create the data dir with private permissions and point larkx at it (must precede any larkx import)."""
     os.umask(0o077)
@@ -41,17 +53,22 @@ def run_server(home: Path, port: int) -> int:
     from .store import Store
 
     service = Service(LarkxSource(), Store(home / 'cache.db'))
-    app = create_app(service, token)
-    server = uvicorn.Server(uvicorn.Config(app, host='127.0.0.1', port=port, log_level='info', access_log=False))
+    app = create_app(service, token, mail_path=home / 'mail.db')
+    server = BackendServer(uvicorn.Config(app, host='127.0.0.1', port=port, log_level='info', access_log=False,
+                                          timeout_graceful_shutdown=.2))
     parent_pid = os.environ.get('FEISHU_LITE_PARENT_PID')
     asyncio.run(_serve(server, int(parent_pid) if parent_pid else None))
     return 0
 
 
 async def _serve(server: uvicorn.Server, parent_pid: int | None):
-    if parent_pid:
-        asyncio.create_task(_exit_with_parent(server, parent_pid))
-    await server.serve()
+    watcher = asyncio.create_task(_exit_with_parent(server, parent_pid)) if parent_pid else None
+    try:
+        await server.serve()
+    finally:
+        if watcher:
+            watcher.cancel()
+            await asyncio.gather(watcher, return_exceptions=True)
 
 
 async def _exit_with_parent(server: uvicorn.Server, pid: int):
