@@ -24,6 +24,8 @@ MVP 功能已经做完并通过验收：扫码登录、会话列表、历史消�
 
 独立图片消息已实现缩略图、点击预览/缩放和失败重试；通过鉴权接口 `GET /messages/{message_id}/image` 按需下载，兼容旧缓存，不支持发送图片或富文本内嵌图片。自动测试和隔离界面验收通过，真实飞书下载待验证，详见 `kb/sessions/2026-10-06-image-messages.md`。
 
+视频会议邀请显示主题、公开会议号和可点击的 `https://vc.feishu.cn/w/` 入口；完整协议模型的 `meetNumber` 才是会议号，不能用内部 `meetingId` 代替。旧占位缓存在 feed 同步或历史读取时补全，详情不可用时每个后端进程只尝试一次；实现与验证见 `kb/sessions/2026-10-14-meeting-invitations.md`。
+
 会话列表支持多选隐藏、隐藏列表和取消隐藏；偏好按账号保存在 App 的 UserDefaults，收到新消息不会解除隐藏，不改变未读和通知策略。验收见 `kb/sessions/2026-10-08-hidden-chats.md`。
 
 Messages / Email 双模块外壳已实现并通过自动测试与构建；独立隔离 UI 已验证草稿、两处首可见行恢复、键盘隔离和模拟聊天回归，主要系统通知已由F2a验证，部分完整回归仍未验，见B原报告及 `kb/sessions/2026-10-14-email-system-integration-f2b.md`。Email 配置、试连、精确账号钥匙串与重启恢复见 `kb/sessions/2026-10-13-email-configuration-d1.md`；主要配置 UI 已经 F1 隔离验证；真实测试 UUID SecItem CRUD 与凭证恢复调用已由 F2b 验证；F2b 旧共享 service 跨签名互访出现 login 密码授权框；R4 已按原计划隔离 Debug/Release service 并通过自动测试与双配置构建，真实测试 UUID 双配置隔离已由 F2c 复验通过，见 `kb/sessions/2026-10-14-email-keychain-chat-f2c.md`，历史 ACL 与真实拒绝/锁定仍未验。Release 保留旧 service，Debug 缺失凭证须重新输入，不回退或迁移旧条目。D2 已实现收件箱 100/50 分页、原生详情、隔离 HTML 与成功显示后的可见性已读，通过自动测试和 Debug 构建；F1 已验证主要阅读 UI、实际 WebKit 资源/脚本隔离、HTTP/_blank 外开和可见性已读，R1 的 HTML 屏幕滚动恢复与新增内存 scheme 隔离已通过 F1b 独立复验，并补齐浅色/鼠标拖宽/旧 cursor 完整恢复/fake Keychain 错误 UI；纯文本R2滚动及原生只读正文主要交互已通过F1c独立复验，P2关闭；真实中文组字与精确旧layout仍未验（`kb/sessions/2026-10-14-email-reader-f1c-acceptance.md`）；未知能力及部分精确竞态仍未验，见 `kb/sessions/2026-10-14-email-reader-f1b-acceptance.md`。原 F1 矩阵见 `kb/sessions/2026-10-14-email-reader-f1-acceptance.md`。实现接续先读 `kb/sessions/2026-10-13-email-reader-d2.md`。真实 IMAP 只读探路已通过，后端库使用 IMAPClient；首版列出全部文件夹、仅读取收件箱，开发依据见 `kb/plans/2026-10-13-email-reader-plan.md`。实现 IMAP 前读 `kb/notes/2026-10-13-email-imap-probe.md`。

@@ -78,14 +78,20 @@ class Store:
         return self.db.execute('SELECT 1 FROM messages WHERE id = ?', (message_id,)).fetchone() is not None
 
     def add_message(self, msg: Message) -> bool:
-        """Insert unless a message with the same id exists. Returns whether it was new."""
+        """Insert or enrich an old meeting placeholder. Returns whether the message was new."""
         data = msg.model_dump()
         cur = self.db.execute(
             f'INSERT OR IGNORE INTO messages ({", ".join(MESSAGE_COLUMNS)}) VALUES ({", ".join("?" for _ in MESSAGE_COLUMNS)})',
             [data[c] for c in MESSAGE_COLUMNS],
         )
+        inserted = cur.rowcount == 1
+        if not inserted and msg.type == 'video_chat' and msg.text != '[视频会议]':
+            self.db.execute(
+                "UPDATE messages SET text=? WHERE id=? AND type='video_chat' AND text='[视频会议]'",
+                (msg.text, msg.id),
+            )
         self.db.commit()
-        return cur.rowcount == 1
+        return inserted
 
     def get_message(self, message_id: str) -> Message | None:
         row = self.db.execute(f'{MESSAGE_SELECT} WHERE m.id = ?', (message_id,)).fetchone()

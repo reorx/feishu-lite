@@ -55,6 +55,7 @@ class Service:
         self._qr_task: asyncio.Task | None = None
         self._tasks: set[asyncio.Task] = set()
         self._reconnect_attempt = 0
+        self._meeting_refresh_attempts: set[str] = set()
 
     # ---- lifecycle ----
 
@@ -213,6 +214,7 @@ class Service:
             self._qr_task.cancel()
         await self.source.logout()
         self.store.clear()
+        self._meeting_refresh_attempts.clear()
         self.qr_status = 'idle'
         self._to_logged_out(None)
 
@@ -328,6 +330,16 @@ class Service:
         cached = self.store.messages_between(chat_id, low, high)
         if len({m.position for m in cached}) < high - low + 1:
             await self._backfill(chat_id, low, high)
+            cached = self.store.messages_between(chat_id, low, high)
+        stale_meetings = [
+            m for m in cached
+            if m.type == 'video_chat' and m.text == '[视频会议]' and m.id not in self._meeting_refresh_attempts
+        ]
+        if stale_meetings:
+            refreshed = await self.source.pull_history(chat_id, [m.position for m in stale_meetings])
+            for msg in refreshed:
+                self.store.add_message(msg)
+            self._meeting_refresh_attempts.update(m.id for m in stale_meetings)
             cached = self.store.messages_between(chat_id, low, high)
         return cached
 

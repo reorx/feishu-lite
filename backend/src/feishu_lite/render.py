@@ -111,7 +111,29 @@ def render_content(msg_type: int, content: bytes) -> str:
         return f'[卡片] {title}' if title else '[卡片]'
     if msg_type == 6:
         return _system_text(content)
+    if msg_type == 19:
+        return _meeting_text(content)
     return PLACEHOLDERS.get(msg_type, '[消息]')
+
+
+def _meeting_text(content: bytes) -> str:
+    # proto_pb2.VideoChatContent is a reduced schema without meetNumber (field 8).
+    # The full upstream entity distinguishes the public number from internal meetingId.
+    vc = _parse(L.entities.VideoChatContent, content)
+    if not vc.HasField('meetingCard') and vc.type != 1:
+        return '[视频会议]'
+    card = vc.meetingCard
+    title = f'[视频会议] {card.topic}'.strip()
+    number = card.meetNumber.strip()
+    if re.fullmatch(r'[0-9]{9}', number):
+        number = ' '.join(number[i:i + 3] for i in range(0, 9, 3))
+    lines = [title]
+    if number:
+        lines.append(f'会议号：{number}')
+    # The meeting card has no join-URL field. Offer the web entry rather than
+    # guessing a deep link from an internal ID or the public meeting number.
+    lines.append('入会入口：https://vc.feishu.cn/w/')
+    return '\n'.join(lines)
 
 
 def _system_text(content: bytes) -> str:
