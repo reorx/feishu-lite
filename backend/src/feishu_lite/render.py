@@ -125,14 +125,16 @@ def _meeting_text(content: bytes) -> str:
     card = vc.meetingCard
     title = f'[视频会议] {card.topic}'.strip()
     number = card.meetNumber.strip()
-    if re.fullmatch(r'[0-9]{9}', number):
-        number = ' '.join(number[i:i + 3] for i in range(0, 9, 3))
+    valid_number = number if re.fullmatch(r'[0-9]{9}', number) else ''
+    if valid_number:
+        number = ' '.join(valid_number[i:i + 3] for i in range(0, 9, 3))
     lines = [title]
     if number:
         lines.append(f'会议号：{number}')
-    # The meeting card has no join-URL field. Offer the web entry rather than
-    # guessing a deep link from an internal ID or the public meeting number.
-    lines.append('入会入口：https://vc.feishu.cn/w/')
+    # The meeting card has no join-URL field. The web client accepts the public
+    # meeting number in the path; meetingId is a different, internal identifier.
+    entry = f'https://vc.feishu.cn/w/{valid_number}'
+    lines.append(f'入会入口：{entry}')
     return '\n'.join(lines)
 
 

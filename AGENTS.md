@@ -24,7 +24,7 @@ MVP 功能已经做完并通过验收：扫码登录、会话列表、历史消�
 
 独立图片消息已实现缩略图、点击预览/缩放和失败重试；通过鉴权接口 `GET /messages/{message_id}/image` 按需下载，兼容旧缓存，不支持发送图片或富文本内嵌图片。自动测试和隔离界面验收通过，真实飞书下载待验证，详见 `kb/sessions/2026-10-06-image-messages.md`。
 
-视频会议邀请显示主题、公开会议号和可点击的 `https://vc.feishu.cn/w/` 入口；完整协议模型的 `meetNumber` 才是会议号，不能用内部 `meetingId` 代替。旧占位缓存在 feed 同步或历史读取时补全，详情不可用时每个后端进程只尝试一次；实现与验证见 `kb/sessions/2026-10-14-meeting-invitations.md`。
+视频会议邀请显示主题、公开会议号和可点击的 `https://vc.feishu.cn/w/<meetNumber>` 入口；完整协议模型的 `meetNumber` 才是会议号，不能用内部 `meetingId` 代替。旧占位缓存在 feed 同步或历史读取时补全，详情不可用时每个后端进程只尝试一次；实现与验证见 `kb/sessions/2026-10-14-meeting-invitations.md` 和 `kb/sessions/2026-10-14-meeting-entry-links.md`。
 
 会话列表支持多选隐藏、隐藏列表和取消隐藏；偏好按账号保存在 App 的 UserDefaults，收到新消息不会解除隐藏，不改变未读和通知策略。验收见 `kb/sessions/2026-10-08-hidden-chats.md`。
 

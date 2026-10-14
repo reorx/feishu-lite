@@ -10,7 +10,7 @@ def meeting(text):
 def test_enrich_cached_meeting_without_treating_it_as_new(tmp_path):
     store = Store(tmp_path / 'cache.db')
     old = meeting('[视频会议]')
-    rich = meeting('[视频会议] 测试会议\n会议号：123 456 789\n入会入口：https://vc.feishu.cn/w/')
+    rich = meeting('[视频会议] 测试会议\n会议号：123 456 789\n入会入口：https://vc.feishu.cn/w/123456789')
     assert store.add_message(old)
     assert not store.add_message(rich)
     assert store.get_message(old.id).text == rich.text
@@ -29,7 +29,7 @@ def test_revoked_meeting_is_not_restored_by_cache_enrichment(tmp_path):
 
 
 async def test_cached_meeting_is_refetched_once_without_mark_read_or_notification(source, make_backend):
-    rich = meeting('[视频会议] 测试会议\n会议号：123 456 789\n入会入口：https://vc.feishu.cn/w/')
+    rich = meeting('[视频会议] 测试会议\n会议号：123 456 789\n入会入口：https://vc.feishu.cn/w/123456789')
     source.add_chat(make_chat('A', unread=3), [rich])
     h = await make_backend(source)
     h.service.store.db.execute('UPDATE messages SET text=? WHERE id=?', ('[视频会议]', rich.id))

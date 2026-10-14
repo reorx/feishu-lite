@@ -26,12 +26,14 @@ def meeting_content(**fields):
 
 def test_meeting_invitation_displays_topic_number_and_web_entry():
     content = meeting_content(topic='测试交付会议', meetNumber='123456789', meetingId='9000000000000000001')
-    assert render_content(19, content) == '[视频会议] 测试交付会议\n会议号：123 456 789\n入会入口：https://vc.feishu.cn/w/'
+    assert render_content(19, content) == (
+        '[视频会议] 测试交付会议\n会议号：123 456 789\n入会入口：https://vc.feishu.cn/w/123456789'
+    )
 
 
 def test_meeting_without_topic_keeps_number_and_does_not_use_internal_id():
     content = meeting_content(meetNumber='123456789', meetingId='9000000000000000001')
-    assert render_content(19, content) == '[视频会议]\n会议号：123 456 789\n入会入口：https://vc.feishu.cn/w/'
+    assert render_content(19, content) == '[视频会议]\n会议号：123 456 789\n入会入口：https://vc.feishu.cn/w/123456789'
 
 
 @pytest.mark.parametrize('fields', [{}, {'meetingId': '9000000000000000001'}, {'topic': '测试会议'}])
