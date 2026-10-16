@@ -1,11 +1,11 @@
 # AGENTS.md
 
-FeishuChat：不依赖飞书官方客户端的轻量飞书聊天客户端（macOS）。协议层走**逆向网页版协议**（cv-cat/LarkAgentX 的 `larkx` 包），不走官方 OpenAPI，因为公司租户是免费版，API 额度撑不起单聊的实时通知。选型依据见 `kb/notes/2026-09-29-feishu-chat-access-research.md`。
+FeishuLite：不依赖飞书官方客户端的轻量飞书聊天客户端（macOS）。协议层走**逆向网页版协议**（cv-cat/LarkAgentX 的 `larkx` 包），不走官方 OpenAPI，因为公司租户是免费版，API 额度撑不起单聊的实时通知。选型依据见 `kb/notes/2026-09-29-feishu-chat-access-research.md`。
 
 ## 结构
 
 - `backend/`：Python（uv）后端 `feishu-lite-backend`，封装 larkx，对外提供 127.0.0.1 上的 REST + SSE 接口，本地缓存用 SQLite。
-- `mac/`：SwiftUI App `FeishuChat`（bundle id `com.reorx.FeishuChat`），负责拉起并守护后端子进程、界面和通知。工程约定和 App 的工作方式见 `mac/AGENTS.md`，改 App 之前先读。
+- `mac/`：SwiftUI App `FeishuLite`（bundle id `com.reorx.FeishuLite`），负责拉起并守护后端子进程、界面和通知。工程约定和 App 的工作方式见 `mac/AGENTS.md`，改 App 之前先读。
 - `kb/`：计划、笔记、session 总结；`kb/known-issues.md` 是已知问题的唯一清单，`kb/next-up.md` 是到期要做的检查。
 - `tmp/`：探路脚本、验收脚本和截图，已 gitignore。
 
@@ -16,7 +16,7 @@ FeishuChat：不依赖飞书官方客户端的轻量飞书聊天客户端（macO
 - Python 是由 App 启动并守护的常驻本地服务子进程，负责登录凭证、飞书通信、实时连接与重连、消息同步和 SQLite 缓存；Swift 负责界面、本地通知和 Dock 角标。后端用 FastAPI + Uvicorn，仅监听 `127.0.0.1`，App 每次启动后端分配随机端口和访问 token。
 - App 启动时拉起后端，关闭窗口后继续运行，退出 App 时终止后端；后端崩溃由 App 自动重启，App 异常退出则由后端检查父进程 PID 后自行关闭。它不注册为独立的 launchd daemon，也不会为每次聊天操作重新执行命令。
 - Debug 通过 `uv run --project <backend目录> feishu-lite-backend --port P` 运行源码；Release 直接运行用户通过 `uv tool install` 安装的后端。`feishu-lite-backend login` 是额外的终端扫码排障命令，登录完成后退出。
-- 本机服务就绪与飞书在线是两回事：后端连接状态为 `logged_out` / `connecting` / `online` / `reconnecting`；未登录或凭证失效时，本机服务仍运行，等待重新登录。生命周期入口见 `backend/src/feishu_lite/main.py`、`service.py` 和 `mac/FeishuChat/Services/BackendSupervisor.swift`。
+- 本机服务就绪与飞书在线是两回事：后端连接状态为 `logged_out` / `connecting` / `online` / `reconnecting`；未登录或凭证失效时，本机服务仍运行，等待重新登录。生命周期入口见 `backend/src/feishu_lite/main.py`、`service.py` 和 `mac/FeishuLite/Services/BackendSupervisor.swift`。
 
 ## 当前状态
 
@@ -34,6 +34,7 @@ Messages / Email 双模块外壳已实现并通过自动测试与构建；独立
 
 ## 文档
 
+- 改名兼容：数据目录和邮件 Keychain service 保留 FeishuChat 存储标识；UserDefaults 在模型创建前一次性迁移。新 bundle 的通知/登录项须重新授权，详见发布指南的升级说明。
 - `kb/docs/releases.md` — 签名、公证、GitHub Releases 与 Homebrew Cask；修改发布工作流或执行发布前读。
 - `kb/docs/module-shell.md` — 双模块的切换、已读、通知与 badge 规则；修改模块外壳或跨模块行为前读。
 - `kb/docs/email-foundation.md` — 邮件账号、同步/提醒、独立缓存和正文安全边界；修改邮件服务、存储、解析或展示前读。
@@ -43,8 +44,8 @@ Messages / Email 双模块外壳已实现并通过自动测试与构建；独立
 - CI 与发布：`.github/workflows/ci.yml` 验证测试、独立后端安装和 App 构建；`release.yml` 在推送 `vMAJOR.MINOR.PATCH` 时构建、签名、公证 Universal DMG，发布到当前仓库并更新 `reorx/homebrew-tap` 的 `feishu-lite` Cask。Release 不内置 Python/larkx；Cask 安装/升级时通过 uv 安装构建对应 commit 的后端。Secrets、首次发布和失败重试见 `kb/docs/releases.md`。
 
 - 后端测试：`cd backend && uv run pytest`。App：`cd mac && make test && make build && make run`。
-- App 自己拉起后端，不需要单独启动。正式数据在 `~/Library/Application Support/FeishuChat/`，后端日志在 `~/Library/Logs/FeishuChat/backend.log`。
-- 聊天接口以 `backend/src/feishu_lite/api.py` 和 `types.py` 为准；邮件接口/共享模型在 `mail/api.py`、`mail/types.py`。App 聊天模型在 `mac/FeishuChatCore/Sources/FeishuChatCore/Models.swift`，邮件模型在同目录 `MailModels.swift`，合成 wire 样本由 Core 测试交叉验证；改已接入接口时两边要一起改。
+- App 自己拉起后端，不需要单独启动。正式数据在 `~/Library/Application Support/FeishuChat/`，后端日志在 `~/Library/Logs/FeishuLite/backend.log`。
+- 聊天接口以 `backend/src/feishu_lite/api.py` 和 `types.py` 为准；邮件接口/共享模型在 `mail/api.py`、`mail/types.py`。App 聊天模型在 `mac/FeishuLiteCore/Sources/FeishuLiteCore/Models.swift`，邮件模型在同目录 `MailModels.swift`，合成 wire 样本由 Core 测试交叉验证；改已接入接口时两边要一起改。
 
 ## 不变量
 

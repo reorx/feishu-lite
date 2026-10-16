@@ -7,13 +7,16 @@ revision=${3:?Usage: render-cask.sh VERSION SHA256 BACKEND_COMMIT}
 [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Invalid release version' >&2; exit 1; }
 [[ "$sha256" =~ ^[a-f0-9]{64}$ ]] || { echo 'Invalid SHA256' >&2; exit 1; }
 [[ "$revision" =~ ^[a-f0-9]{40}$ ]] || { echo 'Backend must be pinned to a full commit SHA' >&2; exit 1; }
+# The published 0.1.0 artifact must remain addressable by its original name.
+app_name=FeishuLite
+[[ "$version" != "0.1.0" ]] || app_name=FeishuChat
 cat <<RUBY
 cask "feishu-lite" do
   version "$version"
   sha256 "$sha256"
 
-  url "https://github.com/reorx/feishu-lite/releases/download/v#{version}/FeishuChat-#{version}.dmg"
-  name "FeishuChat"
+  url "https://github.com/reorx/feishu-lite/releases/download/v#{version}/$app_name-#{version}.dmg"
+  name "$app_name"
   desc "Lightweight Feishu chat client"
   homepage "https://github.com/reorx/feishu-lite"
 
@@ -21,7 +24,7 @@ cask "feishu-lite" do
   depends_on formula: "uv"
   depends_on formula: "git"
 
-  app "FeishuChat.app"
+  app "$app_name.app"
 
   # Third-party tap Ruby hook: also runs on upgrade. Keep the Finder-visible path
   # stable even when a shell config customizes UV_TOOL_BIN_DIR.
@@ -36,7 +39,9 @@ cask "feishu-lite" do
   caveats <<~EOS
     The Python backend is installed for the current user using uv.
     Installation and upgrades require access to GitHub and Python package sources.
-    Quit FeishuChat before upgrading, then reopen it.
+    Quit both FeishuChat and FeishuLite before upgrading, then open $app_name.
+    Upgrading from FeishuChat requires enabling notifications and login at startup again.
+    Existing mail passwords may require Keychain authorization for the new app.
     Uninstalling the cask preserves your login, messages, mail and uv backend.
     To remove the backend separately: uv tool uninstall feishu-lite-backend
   EOS

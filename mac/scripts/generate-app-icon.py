@@ -8,7 +8,7 @@ from pathlib import Path
 def main():
     mac_dir = Path(__file__).resolve().parents[1]
     source = mac_dir / "Artwork/AppIcon.png"
-    catalog = mac_dir / "FeishuChat/Assets.xcassets"
+    catalog = mac_dir / "FeishuLite/Assets.xcassets"
     icon_set = catalog / "AppIcon.appiconset"
     icon_set.mkdir(parents=True, exist_ok=True)
     info = {"author": "xcode", "version": 1}

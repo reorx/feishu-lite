@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="mac/Artwork/AppIcon.png" alt="FeishuChat" width="160">
+  <img src="mac/Artwork/AppIcon.png" alt="FeishuLite" width="160">
 </p>
 
-<h1 align="center">FeishuChat</h1>
+<h1 align="center">FeishuLite</h1>
 
 <p align="center">一个只用来聊天的轻量飞书 macOS 客户端</p>
 
-飞书官方客户端里装着文档、日历、会议和工作台。如果你在电脑上用飞书主要是为了收发消息，可以试试 FeishuChat。用手机飞书扫码登录后，就能在电脑上查看会话、回复消息，有新消息时收到系统通知。
+飞书官方客户端里装着文档、日历、会议和工作台。如果你在电脑上用飞书主要是为了收发消息，可以试试 FeishuLite。用手机飞书扫码登录后，就能在电脑上查看会话、回复消息，有新消息时收到系统通知。
 
 ## 功能
 
@@ -32,7 +32,7 @@ Cask 自动安装 uv、Git、Python 3.12 和与 App 对应的后端。安装时�
 
 ### 手动安装 DMG
 
-从[本仓库 Releases](https://github.com/reorx/feishu-lite/releases) 下载 DMG，将 FeishuChat 拖到 Applications。发布包经过 Developer ID 签名和 Apple 公证。
+从[本仓库 Releases](https://github.com/reorx/feishu-lite/releases) 下载 DMG，将 FeishuLite 拖到 Applications。发布包经过 Developer ID 签名和 Apple 公证。
 
 **使用前必须安装 Python 后端 `feishu-lite-backend`**。App 本身不包含 Python 或 `larkx` 等依赖：
 
@@ -44,10 +44,10 @@ Cask 自动安装 uv、Git、Python 3.12 和与 App 对应的后端。安装时�
 
 ## 使用
 
-1. 打开 FeishuChat，用手机飞书扫描窗口里的二维码，在手机上确认登录。
+1. 打开 FeishuLite，用手机飞书扫描窗口里的二维码，在手机上确认登录。
 2. 在左侧选择一个会话。输入文字后按回车发送，按 Shift + 回车换行。
-3. 系统询问是否允许通知时，选择允许。如果之前拒绝过，可以在「系统设置 → 通知 → FeishuChat」里打开。
-4. 想让 FeishuChat 开机自动运行，在菜单栏的应用菜单里勾选「开机启动」。
+3. 系统询问是否允许通知时，选择允许。如果之前拒绝过，可以在「系统设置 → 通知 → FeishuLite」里打开。
+4. 想让 FeishuLite 开机自动运行，在菜单栏的应用菜单里勾选「开机启动」。
 
 在前台可见的 Messages 工作区打开一个会话会把它标为已读，手机上的未读也会一起清掉。停留在 Email 时，之前选中的聊天继续同步，但不会因为旧选择被自动标为已读；切回 Messages 后补判已读。
 
@@ -61,7 +61,7 @@ Email 列出全部文件夹，首版仅读取收件箱。正文成功显示且 A
 
 目前还不能发送图片和文件，也没有音视频会议、云文档等功能，用到这些时请打开官方客户端。
 
-FeishuChat 不是飞书官方产品，它使用和飞书网页版相同的方式连接飞书，飞书更新后可能会暂时无法使用。登录信息和消息缓存只保存在你自己的电脑上，不经过任何第三方服务器。
+FeishuLite 不是飞书官方产品，它使用和飞书网页版相同的方式连接飞书，飞书更新后可能会暂时无法使用。登录信息和消息缓存只保存在你自己的电脑上，不经过任何第三方服务器。
 
 ## 构建和发布
 
@@ -75,5 +75,11 @@ FeishuChat 不是飞书官方产品，它使用和飞书网页版相同的方式
 
 ## Reference
 
-- [cv-cat/LarkAgentX](https://github.com/cv-cat/LarkAgentX)：逆向实现的飞书网页版协议。FeishuChat 的扫码登录和消息收发都基于它的 larkx 库。
-- [EthanQC/feishu-user-plugin](https://github.com/EthanQC/feishu-user-plugin)：FeishuChat 定时刷新登录状态的做法参考了它。
+- [cv-cat/LarkAgentX](https://github.com/cv-cat/LarkAgentX)：逆向实现的飞书网页版协议。FeishuLite 的扫码登录和消息收发都基于它的 larkx 库。
+- [EthanQC/feishu-user-plugin](https://github.com/EthanQC/feishu-user-plugin)：FeishuLite 定时刷新登录状态的做法参考了它。
+
+### 从 FeishuChat 升级
+
+当前源码已改名为 **FeishuLite**（bundle ID `com.reorx.FeishuLite`）；已发布的 v0.1.0 仍叫 FeishuChat，下一版才提供新名称。安装命令不变。
+
+升级前先取消旧 App 的开机启动并退出旧 App；新 App 需要重新允许通知、开启登录项，邮件钥匙串可能要求授权。原登录和聊天/邮箱缓存继续保存在 `~/Library/Application Support/FeishuChat/`，不会清空。手动安装用户可在退出后将旧 FeishuChat.app 移到废纸篓。详见[升级说明](kb/docs/releases.md#从-feishuchat-升级)。

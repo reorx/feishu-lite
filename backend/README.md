@@ -1,6 +1,6 @@
 # feishu-lite-backend
 
-FeishuChat 的本地后端：封装 larkx（逆向飞书网页版协议），在 127.0.0.1 上提供 REST + SSE，SQLite 做本地缓存。平时由 Mac App 拉起，不需要手动运行。
+FeishuLite 的本地后端：封装 larkx（逆向飞书网页版协议），在 127.0.0.1 上提供 REST + SSE，SQLite 做本地缓存。平时由 Mac App 拉起，不需要手动运行。
 
 ```bash
 uv run pytest                                   # 行为测试（FakeSource，不连飞书）

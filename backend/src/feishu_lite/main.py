@@ -11,6 +11,7 @@ import uvicorn
 
 log = logging.getLogger('feishu_lite')
 
+# Stable storage namespace: keep existing credentials, chat/mail DBs and rollback compatibility.
 DEFAULT_HOME = Path.home() / 'Library' / 'Application Support' / 'FeishuChat'
 PARENT_CHECK_SECONDS = 2
 
@@ -109,7 +110,7 @@ def run_login() -> int:
 
 def main():
     parser = argparse.ArgumentParser(
-        prog='feishu-lite-backend', description='FeishuChat local backend (127.0.0.1 REST + SSE)'
+        prog='feishu-lite-backend', description='FeishuLite local backend (127.0.0.1 REST + SSE)'
     )
     parser.add_argument('--port', type=int, default=18765)
     sub = parser.add_subparsers(dest='command')

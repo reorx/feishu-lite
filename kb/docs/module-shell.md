@@ -9,7 +9,7 @@ tags:
 
 # Messages / Email 模块外壳
 
-给使用或维护 FeishuChat 的人：两个模块如何切换，以及切换对聊天未读和通知有什么影响。
+给使用或维护 FeishuLite 的人：两个模块如何切换，以及切换对聊天未读和通知有什么影响。
 
 窗口最左侧固定显示 Messages、Email 入口，右侧显示当前模块的列表和详情。Email 已有独立配置、同步状态、收件箱列表与正文；主要配置/阅读 UI 与实际 WebKit 隔离已经 F1 验证，测试 UUID 双配置真实钥匙串隔离已通过 [F2c验收](../sessions/2026-10-14-email-keychain-chat-f2c.md)，历史 ACL、真实系统错误和剩余 UI 项仍待验。聊天扫码页只占 Messages 工作区；停留 Email 时不会启动扫码。稳定合成服务下的隐藏取消往返、假扫码状态、邮箱认证失败/HTTP 超时期间聊天历史、实际键入后点击发送与草稿已由 F2c 验证；不代表真实飞书登录或 IME/Return 键盘路径通过。后端运行依赖缺失时，仍显示全局安装引导；旧后端缺少 mail 能力时 Email 提示更新后重新检测。
 
@@ -25,4 +25,4 @@ tags:
 
 邮件提醒按后端稳定批次处理，成功投递或明确抑制后才确认；当前 Email 只抑制同一封成功显示的正文，其他邮件及自己发给自己的收件仍提醒。读删、重建和账号移除清理对应邮件通知。投递结果不确定时保留待提醒与恢复入口，不自动重弹或确认；明确再次提醒可能重复显示。恢复提示在收件箱列表和详情上方占独立空间，文字可换行，重试按钮保留完整尺寸；没有提示时不占空间。唤醒经同一本机后端合并重连，再对账计数/提醒与可见已读。以上调用点已通过自动测试；实际系统通知、恢复提示布局与睡眠行为留独立验收，见 [E 报告](../sessions/2026-10-14-email-notifications-e.md)。
 
-相关代码：[外壳状态](../../mac/FeishuChat/Model/AppState.swift)、[聊天状态](../../mac/FeishuChat/Model/MessagesState.swift)、[策略与路由](../../mac/FeishuChatCore/Sources/FeishuChatCore/ModuleShell.swift)。验证见 [Core 行为测试](../../mac/FeishuChatCore/Tests/FeishuChatCoreTests/ModuleShellTests.swift) 和 [实际状态调用测试](../../mac/Tests/FeishuChatStateTests/ModuleIntegrationTests.swift)；完整范围见 [邮箱阅读器计划](../plans/2026-10-13-email-reader-plan.md)。
+相关代码：[外壳状态](../../mac/FeishuLite/Model/AppState.swift)、[聊天状态](../../mac/FeishuLite/Model/MessagesState.swift)、[策略与路由](../../mac/FeishuLiteCore/Sources/FeishuLiteCore/ModuleShell.swift)。验证见 [Core 行为测试](../../mac/FeishuLiteCore/Tests/FeishuLiteCoreTests/ModuleShellTests.swift) 和 [实际状态调用测试](../../mac/Tests/FeishuLiteStateTests/ModuleIntegrationTests.swift)；完整范围见 [邮箱阅读器计划](../plans/2026-10-13-email-reader-plan.md)。

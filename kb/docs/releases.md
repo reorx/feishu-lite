@@ -2,9 +2,9 @@
 created: 2026-10-16
 tags: [release, homebrew, macos]
 ---
-# 发布 FeishuChat
+# 发布 FeishuLite
 
-用户通过 `brew install --cask reorx/tap/feishu-lite` 安装。Cask 安装 FeishuChat.app，同时安装 uv、Git 及与 App 对应 commit 的 Python 后端。v0.1.0 已成功发布到 GitHub Releases 和 tap。DMG 用户按照 Release 页说明手动安装后端。
+用户通过 `brew install --cask reorx/tap/feishu-lite` 安装。下一版 Cask 安装 FeishuLite.app，同时安装 uv、Git 及与 App 对应 commit 的 Python 后端。v0.1.0 已发布到 GitHub Releases 和 tap，仍为 FeishuChat.app；不得重打该 tag 或替换旧产物。DMG 用户按照 Release 页说明手动安装后端。
 
 ## 发布流程
 
@@ -60,7 +60,7 @@ git push origin v0.1.1
 
 ## 安装和卸载边界
 
-安装与升级需要访问 GitHub、Python 下载源和包源。uv 安装失败会使 Cask 安装报错，网络恢复后可 `brew reinstall --cask reorx/tap/feishu-lite` 重试。升级前退出 FeishuChat，避免正在运行的后端与磁盘版本不一致。
+安装与升级需要访问 GitHub、Python 下载源和包源。uv 安装失败会使 Cask 安装报错，网络恢复后可 `brew reinstall --cask reorx/tap/feishu-lite` 重试。升级前退出 FeishuLite，避免正在运行的后端与磁盘版本不一致。
 
 后端入口固定安装到当前用户 `~/.local/bin`，Finder 启动可发现；Cask 为当前用户安装后端，不为其他 macOS 用户预装。普通卸载保留登录、消息、邮箱和 uv 后端，不添加会清空数据的 zap。需要单独卸载后端时执行 `uv tool uninstall feishu-lite-backend`。
 
@@ -76,3 +76,17 @@ Cask 使用第三方 tap 仍兼容的 Ruby `postflight`，用于调用需要联�
 - `mac/Config/Release.xcconfig`：禁用基础调试权限注入；`get-task-allow` 会导致 Apple 拒绝公证，不能删除这项配置。
 
 本地检查：`actionlint`、`bash -n scripts/render-cask.sh scripts/release-notes.sh mac/scripts/make-dmg.sh`、`uv run --no-project python -m unittest discover -s scripts/tests -v`。
+
+## 从 FeishuChat 升级
+
+下一版原生客户端为 **FeishuLite.app / com.reorx.FeishuLite**，工程及 Swift 包也统一使用 FeishuLite。安装命令和 Cask token `feishu-lite` 不变；新的 DMG 为 `FeishuLite-<version>.dmg`。`render-cask.sh` 对已发布的 0.1.0 保留旧 app/DMG 名称。线上 tap 在下一版本成功发布后才更新，目前仍提供原版 0.1.0。
+
+升级前退出 FeishuChat 和 FeishuLite，避免两份后端同时使用同一缓存。Homebrew 使用已安装旧 Cask 的 app artifact 卸载/暂存 FeishuChat，再安装新 Cask 的 FeishuLite；无需额外删除钩子，也不添加 zap。手动 DMG 用户在退出旧 App、取消旧 App 的「开机启动」后，将新 App 拖入 Applications，再把旧 FeishuChat.app 移到废纸篓；不要删除 Application Support 或钥匙串。
+
+- **登录和数据库**：保留 `~/Library/Application Support/FeishuChat/` 作为稳定存储命名空间，原 larkx 凭证、cache.db、mail.db 原地使用，不复制或改名 SQLite，也不合并两套数据。`FEISHU_LITE_HOME` 覆盖仍有效。旧版回退继续读取同一目录。
+- **偏好**：新 App 在模型创建前，从 `com.reorx.FeishuChat` UserDefaults 域一次性补齐缺失值，保留隐藏会话、当前模块、邮件通知 receipt/intent 与待清理凭证 UUID。新值优先，旧域不删除；以后删除新偏好不会再次从旧域复活。草稿本来只在内存中，退出前先处理未发送内容。
+- **邮件密码**：继续使用 Release `com.reorx.FeishuChat.mail` / Debug `.mail.debug`，精确 account UUID 和双配置隔离不变。这些是存储标识，不是 bundle ID。旧钥匙串 ACL 可能要求允许新 App 访问，拒绝时应用原有错误/重试/重新输入流程；不批量删密码、不跨配置读取、不导出明文。
+- **通知与登录项**：新 bundle 是新的系统身份，需要重新允许 FeishuLite 通知、在新 App 菜单勾选开机启动。升级前先在旧 App 取消开机启动，或在系统设置「通用 → 登录项」移除旧项。不能通过新 bundle 的 `SMAppService.mainApp` 替旧 App 注销；不冒用旧身份。旧通知不会迁移或自动清理，用户可手动清除，旧通知点击也不会转交新 App。
+- **日志**：新日志写入 `~/Library/Logs/FeishuLite/backend.log`，旧日志保留供排障。
+
+改名的本地验证与边界见 [改名记录](../sessions/2026-10-16-feishulite-rename.md)。正式签名、公证和从 0.1.0 的完整 Homebrew 升级需在下一版发布时验证。

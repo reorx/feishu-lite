@@ -4,7 +4,7 @@
 
 ## 下次干净 macOS 用户环境验收时
 
-- **补齐 Cask 全安装验收**：v0.1.0 已正式发布，签名、公证、tap 更新、Homebrew 下载/校验和、下载后 App Gatekeeper 与隔离后端安装均通过；干净用户环境仍需验证完整 `brew install --cask reorx/tap/feishu-lite`、Finder 启动和下一版本升级。
+- **补齐 Cask 全安装验收**：v0.1.0 已正式发布，签名、公证、tap 更新、Homebrew 下载/校验和、下载后 App Gatekeeper 与隔离后端安装均通过；干净用户环境仍需验证完整 `brew install --cask reorx/tap/feishu-lite`、Finder 启动和下一版本升级。下一版包含 FeishuLite 改名，需验证旧 app 被替换、偏好继承、邮件钥匙串 ACL、通知重新授权及登录项切换；保持 v0.1.0 原产物不变。
   → 操作见 `kb/docs/releases.md`，结果记到 `kb/sessions/2026-10-16-homebrew-release.md`。
 
 ## 邮箱阶段 F 真实验收前，用户指定测试邮件与发件来源后

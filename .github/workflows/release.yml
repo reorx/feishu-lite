@@ -34,7 +34,7 @@ jobs:
       - name: Resolve version
         id: version
         run: |
-          version=0.1.0
+          version=0.1.1
           if [[ "$GITHUB_REF_TYPE" == tag ]]; then
             version=${GITHUB_REF_NAME#v}
           fi
@@ -64,12 +64,12 @@ jobs:
           VERSION: ${{ steps.version.outputs.marketing }}
         run: |
           make -C mac build-release BACKEND_REVISION="$GITHUB_SHA" RELEASE_XCARGS="DEVELOPMENT_TEAM=$APPLE_TEAM_ID OTHER_CODE_SIGN_FLAGS=--timestamp MARKETING_VERSION=$VERSION CURRENT_PROJECT_VERSION=$GITHUB_RUN_NUMBER"
-          codesign --verify --deep --strict mac/.build/DerivedData/Build/Products/Release/FeishuChat.app
-          codesign -d --entitlements :- mac/.build/DerivedData/Build/Products/Release/FeishuChat.app > "$RUNNER_TEMP/entitlements.plist"
+          codesign --verify --deep --strict mac/.build/DerivedData/Build/Products/Release/FeishuLite.app
+          codesign -d --entitlements :- mac/.build/DerivedData/Build/Products/Release/FeishuLite.app > "$RUNNER_TEMP/entitlements.plist"
           if [[ "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.get-task-allow' "$RUNNER_TEMP/entitlements.plist" 2>/dev/null || true)" == true ]]; then
             echo 'Release must not contain get-task-allow'; exit 1
           fi
-          architectures=$(lipo -archs mac/.build/DerivedData/Build/Products/Release/FeishuChat.app/Contents/MacOS/FeishuChat)
+          architectures=$(lipo -archs mac/.build/DerivedData/Build/Products/Release/FeishuLite.app/Contents/MacOS/FeishuLite)
           [[ " $architectures " == *" arm64 "* && " $architectures " == *" x86_64 "* ]]
           make -C mac dmg
           codesign --sign 'Developer ID Application' --timestamp mac/dist/*.dmg
@@ -94,7 +94,7 @@ jobs:
           (cd mac/dist && shasum -a 256 ./*.dmg > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: FeishuChat-release
+          name: FeishuLite-release
           path: mac/dist/*
           if-no-files-found: error
       - name: Publish in this repository
@@ -107,7 +107,7 @@ jobs:
             gh release upload "$GITHUB_REF_NAME" mac/dist/* --repo "$GITHUB_REPOSITORY" --clobber
             gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --notes-file "$RUNNER_TEMP/release-notes.md"
           else
-            gh release create "$GITHUB_REF_NAME" mac/dist/* --repo "$GITHUB_REPOSITORY" --verify-tag --title "FeishuChat $GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release-notes.md"
+            gh release create "$GITHUB_REF_NAME" mac/dist/* --repo "$GITHUB_REPOSITORY" --verify-tag --title "FeishuLite $GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release-notes.md"
           fi
       - name: Clean signing credentials
         if: always()
@@ -149,9 +149,9 @@ jobs:
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
           mkdir -p "$RUNNER_TEMP/release" tap/Casks
           gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
-            --pattern "FeishuChat-$version.dmg" --pattern SHA256SUMS --dir "$RUNNER_TEMP/release"
+            --pattern "FeishuLite-$version.dmg" --pattern SHA256SUMS --dir "$RUNNER_TEMP/release"
           (cd "$RUNNER_TEMP/release" && shasum -a 256 -c SHA256SUMS)
-          sha=$(shasum -a 256 "$RUNNER_TEMP/release/FeishuChat-$version.dmg" | cut -d' ' -f1)
+          sha=$(shasum -a 256 "$RUNNER_TEMP/release/FeishuLite-$version.dmg" | cut -d' ' -f1)
           revision=$(git rev-parse HEAD)
           bash scripts/render-cask.sh "$version" "$sha" "$revision" > "$RUNNER_TEMP/feishu-lite.rb"
           ruby -c "$RUNNER_TEMP/feishu-lite.rb"

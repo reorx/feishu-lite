@@ -1,14 +1,14 @@
 SHELL := /bin/bash
 DERIVED_DATA := .build/DerivedData
-APP := $(DERIVED_DATA)/Build/Products/Debug/FeishuChat.app
-RELEASE_APP := $(DERIVED_DATA)/Build/Products/Release/FeishuChat.app
+APP := $(DERIVED_DATA)/Build/Products/Debug/FeishuLite.app
+RELEASE_APP := $(DERIVED_DATA)/Build/Products/Release/FeishuLite.app
 BACKEND_REVISION ?= $(shell git rev-parse HEAD)
-XCODEBUILD := xcodebuild -project FeishuChat.xcodeproj -scheme FeishuChat \
+XCODEBUILD := xcodebuild -project FeishuLite.xcodeproj -scheme FeishuLite \
 	-destination 'platform=macOS' -derivedDataPath $(DERIVED_DATA)
 
 .PHONY: gen build build-release dmg test run dev clean
 
-# 从 project.yml 重新生成 FeishuChat.xcodeproj（xcodeproj 不入库）
+# 从 project.yml 重新生成 FeishuLite.xcodeproj（xcodeproj 不入库）
 gen:
 	xcodegen
 
@@ -23,7 +23,7 @@ dmg:
 
 # Core 纯逻辑 + App 原始 Model/Services 的隔离调用测试
 test:
-	cd FeishuChatCore && swift test
+	cd FeishuLiteCore && swift test
 	swift test
 
 # kill 后等旧进程退出，再用 open -n 强制新实例启动：
@@ -31,11 +31,11 @@ test:
 # 需要给 app 注入环境变量时用 open -n --env KEY=value $(APP)
 # （open 启动的 app 不继承 shell 环境）。
 run:
-	@pkill -x FeishuChat 2>/dev/null || true
-	@for i in $$(seq 1 20); do pgrep -qx FeishuChat || break; sleep 0.1; done
+	@pkill -x FeishuLite 2>/dev/null || true
+	@for i in $$(seq 1 20); do pgrep -qx FeishuLite || break; sleep 0.1; done
 	@open -n $(APP)
 
 dev: build run
 
 clean:
-	rm -rf $(DERIVED_DATA) FeishuChatCore/.build FeishuChat.xcodeproj
+	rm -rf $(DERIVED_DATA) FeishuLiteCore/.build FeishuLite.xcodeproj

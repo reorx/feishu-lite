@@ -7,6 +7,6 @@ version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/C
 mkdir -p "$dist"
 staging=$(mktemp -d)
 trap 'rm -rf "$staging"' EXIT
-ditto "$app" "$staging/FeishuChat.app"
+ditto "$app" "$staging/FeishuLite.app"
 ln -s /Applications "$staging/Applications"
-hdiutil create -volname FeishuChat -srcfolder "$staging" -ov -format UDZO "$dist/FeishuChat-$version.dmg"
+hdiutil create -volname FeishuLite -srcfolder "$staging" -ov -format UDZO "$dist/FeishuLite-$version.dmg"

@@ -1,14 +1,14 @@
-name: FeishuChat
+name: FeishuLite
 options:
   bundleIdPrefix: com.reorx
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
 
-# 第三方依赖统一在 FeishuChatCore/Package.swift 声明，app target 传递依赖
+# 第三方依赖统一在 FeishuLiteCore/Package.swift 声明，app target 传递依赖
 packages:
-  FeishuChatCore:
-    path: FeishuChatCore
+  FeishuLiteCore:
+    path: FeishuLiteCore
 
 configFiles:
   Debug: Config/Debug.xcconfig
@@ -18,25 +18,25 @@ settings:
   base:
     SWIFT_VERSION: "5.0"
     ENABLE_HARDENED_RUNTIME: YES
-    MARKETING_VERSION: 0.1.0
+    MARKETING_VERSION: 0.1.1
     CURRENT_PROJECT_VERSION: 1
 
 targets:
-  FeishuChat:
+  FeishuLite:
     type: application
     platform: macOS
     sources:
-      - FeishuChat
+      - FeishuLite
     dependencies:
-      - package: FeishuChatCore
+      - package: FeishuLiteCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.reorx.FeishuChat
+        PRODUCT_BUNDLE_IDENTIFIER: com.reorx.FeishuLite
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     info:
-      path: FeishuChat/Info.plist
+      path: FeishuLite/Info.plist
       properties:
-        CFBundleDisplayName: FeishuChat
+        CFBundleDisplayName: FeishuLite
         LSApplicationCategoryType: public.app-category.social-networking
         # 后端子进程的位置，值来自 Config/Backend.xcconfig
         FeishuBackendDir: $(FEISHU_BACKEND_DIR)
@@ -45,7 +45,7 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
     entitlements:
-      path: FeishuChat/FeishuChat.entitlements
+      path: FeishuLite/FeishuLite.entitlements
       properties:
         # 非沙箱：要拉起 uv 子进程（后端），沙箱里做不到
         com.apple.security.app-sandbox: false

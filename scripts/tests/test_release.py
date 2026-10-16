@@ -22,8 +22,14 @@ class CaskReleaseTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('version "1.2.3"', result.stdout)
         self.assertIn(f'sha256 "{SHA256}"', result.stdout)
-        self.assertIn('/reorx/feishu-lite/releases/download/v#{version}/FeishuChat-#{version}.dmg', result.stdout)
+        self.assertIn('/reorx/feishu-lite/releases/download/v#{version}/FeishuLite-#{version}.dmg', result.stdout)
         self.assertIn(f'feishu-lite.git@{REVISION}#subdirectory=backend', result.stdout)
+        self.assertIn('app "FeishuLite.app"', result.stdout)
+
+    def test_published_v010_keeps_original_artifact(self):
+        result = self.render(version='0.1.0')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('FeishuChat-#{version}.dmg', result.stdout)
         self.assertIn('app "FeishuChat.app"', result.stdout)
 
     def test_invalid_release_metadata_produces_no_cask(self):

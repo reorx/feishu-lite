@@ -1,7 +1,7 @@
 [project]
 name = "feishu-lite-backend"
 version = "0.1.0"
-description = "FeishuChat backend: wraps larkx (reverse-engineered Feishu web protocol) behind a local REST + SSE API"
+description = "FeishuLite backend: wraps larkx (reverse-engineered Feishu web protocol) behind a local REST + SSE API"
 readme = "README.md"
 authors = [
     { name = "Reorx", email = "novoreorx@gmail.com" }
