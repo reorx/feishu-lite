@@ -5,7 +5,15 @@ revision=${1:?Usage: release-notes.sh BACKEND_REVISION}
 cat <<EOF
 适用于 macOS 14 及以上，支持 Apple Silicon 和 Intel。App 已使用 Developer ID 签名并通过 Apple 公证。
 
-## 使用前必须安装依赖
+## Homebrew 安装（推荐）
+
+\`\`\`sh
+brew install --cask reorx/tap/feishu-lite
+\`\`\`
+
+Cask 自动安装 uv、Git 和与 App 对应的 Python 后端。升级前退出 App，运行 \`brew upgrade --cask feishu-lite\` 后重新打开。Cask 在 Release 发布后自动更新，首次发布时可能需要稍等片刻。
+
+## 手动安装 DMG：使用前必须安装依赖
 
 FeishuChat 依赖独立的 Python 后端 **feishu-lite-backend**，其中通过 **larkx** 连接飞书。DMG 不包含 Python 或这些依赖；只安装 App 还不能使用。
 

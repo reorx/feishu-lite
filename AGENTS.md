@@ -34,12 +34,13 @@ Messages / Email 双模块外壳已实现并通过自动测试与构建；独立
 
 ## 文档
 
+- `kb/docs/releases.md` — 签名、公证、GitHub Releases 与 Homebrew Cask；修改发布工作流或执行发布前读。
 - `kb/docs/module-shell.md` — 双模块的切换、已读、通知与 badge 规则；修改模块外壳或跨模块行为前读。
 - `kb/docs/email-foundation.md` — 邮件账号、同步/提醒、独立缓存和正文安全边界；修改邮件服务、存储、解析或展示前读。
 
 ## 运行和测试
 
-- CI 与发布：`.github/workflows/ci.yml` 验证测试、独立后端安装和 App 构建；`release.yml` 在推送 `vMAJOR.MINOR.PATCH` 时构建、签名、公证 Universal DMG 并发布到当前仓库。安装依赖和 Secrets 约定见 README「构建和发布」。Release 不内置 Python/larkx，安装命令固定到构建对应的 commit。
+- CI 与发布：`.github/workflows/ci.yml` 验证测试、独立后端安装和 App 构建；`release.yml` 在推送 `vMAJOR.MINOR.PATCH` 时构建、签名、公证 Universal DMG，发布到当前仓库并更新 `reorx/homebrew-tap` 的 `feishu-lite` Cask。Release 不内置 Python/larkx；Cask 安装/升级时通过 uv 安装构建对应 commit 的后端。Secrets、首次发布和失败重试见 `kb/docs/releases.md`。
 
 - 后端测试：`cd backend && uv run pytest`。App：`cd mac && make test && make build && make run`。
 - App 自己拉起后端，不需要单独启动。正式数据在 `~/Library/Application Support/FeishuChat/`，后端日志在 `~/Library/Logs/FeishuChat/backend.log`。

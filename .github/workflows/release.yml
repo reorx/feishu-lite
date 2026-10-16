@@ -40,6 +40,8 @@ jobs:
           fi
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Tag must be vMAJOR.MINOR.PATCH'; exit 1; }
           echo "marketing=$version" >> "$GITHUB_OUTPUT"
+      - name: Test release and Cask contracts
+        run: uv run --no-project python -m unittest discover -s scripts/tests -v
       - name: Import Developer ID certificate
         env:
           CERT_P12: ${{ secrets.CERT_P12 }}
@@ -63,7 +65,10 @@ jobs:
         run: |
           make -C mac build-release BACKEND_REVISION="$GITHUB_SHA" RELEASE_XCARGS="DEVELOPMENT_TEAM=$APPLE_TEAM_ID OTHER_CODE_SIGN_FLAGS=--timestamp MARKETING_VERSION=$VERSION CURRENT_PROJECT_VERSION=$GITHUB_RUN_NUMBER"
           codesign --verify --deep --strict mac/.build/DerivedData/Build/Products/Release/FeishuChat.app
+          lipo -verify_arch arm64 x86_64 mac/.build/DerivedData/Build/Products/Release/FeishuChat.app/Contents/MacOS/FeishuChat
           make -C mac dmg
+          codesign --sign 'Developer ID Application' --timestamp mac/dist/*.dmg
+          codesign --verify --strict mac/dist/*.dmg
       - name: Notarize and staple
         env:
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
@@ -75,14 +80,15 @@ jobs:
           xcrun notarytool submit mac/dist/*.dmg --key "$RUNNER_TEMP/notary-key.p8" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID" --wait --timeout 20m
           xcrun stapler staple mac/dist/*.dmg
           xcrun stapler validate mac/dist/*.dmg
-          (cd mac/dist && shasum -a 256 *.dmg > SHA256SUMS)
+          spctl --assess --type open --context context:primary-signature --verbose mac/dist/*.dmg
+          (cd mac/dist && shasum -a 256 ./*.dmg > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
           name: FeishuChat-release
           path: mac/dist/*
           if-no-files-found: error
       - name: Publish in this repository
-        if: github.ref_type == 'tag'
+        if: github.event_name == 'push' && github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -100,3 +106,62 @@ jobs:
           if [[ -f "$RUNNER_TEMP/build.keychain-db" ]]; then
             security delete-keychain "$RUNNER_TEMP/build.keychain-db"
           fi
+
+  homebrew:
+    name: Publish Homebrew Cask
+    needs: release
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: macos-15
+    timeout-minutes: 15
+    # Serialize tap updates across releases. Re-running this failed job does not
+    # rebuild or re-sign the artifact: its checksum comes from GitHub Releases.
+    concurrency:
+      group: homebrew-tap
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Require tap write credential
+        env:
+          TAP_PUSH_TOKEN: ${{ secrets.TAP_PUSH_TOKEN }}
+        run: ': "${TAP_PUSH_TOKEN:?Configure TAP_PUSH_TOKEN with contents:write for reorx/homebrew-tap}"'
+      - uses: actions/checkout@v4
+        with:
+          repository: reorx/homebrew-tap
+          token: ${{ secrets.TAP_PUSH_TOKEN }}
+          path: tap
+      - name: Generate cask from published DMG
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+          mkdir -p "$RUNNER_TEMP/release" tap/Casks
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --pattern "FeishuChat-$version.dmg" --pattern SHA256SUMS --dir "$RUNNER_TEMP/release"
+          (cd "$RUNNER_TEMP/release" && shasum -a 256 -c SHA256SUMS)
+          sha=$(shasum -a 256 "$RUNNER_TEMP/release/FeishuChat-$version.dmg" | cut -d' ' -f1)
+          revision=$(git rev-parse HEAD)
+          bash scripts/render-cask.sh "$version" "$sha" "$revision" > "$RUNNER_TEMP/feishu-lite.rb"
+          ruby -c "$RUNNER_TEMP/feishu-lite.rb"
+          # A retry of an older release must not downgrade the tap.
+          if [[ -f tap/Casks/feishu-lite.rb ]]; then
+            current=$(sed -n 's/^  version "\([0-9.]*\)"$/\1/p' tap/Casks/feishu-lite.rb)
+            ruby -e 'exit(Gem::Version.new(ARGV[0]) > Gem::Version.new(ARGV[1]) ? 1 : 0)' "$current" "$version" || {
+              echo "Tap already has newer version $current; refusing downgrade"; exit 1;
+            }
+          fi
+          cp "$RUNNER_TEMP/feishu-lite.rb" tap/Casks/feishu-lite.rb
+      - name: Commit and push cask
+        working-directory: tap
+        run: |
+          git add Casks/feishu-lite.rb
+          if git diff --cached --quiet; then
+            echo 'Cask already matches release'
+            exit 0
+          fi
+          git -c user.name=github-actions[bot] \
+            -c user.email=41898282+github-actions[bot]@users.noreply.github.com \
+            commit -m "feishu-lite ${GITHUB_REF_NAME#v}"
+          git push origin HEAD

@@ -22,6 +22,16 @@
 
 需要 **macOS 14 或更新版本**，支持 Apple Silicon 和 Intel。
 
+首次正式 Release 和 Cask 发布后，可直接运行：
+
+```sh
+brew install --cask reorx/tap/feishu-lite
+```
+
+Cask 自动安装 uv、Git、Python 3.12 和与 App 对应的后端。安装时需要联网访问 GitHub 和 Python 包源。升级前退出 App，再运行 `brew upgrade --cask feishu-lite`，完成后重新打开。卸载 Cask 会保留登录、消息、邮件数据及 uv 后端。
+
+### 手动安装 DMG
+
 从[本仓库 Releases](https://github.com/reorx/feishu-lite/releases) 下载 DMG，将 FeishuChat 拖到 Applications。发布包经过 Developer ID 签名和 Apple 公证。
 
 **使用前必须安装 Python 后端 `feishu-lite-backend`**。App 本身不包含 Python 或 `larkx` 等依赖：
@@ -57,7 +67,9 @@ FeishuChat 不是飞书官方产品，它使用和飞书网页版相同的方式
 
 普通 push / PR 会运行后端测试、独立 Python 工具安装验证、Swift 测试，以及 Debug / Universal Release 构建。发布配置见 [.github/workflows/release.yml](.github/workflows/release.yml)。
 
-推送 `vMAJOR.MINOR.PATCH` 标签会构建 Universal DMG、签名、公证，并直接上传到**当前仓库**的 GitHub Releases。手动运行 Release 工作流只生成可下载 artifact。首次需配置 `CERT_P12`、`CERT_P12_PASSWORD`、`APPLE_TEAM_ID`、`ASC_PRIVATE_KEY`、`ASC_KEY_ID`、`ASC_ISSUER_ID` 六个仓库 Secrets；证书和私钥使用 base64 编码。无需跨仓库发布 Token。
+推送 `vMAJOR.MINOR.PATCH` 标签会构建 Universal DMG、签名、公证，上传到**当前仓库**的 GitHub Releases，然后自动创建或更新 `reorx/homebrew-tap` 的 `Casks/feishu-lite.rb`。手动运行 Release 工作流只生成可下载 artifact（即使选择 tag 也不发布）。
+
+签名需配置 `CERT_P12`、`CERT_P12_PASSWORD`、`APPLE_TEAM_ID`、`ASC_PRIVATE_KEY`、`ASC_KEY_ID`、`ASC_ISSUER_ID` 六个仓库 Secrets；证书和私钥使用 base64 编码。Cask 发布另需 `TAP_PUSH_TOKEN`，仅授予 `reorx/homebrew-tap` 的 Contents 读写权限。缺少该 Token 时 Cask job 明确失败，可补齐后仅重跑失败 job。首次发布前请确认 Apple 开发者协议有效；此前试运行曾因协议问题返回 403。完整步骤见 [发布指南](kb/docs/releases.md)。
 
 本地使用 `make -C mac test`、`make -C mac build-release`、`make -C mac dmg`；签名需要本机 Developer ID 证书和 `RELEASE_XCARGS='DEVELOPMENT_TEAM=你的TeamID'`。开发调试仍使用 `make -C mac build` 和源码后端。
 

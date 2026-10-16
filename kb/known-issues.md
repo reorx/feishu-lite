@@ -69,11 +69,10 @@
 - 登录后在 litetest 中查看一条真实图片，确认历史图片及实时图片均可加载，再移除此项。
 - 当前按需下载原图，无磁盘图片缓存；单张上限 25 MiB、4000 万像素，超过限制显示加载失败。GIF 动画播放不在本次验收范围内。
 
-## App：只能以 Debug 构建从仓库里运行，没有安装和发布流程
+## 发布：首次公证与 Homebrew 安装尚未完成线上验证
 
-- 记录：2026-09-29（第 2 阶段实现，有意简化）
-- App 从 `mac/.build/DerivedData/.../FeishuChat.app` 运行；后端目录和 `uv` 路径在构建时写进 Info.plist（`mac/Config/Backend.xcconfig`），指向本机的仓库路径。仓库挪位置、`make clean` 之后要重新构建，"开机启动"登记的也是这个路径下的 App。
-- 处理方向：加 `make install`（Release 构建拷到 `/Applications`），后端打成独立可执行文件或固定装到 `~/Library/Application Support/FeishuChat/backend`。
+- 更新：2026-10-16。Release 已使用独立 uv 后端，Universal DMG、Developer ID 签名、公证与 Cask 自动发布链路已实现。2026-10-08 线上运行在公证阶段遇到 Apple 协议 HTTP 403；2026-10-16 检查签名 Secrets 已配置，但缺少 `TAP_PUSH_TOKEN`，仓库尚无正式 Release。
+- 待验证：协议状态、首次公证/Gatekeeper、tap 推送及干净用户的 Cask 安装/升级；本地测试和 Homebrew 解析不代表线上全链路通过。操作见 `kb/docs/releases.md`。
 
 ## App：每次启动后端都经过 `uv run`，依赖有变化时启动需要联网
 
