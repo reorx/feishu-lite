@@ -45,3 +45,5 @@ TAP_PUSH_TOKEN 缺失时明确使 Homebrew job 失败，不像参考项目那样
 notarytool history 已成功，历史协议 403 未重现。隔离 uv tool 目录实际从 GitHub 安装 eb947b5 后端并执行 --help 成功。代码已推送；手动运行 38864857590 暴露 Release 从仓库根目录跑 pytest 导致子进程无法 import tests.mail（17 failed / 294 passed），将执行目录改为 backend，与普通 CI 一致。
 
 修正 pytest 工作目录后本地全量 311 passed。运行 38865281453 已通过全部测试和 Developer ID Universal 构建，但新增 lipo -verify_arch 的参数被工具误解析；改为 lipo -archs 并检查两个架构，已在本机现有 Universal App 验证。继续试运行。
+
+运行 38865857688 成功构建和签名 DMG、上传 Apple，但公证 Invalid。直接用本机凭据读取 submission 842fd50c-01fa-4c79-9873-3c183188970f 日志，确认两架构都带有 get-task-allow；本机旧 Release 也复现。对照 VocalFlow Mac，补上 Release 的 CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO。CI 增加公证前 entitlement 检查，并解析 notarytool JSON 的 Accepted 状态，拒绝时自动输出 Apple log，避免 Invalid 后继续 staple 的误导错误。

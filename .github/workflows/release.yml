@@ -65,6 +65,10 @@ jobs:
         run: |
           make -C mac build-release BACKEND_REVISION="$GITHUB_SHA" RELEASE_XCARGS="DEVELOPMENT_TEAM=$APPLE_TEAM_ID OTHER_CODE_SIGN_FLAGS=--timestamp MARKETING_VERSION=$VERSION CURRENT_PROJECT_VERSION=$GITHUB_RUN_NUMBER"
           codesign --verify --deep --strict mac/.build/DerivedData/Build/Products/Release/FeishuChat.app
+          codesign -d --entitlements :- mac/.build/DerivedData/Build/Products/Release/FeishuChat.app > "$RUNNER_TEMP/entitlements.plist"
+          if [[ "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.get-task-allow' "$RUNNER_TEMP/entitlements.plist" 2>/dev/null || true)" == true ]]; then
+            echo 'Release must not contain get-task-allow'; exit 1
+          fi
           architectures=$(lipo -archs mac/.build/DerivedData/Build/Products/Release/FeishuChat.app/Contents/MacOS/FeishuChat)
           [[ " $architectures " == *" arm64 "* && " $architectures " == *" x86_64 "* ]]
           make -C mac dmg
@@ -78,7 +82,12 @@ jobs:
         run: |
           : "${ASC_PRIVATE_KEY:?Missing ASC_PRIVATE_KEY}" "${ASC_KEY_ID:?Missing ASC_KEY_ID}" "${ASC_ISSUER_ID:?Missing ASC_ISSUER_ID}"
           printf '%s' "$ASC_PRIVATE_KEY" | base64 --decode > "$RUNNER_TEMP/notary-key.p8"
-          xcrun notarytool submit mac/dist/*.dmg --key "$RUNNER_TEMP/notary-key.p8" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID" --wait --timeout 20m
+          xcrun notarytool submit mac/dist/*.dmg --key "$RUNNER_TEMP/notary-key.p8" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID" --wait --timeout 20m --output-format json > "$RUNNER_TEMP/notary-result.json"
+          if ! jq -e '.status == "Accepted"' "$RUNNER_TEMP/notary-result.json"; then
+            submission=$(jq -r '.id' "$RUNNER_TEMP/notary-result.json")
+            xcrun notarytool log "$submission" --key "$RUNNER_TEMP/notary-key.p8" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID"
+            exit 1
+          fi
           xcrun stapler staple mac/dist/*.dmg
           xcrun stapler validate mac/dist/*.dmg
           spctl --assess --type open --context context:primary-signature --verbose mac/dist/*.dmg

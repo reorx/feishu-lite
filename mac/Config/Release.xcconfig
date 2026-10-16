@@ -7,3 +7,5 @@ FEISHU_BACKEND_REVISION = master
 // DEVELOPMENT_TEAM 由 Local.xcconfig 提供，或由发布脚本通过 xcodebuild 参数覆盖。
 CODE_SIGN_STYLE = Manual
 CODE_SIGN_IDENTITY = Developer ID Application
+// xcodebuild build 默认注入调试权限；Developer ID 公证禁止 get-task-allow。
+CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO
