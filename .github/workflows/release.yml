@@ -65,7 +65,8 @@ jobs:
         run: |
           make -C mac build-release BACKEND_REVISION="$GITHUB_SHA" RELEASE_XCARGS="DEVELOPMENT_TEAM=$APPLE_TEAM_ID OTHER_CODE_SIGN_FLAGS=--timestamp MARKETING_VERSION=$VERSION CURRENT_PROJECT_VERSION=$GITHUB_RUN_NUMBER"
           codesign --verify --deep --strict mac/.build/DerivedData/Build/Products/Release/FeishuChat.app
-          lipo -verify_arch arm64 x86_64 mac/.build/DerivedData/Build/Products/Release/FeishuChat.app/Contents/MacOS/FeishuChat
+          architectures=$(lipo -archs mac/.build/DerivedData/Build/Products/Release/FeishuChat.app/Contents/MacOS/FeishuChat)
+          [[ " $architectures " == *" arm64 "* && " $architectures " == *" x86_64 "* ]]
           make -C mac dmg
           codesign --sign 'Developer ID Application' --timestamp mac/dist/*.dmg
           codesign --verify --strict mac/dist/*.dmg

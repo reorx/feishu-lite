@@ -43,3 +43,5 @@ TAP_PUSH_TOKEN 缺失时明确使 Homebrew job 失败，不像参考项目那样
 用户要求自行查找并配置已有凭据。已阅读 VocalFlow Mac 的签名文档和 `~/Sync/apple-developer/AGENTS.md`，使用 envops 读取权威来源，同步六项签名 Secrets。TAP_PUSH_TOKEN 使用现有 gh OAuth token 通过 stdin 配置，已验证 tap 写权限；该 token 权限范围为账号级 repo，并非仅限 tap 的 PAT。所有凭据均未输出或提交。
 
 notarytool history 已成功，历史协议 403 未重现。隔离 uv tool 目录实际从 GitHub 安装 eb947b5 后端并执行 --help 成功。代码已推送；手动运行 38864857590 暴露 Release 从仓库根目录跑 pytest 导致子进程无法 import tests.mail（17 failed / 294 passed），将执行目录改为 backend，与普通 CI 一致。
+
+修正 pytest 工作目录后本地全量 311 passed。运行 38865281453 已通过全部测试和 Developer ID Universal 构建，但新增 lipo -verify_arch 的参数被工具误解析；改为 lipo -archs 并检查两个架构，已在本机现有 Universal App 验证。继续试运行。
