@@ -2,9 +2,9 @@
 
 > 接下来要做的事，按时间排。做完一项就删掉，结果记到条目指定的 kb 文档，这里不留记录。
 
-## Apple 开发者协议有效且 TAP_PUSH_TOKEN 配置后
+## 下次干净 macOS 用户环境验收时
 
-- **完成首次发布**：推送代码后运行 `gh workflow run release.yml --ref master`，确认 Apple 公证、staple、Gatekeeper 与 artifact 上传成功，再推送 `v0.1.0` 标签；确认 Release 与 Homebrew 两个 job 成功，干净用户环境验证 `brew install --cask reorx/tap/feishu-lite`、Finder 启动和升级。历史运行已完成签名和打包，但公证返回协议缺失 HTTP 403；2026-10-16 仓库仍缺 `TAP_PUSH_TOKEN`。
+- **补齐 Cask 全安装验收**：v0.1.0 已正式发布，签名、公证、tap 更新、Homebrew 下载/校验和、下载后 App Gatekeeper 与隔离后端安装均通过；干净用户环境仍需验证完整 `brew install --cask reorx/tap/feishu-lite`、Finder 启动和下一版本升级。
   → 操作见 `kb/docs/releases.md`，结果记到 `kb/sessions/2026-10-16-homebrew-release.md`。
 
 ## 邮箱阶段 F 真实验收前，用户指定测试邮件与发件来源后

@@ -4,7 +4,7 @@ tags: [release, homebrew, macos]
 ---
 # 发布 FeishuChat
 
-用户通过 `brew install --cask reorx/tap/feishu-lite` 安装。Cask 安装 FeishuChat.app，同时安装 uv、Git 及与 App 对应 commit 的 Python 后端。首次正式 Release 和 Cask 成功发布后，这条命令才可用。DMG 用户按照 Release 页说明手动安装后端。
+用户通过 `brew install --cask reorx/tap/feishu-lite` 安装。Cask 安装 FeishuChat.app，同时安装 uv、Git 及与 App 对应 commit 的 Python 后端。v0.1.0 已成功发布到 GitHub Releases 和 tap。DMG 用户按照 Release 页说明手动安装后端。
 
 ## 发布流程
 
@@ -36,7 +36,7 @@ tags: [release, homebrew, macos]
 
 Apple 签名凭据的权威来源是 `~/Sync/apple-developer/`，先读该目录的 `AGENTS.md`，通过 envops 获取 `secrets.env`，文件类 Secret 直接 base64 编码后送给 `gh secret set`；不要输出或在仓库保存密钥。不能从其他 GitHub 仓库下载 Secret 明文。
 
-2026-10-16 已从该目录同步六项签名 Secrets，并用本机 `gh auth token` 经 stdin 配置 TAP_PUSH_TOKEN，确认有 tap 写权限。当前复用的是 GitHub CLI OAuth token，拥有 `repo` 等账号级权限，并非仅限 tap 的 fine-grained PAT；以后更换凭据可使用上表的最小权限 PAT。Apple notarytool history 当前成功，历史协议 403 未重现。没有成功公证的包不会上传或发布。
+2026-10-16 已从该目录同步六项签名 Secrets，并用本机 `gh auth token` 经 stdin 配置 TAP_PUSH_TOKEN，确认有 tap 写权限。当前复用的是 GitHub CLI OAuth token，拥有 `repo` 等账号级权限，并非仅限 tap 的 fine-grained PAT；以后更换凭据可使用上表的最小权限 PAT。v0.1.0 已通过 Apple 公证、staple 和 Gatekeeper 验证，历史协议 403 未重现。没有成功公证的包不会上传或发布。
 
 ## 验证与正式发布
 
@@ -47,11 +47,11 @@ gh workflow run release.yml --ref master
 gh run list --workflow release.yml
 ```
 
-确认测试、签名、公证、Gatekeeper 与 artifact 上传均成功后，首次发布：
+确认测试、签名、公证、Gatekeeper 与 artifact 上传均成功后，发布下一个版本（以下以 0.1.1 为例，0.1.0 已发布）：
 
 ```sh
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
 等待 Release 和 Homebrew 两个 job 均成功，在干净用户环境验证安装、Finder 启动、后端就绪和升级。不要用正式聊天会话做点击验收。
@@ -73,5 +73,6 @@ Cask 使用第三方 tap 仍兼容的 Ruby `postflight`，用于调用需要联�
 - `scripts/tests/`：元数据与安装/升级钩子的隔离行为验证。
 - `scripts/release-notes.sh`：Cask 和 DMG 安装说明。
 - `mac/scripts/make-dmg.sh`：DMG 内容和文件名。
+- `mac/Config/Release.xcconfig`：禁用基础调试权限注入；`get-task-allow` 会导致 Apple 拒绝公证，不能删除这项配置。
 
 本地检查：`actionlint`、`bash -n scripts/render-cask.sh scripts/release-notes.sh mac/scripts/make-dmg.sh`、`uv run --no-project python -m unittest discover -s scripts/tests -v`。

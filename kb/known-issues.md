@@ -69,11 +69,6 @@
 - 登录后在 litetest 中查看一条真实图片，确认历史图片及实时图片均可加载，再移除此项。
 - 当前按需下载原图，无磁盘图片缓存；单张上限 25 MiB、4000 万像素，超过限制显示加载失败。GIF 动画播放不在本次验收范围内。
 
-## 发布：首次公证与 Homebrew 安装尚未完成线上验证
-
-- 更新：2026-10-16。Release 已使用独立 uv 后端，Universal DMG、Developer ID 签名、公证与 Cask 自动发布链路已实现。已从本机权威来源同步签名 Secrets 并配置 `TAP_PUSH_TOKEN`，notarytool history 成功，历史协议 403 未重现。正在进行首次发布验证。
-- 待验证：协议状态、首次公证/Gatekeeper、tap 推送及干净用户的 Cask 安装/升级；本地测试和 Homebrew 解析不代表线上全链路通过。操作见 `kb/docs/releases.md`。
-
 ## App：每次启动后端都经过 `uv run`，依赖有变化时启动需要联网
 
 - 记录：2026-09-29（第 2 阶段实现）

@@ -22,7 +22,7 @@
 
 需要 **macOS 14 或更新版本**，支持 Apple Silicon 和 Intel。
 
-首次正式 Release 和 Cask 发布后，可直接运行：
+直接运行：
 
 ```sh
 brew install --cask reorx/tap/feishu-lite
@@ -69,7 +69,7 @@ FeishuChat 不是飞书官方产品，它使用和飞书网页版相同的方式
 
 推送 `vMAJOR.MINOR.PATCH` 标签会构建 Universal DMG、签名、公证，上传到**当前仓库**的 GitHub Releases，然后自动创建或更新 `reorx/homebrew-tap` 的 `Casks/feishu-lite.rb`。手动运行 Release 工作流只生成可下载 artifact（即使选择 tag 也不发布）。
 
-签名需配置 `CERT_P12`、`CERT_P12_PASSWORD`、`APPLE_TEAM_ID`、`ASC_PRIVATE_KEY`、`ASC_KEY_ID`、`ASC_ISSUER_ID` 六个仓库 Secrets；证书和私钥使用 base64 编码。Cask 发布另需 `TAP_PUSH_TOKEN`，仅授予 `reorx/homebrew-tap` 的 Contents 读写权限。缺少该 Token 时 Cask job 明确失败，可补齐后仅重跑失败 job。首次发布前请确认 Apple 开发者协议有效；此前试运行曾因协议问题返回 403。完整步骤见 [发布指南](kb/docs/releases.md)。
+签名使用 `CERT_P12`、`CERT_P12_PASSWORD`、`APPLE_TEAM_ID`、`ASC_PRIVATE_KEY`、`ASC_KEY_ID`、`ASC_ISSUER_ID` 六个仓库 Secrets；证书和私钥使用 base64 编码。Cask 发布另使用 `TAP_PUSH_TOKEN`。七项均已配置，`v0.1.0` 已通过完整发布流程。更换 Token 时建议仅授予 `reorx/homebrew-tap` 的 Contents 读写权限；缺少 Token 时 Cask job 明确失败，可补齐后仅重跑失败 job。凭据来源和完整步骤见 [发布指南](kb/docs/releases.md)。
 
 本地使用 `make -C mac test`、`make -C mac build-release`、`make -C mac dmg`；签名需要本机 Developer ID 证书和 `RELEASE_XCARGS='DEVELOPMENT_TEAM=你的TeamID'`。开发调试仍使用 `make -C mac build` 和源码后端。
 
