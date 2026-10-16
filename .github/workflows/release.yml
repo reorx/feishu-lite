@@ -26,7 +26,7 @@ jobs:
       - name: Test
         run: |
           make -C mac test
-          uv run --project backend --locked pytest backend/tests
+          (cd backend && uv run --locked pytest)
           uv build --project backend --out-dir dist
           uv tool install --python 3.12 dist/*.whl
           "$(uv tool dir --bin)/feishu-lite-backend" --help

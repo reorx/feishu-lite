@@ -34,7 +34,9 @@ tags: [release, homebrew, macos]
 
 本仓库 `GITHUB_TOKEN` 只能发布当前仓库，无法更新 tap。Token 可在 GitHub 设置页录入，或运行 `gh secret set TAP_PUSH_TOKEN --repo reorx/feishu-lite` 后交互输入，不要粘贴进命令或提交文件。
 
-2026-10-16 检查：六项签名 Secrets 已存在，TAP_PUSH_TOKEN 尚未配置。此前手动构建成功签名，但 Apple 公证返回 HTTP 403，原因是协议缺失或过期；账号持有人须登录 Apple Developer / App Store Connect 查看并接受待处理协议。没有成功公证的包不会上传或发布。
+Apple 签名凭据的权威来源是 `~/Sync/apple-developer/`，先读该目录的 `AGENTS.md`，通过 envops 获取 `secrets.env`，文件类 Secret 直接 base64 编码后送给 `gh secret set`；不要输出或在仓库保存密钥。不能从其他 GitHub 仓库下载 Secret 明文。
+
+2026-10-16 已从该目录同步六项签名 Secrets，并用本机 `gh auth token` 经 stdin 配置 TAP_PUSH_TOKEN，确认有 tap 写权限。当前复用的是 GitHub CLI OAuth token，拥有 `repo` 等账号级权限，并非仅限 tap 的 fine-grained PAT；以后更换凭据可使用上表的最小权限 PAT。Apple notarytool history 当前成功，历史协议 403 未重现。没有成功公证的包不会上传或发布。
 
 ## 验证与正式发布
 
