@@ -153,6 +153,19 @@ R5b 由新的 Codex agent `mailfin-r5b` 接手，目标不变：U1-01 修好，�
 
 不改 `mac/FeishuLite/UI/` 下的视图。新接口怎么用，写进总结的「给 R8/R9 的接口说明」，包括类型名、属性和一个用法示例。
 
+R5b 的接续（协调者补）：R5b 已在 `f071225` 签收。
+
+- 它改了 `ConversationView`、`ImageMessageView`、`ScrollAnchors`、两个列表，以及 `mac/Package.swift`：聊天相关的视图现在也编译进 App 测试 target。
+- `ImageMessageView` 新增了必传参数 `isVisible`。
+- 测试基线是后端 311、Core 74、App 103。
+
+### R6 之后，R7–R9 和 V1 都要遵守的 R5b 结论
+
+- 消息详情必须保持普通 `VStack`，不能改回 `LazyVStack` 或其他虚拟化容器。改回去的话，必须先重新通过 R5b 的 `repro2` 和最小序列压力测试。
+- 分页由历史标题在 viewport 里是否可见来触发，不能改回 `onAppear`：普通栈会一次创建所有行，`onAppear` 会提前加载。
+- `ImageMessageView` 的 `isVisible` 来自真实 viewport，`.task(id: isVisible ? attempt : nil)` 负责按需下载和取消，改样式时要保留这条链路。
+- 压力脚本是 `tmp/2026-10-18-ui-fixes/r5b/tools/stress.py`。凡是改了消息详情、消息行或图片视图的任务（主要是 R9），提交前都要跑 `repro2` 和 `minimal-sheet-resize`，各 50 轮。
+
 完成标准：
 
 - 每项都是先写行为测试再实现。
@@ -278,7 +291,7 @@ R9 签收后派发，协调者届时按 R5 至 R9 的实际产出补充这一节
 
 1. **全量基线**：后端、Core、App 测试和 Debug 构建，数量和 U1 时对比。
 2. **逐条复验 32 条**：在隔离副本里造出审查截图对应的状态，截修改后的图，和 U1 的修改前截图对比。每条判定为修好、部分修好、没修好或有新问题。用户决定不做的部分（U1-11 的样式恢复和图片占位、菜单语言）记为“按决定不做”。
-3. **卡死压力回归**：复用 R5 的脚本再跑一遍。
+3. **卡死压力回归**：用 R5b 的 `tools/stress.py` 跑全部 6 类，每类 50 轮，必须包含 `repro2` 和 `minimal-sheet-resize`。另外 4 类在旧代码上本来就不卡，只跑它们证明不了什么。
 4. **功能回归**：
    - 聊天发送：按钮和回车。输入法组字时回车不发送，沿用 G2a 的 Rime 做法，不改全局设置也能用时才做。
    - 切换会话后草稿保留；滚动位置恢复。
@@ -312,6 +325,8 @@ R9 签收后派发，协调者届时按 R5 至 R9 的实际产出补充这一节
   - 观察器读键盘事件的 `NSEvent.eventNumber` 会抛异常，改读 timestamp。
   - 长文本键入时，窗口可能中途失去激活；用短文本，并先确认焦点。
   - 系统“键盘导航”是关闭的，不要依赖 Tab 聚焦，也不要改这个全局设置。
+  - 后端测试要先进入 `backend/` 目录，再跑 `uv run pytest`。在仓库根用 `uv run --project backend pytest backend/tests` 不会切换工作目录，会出现 17 个假失败（R5b 踩过）。
+  - 主线程真卡死时，同一个主 actor 上的单测超时不会触发，要用进程外的心跳和 CPU 采样来判断（R5 和 R5b 的做法）。
 - 收尾时清理自己启动的东西：App、服务、端口、偏好域、隔离 HOME、caffeinate、浏览器会话（`mac-dev-cleanup --only browser --min-age 2`），并从 LaunchServices 注销副本。只清自己的，证据保留。
 
 ## 交付物
@@ -330,13 +345,13 @@ R9 签收后派发，协调者届时按 R5 至 R9 的实际产出补充这一节
 
 ## 状态区（只有协调者改）
 
-审阅基线：`f707b19`（U1 签收）。
+审阅基线：`f071225`（R5b）。测试基线：后端 311、Core 74、App 103。
 
 | 任务 | 状态 | agent / tab | 结果提交 | 备注 |
 |---|---|---|---|---|
-| R5 | 返工（R5b） | `mailfin-r5` / tab `w3W:tA`，Codex | `d853a3c`（只有调查报告） | 没修好：拿到稳定复现 `repro2`，排除了“只是滚动锚点回写”；到 context 40% 停下，产品代码已撤回 |
-| R5b | 进行中 | `mailfin-r5b` / tab `w3W:tB`，Codex | | 返工 brief 见「R5b」一节；监视器 bvikv2f11 |
-| R6 | 计划中 | `mailfin-r6`，Codex | | 等 R5 签收 |
+| R5 | 由 R5b 完成 | `mailfin-r5` / tab `w3W:tA`，Codex | `d853a3c`（只有调查报告） | 没修好：拿到稳定复现 `repro2`，排除了“只是滚动锚点回写”；到 context 40% 停下，产品代码已撤回 |
+| R5b | 已签收 | `mailfin-r5b` / tab `w3W:tB`，Codex | `f071225` | 根因是消息详情的 LazyVStack 和可变高度消息行之间的布局不收敛，最小序列是“最小窗口里开关图片预览→拉宽→再滚动”。改为普通 VStack；图片只在进入 viewport 后才下载；分页改由历史标题是否可见触发；锚点只在语义变化时写。6 类压力各 50 轮，共 300 轮全部通过，新增 5 项 App 测试。取舍：已加载 1030 条时内存约 532 MiB，缩放窗口时主线程最长停 1.5 秒，已记 known-issues |
+| R6 | 计划中 | `mailfin-r6`，Codex | | 可以开始 |
 | R7 | 计划中 | `mailfin-r7`，Claude Code | | 等 R6 签收 |
 | R8 | 计划中 | `mailfin-r8`，Claude Code | | 等 R7 签收 |
 | R9 | 计划中 | `mailfin-r9`，Claude Code | | 等 R8 签收 |
