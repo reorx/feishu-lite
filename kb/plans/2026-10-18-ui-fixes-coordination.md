@@ -35,6 +35,7 @@ tags:
 | U1-39 的分工 | Codex 在 Core/Model 里区分永久错误和临时错误；Claude Code 按这个分类改界面，永久错误不显示重试 | 协调者，沿用审查的建议 |
 | Codex 任务能不能改视图 | R6 不改 `mac/FeishuLite/UI/`，只提供 Core/Model 接口和测试。R5 例外，因为卡死的根源就在视图的滚动锚点机制里 | 协调者 |
 | 复验方式 | 每个 Claude Code 任务在隔离副本里截修改前后的对比图自证；全部做完后，由没参与修改的 Codex tab（V1）统一复验。不逐个复验，因为 R7 到 R9 是连续的界面改动，逐个复验要多开好几个 tab，而且问题多半出在整体效果上 | 协调者 |
+| R8 观察到的翻页卡住（刷新时翻页请求还没返回，`isPaging` 一直为真） | 不修。真实后端有 HTTP 超时兜底，R8 已在界面上规避（列表为空时不显示翻页行），影响只是超时前不能再点“加载更早的邮件” | 协调者 |
 | 共享文件 | known-issues、next-up、根和 mac 的 AGENTS.md、README、`kb/docs/`、审查文档、本文，都由协调者在签收后更新。执行者把要改的内容写进总结的「交给协调者」 | 协调者（沿用） |
 
 ## 必读
@@ -277,7 +278,14 @@ R7 的接续（协调者补）：R7 已在 `e803fb9` 签收，测试基线变为
 额外必读：
 
 - `mac/AGENTS.md` 里两处说明：输入框（NSTextView 与输入法组字）和“今天/昨天”相对时间。
-- R6 总结里的接口说明。
+- R6 总结里的接口说明（[R6](../sessions/2026-10-18-ui-r6.md)）。
+
+R8 的接续（协调者补）：R8 已在 `cbd58d4` 签收，测试基线变为后端 312、Core 97、App 112。和 R9 有关的几点：
+
+- 列表里的小空态（U1-31 的“暂无会话”“还没有消息”等）用 R8 新增的 `ListEmptyState`（`ShellComponents.swift`），用法见 [R8 总结](../sessions/2026-10-18-ui-r8.md)「接口说明」。详情区的空态继续用 ContentUnavailableView；它放在 VStack 里时要加 `.frame(maxWidth: .infinity, maxHeight: .infinity)`，否则同一列的其他内容会被一起居中。
+- 侧栏和提示条组件见 [R7 总结](../sessions/2026-10-18-ui-r7.md)「接口说明」。错误提示可以用 `NoticeBar`。
+- 隔离副本和截图工具可以复用 `tmp/2026-10-18-ui-fixes/r8/`（`tools/rebuild.sh`、`tools/capture.py`）。R8 给 `ax.swift` 的 press 加了 AXLink；plain 样式的 SwiftUI 菜单不响应 AXPress，要真实点击。换成自己的 bundle id 和端口。
+- R9 要改消息详情、消息行和图片视图，提交前必须跑 R5b 的 `repro2` 和 `minimal-sheet-resize`，各 50 轮（见「R6 之后……都要遵守的 R5b 结论」）。
 
 范围：
 
@@ -312,6 +320,8 @@ R9 签收后派发。R7 截“未知投递”状态时发现：合成服务的 a
 
 不做：界面改动。
 
+5. 顺带一项（R8 的发现，[R8 总结](../sessions/2026-10-18-ui-r8.md)「交给协调者」第 4 条）：账号被服务端推送移除时（不是用户点“移除邮箱”），旧的 `errorMessage` 会留在未配置的表单里。让推送移除也清掉旧错误，同样先写测试。
+
 完成标准：根因说明；测试先红后绿；后端、Core、App 测试的数量和结果；Debug 构建通过；在隔离副本里用 R7 的 `ack_check.py` 复测，请求数有上限。
 
 ### V1：独立复验
@@ -328,6 +338,8 @@ R10 签收后派发，协调者届时按 R5 至 R10 的实际产出补充这一�
    - HTML 安全探测：CSP 没变，外链只在用户点击时才外开。
    - 未知投递提示；通知点击路由。
 5. **新发现**：对比中看到的新问题，按审查的格式列出。
+
+已知要注意的（协调者补）：R8 让 e03 和 e02 变成了同一画面（附件常驻显示），复验 U1-36 看 e11、e11b；R7、R8 新增的对照状态有 e02b、e11b、e24b、e28b、w02b、w03b、w06b、w08b、w09b、m19b。深色 HTML 底色依赖 WebKit 的私有 setter `_setDrawsBackground:`，要用像素确认 U1-12。
 
 完成标准：每条都有结论和证据路径；发现的问题有最小复现，并判断属于界面还是功能问题。
 
@@ -374,7 +386,7 @@ R10 签收后派发，协调者届时按 R5 至 R10 的实际产出补充这一�
 
 ## 状态区（只有协调者改）
 
-审阅基线：`e803fb9`（R7）。测试基线：后端 312、Core 88、App 112。
+审阅基线：`cbd58d4`（R8）。测试基线：后端 312、Core 97、App 112。
 
 | 任务 | 状态 | agent / tab | 结果提交 | 备注 |
 |---|---|---|---|---|
@@ -382,8 +394,8 @@ R10 签收后派发，协调者届时按 R5 至 R10 的实际产出补充这一�
 | R5b | 已签收 | `mailfin-r5b` / tab `w3W:tB`，Codex | `f071225` | 根因是消息详情的 LazyVStack 和可变高度消息行之间的布局不收敛，最小序列是“最小窗口里开关图片预览→拉宽→再滚动”。改为普通 VStack；图片只在进入 viewport 后才下载；分页改由历史标题是否可见触发；锚点只在语义变化时写。6 类压力各 50 轮，共 300 轮全部通过，新增 5 项 App 测试。取舍：已加载 1030 条时内存约 532 MiB，缩放窗口时主线程最长停 1.5 秒，已记 known-issues |
 | R6 | 已签收 | `mailfin-r6` / tab `w3W:tC`，Codex | `3c22a97` | 聊天错误按 5 个场景和状态码给固定文案，原始状态码和 body 只写进 os.Logger；邮件正文有 10 种永久错误，提供 `MailState.canRetryBody`；`ImageMessageFailure` 区分永久和临时；`Message.meetingInvitation` 严格解析后端渲染的会议文本。没有改视图、wire 和 SQLite。R6 自己定的：`malformed_response` 仍然可以重试；会议主题允许多行 |
 | R7 | 已签收 | `mailfin-r7` / tab `w3W:tD`，Claude Code | `e803fb9` | 模块切换并入每个模块的侧栏顶部，用两段控件，badge 叠在图标上；没用三栏，理由是只有两个模块，扫码页等也没有列表。扫码页和邮箱能力页也放进分栏。共用 `SidebarHeader`、`NoticeBar`；邮件提醒提示条移到详情栏顶部；⌘1/⌘2/⌘R、`SidebarCommands`；侧栏收起时，异常状态露在工具栏。新增 2 个外壳布局测试，改写 2 个提示条布局测试（原测试断言的正是“推动分栏”）。卡死压力 6 类共 300 轮通过。自己发现并修好了一处 fixedSize 把分栏撑到 1790pt 的问题。发现的 ack 忙循环转给 R10 |
-| R8 | 进行中 | `mailfin-r8` / tab `w3W:tE`，Claude Code | | 监视器 brmtm6b8s（wait_commit.sh） |
-| R9 | 计划中 | `mailfin-r9`，Claude Code | | 等 R8 签收 |
+| R8 | 已签收 | `mailfin-r8` / tab `w3W:tE`，Claude Code | `cbd58d4` | 14 条邮件条目全部修好。外壳 CSS 只给带 `th` 的表格画框；WKWebView 不画背景，深色正文和头部都是 rgb(46,47,46)；头部按内容定高，收件人折叠；排版常量放进 Core 的 `MailReaderLayout`（14pt、行高 1.5、边距 20、最大宽 720）。CSP、导航、delegate 和白名单都没动，CSP 测试原样通过；纯文本和 HTML 的位置恢复逐像素一致。R8 自己定的：阅读宽度 720pt，而不是审查建议的 70–80 个汉字；收件人和附件展开后，按个数定滚动上限；同一条错误在表单开着时只显示在表单里，否则只显示在侧栏。深色底色靠 WebKit 私有 setter，以后被去掉会退回原样但不崩溃。翻页卡住的观察，协调者决定不修；推送移除后残留错误的观察，转给 R10 |
+| R9 | 进行中 | `mailfin-r9`，Claude Code | | |
 | R10 | 计划中 | `mailfin-r10`，Codex | | 等 R9 签收 |
 | V1 | 计划中 | `mailfin-v1`，Codex | | 等 R10 签收，届时补 brief |
 
