@@ -30,13 +30,21 @@ tags: [release, homebrew, macos]
 | `ASC_PRIVATE_KEY` | App Store Connect API 私钥 p8，base64 |
 | `ASC_KEY_ID` | API Key ID |
 | `ASC_ISSUER_ID` | API Issuer ID |
-| `TAP_PUSH_TOKEN` | fine-grained PAT，仅授权 reorx/homebrew-tap 的 Contents 读写 |
+| `TAP_DEPLOY_KEY` | 本 App 专用的 SSH deploy key 私钥，仅对 reorx/homebrew-tap 可写 |
 
-本仓库 `GITHUB_TOKEN` 只能发布当前仓库，无法更新 tap。Token 可在 GitHub 设置页录入，或运行 `gh secret set TAP_PUSH_TOKEN --repo reorx/feishu-lite` 后交互输入，不要粘贴进命令或提交文件。
+本仓库 `GITHUB_TOKEN` 只能发布当前仓库，无法更新 tap。Homebrew job 使用 `actions/checkout` 的 `ssh-key:` 检出 tap，再通过 `git push origin HEAD` 推送。每个 App 一把 deploy key，权限只覆盖 tap 仓库，可单独吊销，无需定期续期。
+
+重新生成或轮换 deploy key：
+
+```sh
+bash ~/Code/devblocks/macos-app-release/scripts/setup-secrets.sh --repo reorx/feishu-lite --skip-apple
+```
+
+脚本在 tap 上创建标题为 `release: reorx/feishu-lite` 的可写 deploy key，将私钥存入本仓库的 `TAP_DEPLOY_KEY` secret，退出时删除本地临时私钥。重复执行会删除同名旧 key 并重新生成；不改 Apple 签名 Secrets。不要输出或提交私钥。
 
 Apple 签名凭据的权威来源是 `~/Sync/apple-developer/`，先读该目录的 `AGENTS.md`，通过 envops 获取 `secrets.env`，文件类 Secret 直接 base64 编码后送给 `gh secret set`；不要输出或在仓库保存密钥。不能从其他 GitHub 仓库下载 Secret 明文。
 
-2026-10-16 已从该目录同步六项签名 Secrets，并用本机 `gh auth token` 经 stdin 配置 TAP_PUSH_TOKEN，确认有 tap 写权限。当前复用的是 GitHub CLI OAuth token，拥有 `repo` 等账号级权限，并非仅限 tap 的 fine-grained PAT；以后更换凭据可使用上表的最小权限 PAT。v0.1.0 已通过 Apple 公证、staple 和 Gatekeeper 验证，历史协议 403 未重现。没有成功公证的包不会上传或发布。
+2026-10-16 已从该目录同步六项签名 Secrets。2026-10-18 将 tap 写凭据从账号级 OAuth token 迁移为本 App 专用 deploy key，并删除仓库中保存的旧 token secret；deploy key 的实际推送待下一次发布验证。v0.1.0 已通过 Apple 公证、staple 和 Gatekeeper 验证，历史协议 403 未重现。没有成功公证的包不会上传或发布。
 
 ## 验证与正式发布
 
@@ -56,7 +64,7 @@ git push origin v0.1.2
 
 等待 Release 和 Homebrew 两个 job 均成功，在干净用户环境验证安装、Finder 启动、后端就绪和升级。不要用正式聊天会话做点击验收。
 
-如果仅 Homebrew job 失败，修复 Token 或 tap 冲突后使用 GitHub 的 Re-run failed jobs。它下载已发布 DMG，无需重做签名和公证。已存在同版本 Cask 且内容一致时不会提交；tap 有更新版本时会拒绝降级。Release 同版本重试会替换产物，因此尽量只重试失败 job，正式修复优先发新版本。
+如果仅 Homebrew job 失败，修复 deploy key 或 tap 冲突后使用 GitHub 的 Re-run failed jobs。遇到 SSH 权限错误时，用上面的命令重新生成可写 key。它下载已发布 DMG，无需重做签名和公证。已存在同版本 Cask 且内容一致时不会提交；tap 有更新版本时会拒绝降级。Release 同版本重试会替换产物，因此尽量只重试失败 job，正式修复优先发新版本。
 
 ## 安装和卸载边界
 

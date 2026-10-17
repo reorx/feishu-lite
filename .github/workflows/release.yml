@@ -134,12 +134,12 @@ jobs:
           persist-credentials: false
       - name: Require tap write credential
         env:
-          TAP_PUSH_TOKEN: ${{ secrets.TAP_PUSH_TOKEN }}
-        run: ': "${TAP_PUSH_TOKEN:?Configure TAP_PUSH_TOKEN with contents:write for reorx/homebrew-tap}"'
+          TAP_DEPLOY_KEY: ${{ secrets.TAP_DEPLOY_KEY }}
+        run: ': "${TAP_DEPLOY_KEY:?Configure TAP_DEPLOY_KEY with a writable deploy key for reorx/homebrew-tap}"'
       - uses: actions/checkout@v4
         with:
           repository: reorx/homebrew-tap
-          token: ${{ secrets.TAP_PUSH_TOKEN }}
+          ssh-key: ${{ secrets.TAP_DEPLOY_KEY }}
           path: tap
       - name: Generate cask from published DMG
         env:
