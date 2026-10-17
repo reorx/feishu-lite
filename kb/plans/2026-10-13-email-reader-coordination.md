@@ -423,6 +423,8 @@ F2b预留：实际SecItem测试UUID/Debug-Release互访、backend supervisor独�
 
 ### 当前接续：真实邮箱测试目标与最终验收边界
 
+> 2026-10-17 起由 [收尾协调记录](2026-10-17-email-reader-finish-coordination.md) 接续：用户取消了指定测试邮件的要求，剩余边界与真实邮箱浏览已在那里完成验收。本节保留当时的状态。
+
 coordinator 已审阅 F2b `284fbfc`、R4 `1f20f89` 和 F2c `6993f6a` 的报告、提交与关键屏幕/结构化证据。R1 HTML、R2纯文本滚动、R3提示布局均已独立复验关闭；原计划触发的R4配置service隔离也已在真实SecItem、不同签名下复验通过。开发及验收代码执行均在独立Codex tab，coordinator只派发、读证据与维护本文。
 
 最新自动基线：后端301（F2b）；Core74/App96、Debug及未签名Universal Release构建（R4）。F2c无产品改动，未重复全量。R3原有SSE时序用例首轮失败保留，F2b/R4全量未复现，不宣称绝无flake。F2c的键盘自动化失败保留，实际键入+按钮发送通过不覆盖Return/IME。
