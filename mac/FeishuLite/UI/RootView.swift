@@ -6,10 +6,13 @@ struct RootView: View {
     let windows: WindowManager
 
     @Environment(\.openWindow) private var openWindow
+    /// 两个模块共用，切换模块时侧栏保持展开或收起
+    @State private var sidebarVisibility: NavigationSplitViewVisibility = .all
 
     var body: some View {
         content
             .frame(minWidth: 800, minHeight: 460)
+            .environment(\.today, appState.today)
             .background(WindowReader { windows.window = $0 })
             .onAppear { windows.openWindow = openWindow }
             .modifier(LogoutConfirmation(messages: appState.messages))
@@ -18,16 +21,18 @@ struct RootView: View {
     @ViewBuilder
     private var content: some View {
         if appState.status != nil {
-            HStack(spacing: 0) {
-                ModuleNavigation(appState: appState)
-                Divider()
-                // 条件分支销毁旧工作区，避免隐藏的 NSTextView 接收回车。
+            // 条件分支销毁旧工作区，避免隐藏的 NSTextView 接收回车。
+            // 外层容器常驻，onAppear 和以前一样只在内容出现时触发一次，切换模块不会重复触发。
+            ZStack {
                 switch appState.activeModule {
                 case .messages:
-                    MessagesWorkspace(appState: appState)
+                    MainView(appState: appState, sidebarVisibility: $sidebarVisibility,
+                             switcher: AppModuleSwitcher(appState: appState))
                 case .email:
                     EmailWorkspace(mail: appState.mail, notifications: appState.mailNotifications,
-                                   redetect: appState.retryBackendInstallation)
+                                   redetect: appState.retryBackendInstallation,
+                                   sidebarVisibility: $sidebarVisibility,
+                                   switcher: AppModuleSwitcher(appState: appState))
                 }
             }
             .onAppear { appState.reevaluateViewing() }
@@ -37,57 +42,14 @@ struct RootView: View {
     }
 }
 
-private struct MessagesWorkspace: View {
+/// 单独读未读数，badge 变化只刷新切换控件
+private struct AppModuleSwitcher: View {
     let appState: AppState
 
     var body: some View {
-        if let status = appState.messages.status, status.state == .loggedOut {
-            LoginView(login: appState.messages.login, sessionExpired: status.lastError != nil)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .navigationTitle("Messages")
-        } else {
-            MainView(appState: appState)
+        ModuleSwitcher(activeModule: appState.activeModule, counts: appState.unreadCounts) {
+            appState.activeModule = $0
         }
-    }
-}
-
-private struct ModuleNavigation: View {
-    @Bindable var appState: AppState
-
-    var body: some View {
-        VStack(spacing: 8) {
-            moduleButton(.messages, title: "Messages", icon: "bubble.left.and.bubble.right",
-                         count: appState.unreadCounts.messages)
-            moduleButton(.email, title: "Email", icon: "envelope", count: appState.unreadCounts.email)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 6)
-        .padding(.top, 12)
-        .frame(width: 76)
-        .background(.bar)
-    }
-
-    private func moduleButton(_ module: AppModule, title: String, icon: String, count: Int) -> some View {
-        Button { appState.activeModule = module } label: {
-            VStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .frame(height: 24)
-                Text(title)
-                    .font(.system(size: 10, weight: .medium))
-                if count > 0 { UnreadBadge(count: count, muted: false) }
-            }
-            .padding(.vertical, 10)
-            .frame(maxWidth: .infinity)
-            .foregroundStyle(appState.activeModule == module ? Color.accentColor : Color.secondary)
-            .background(appState.activeModule == module ? Color.accentColor.opacity(0.12) : .clear,
-                        in: .rect(cornerRadius: 8))
-            .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(title)
-        .accessibilityValue(count > 0 ? "\(count) 条未读" : "没有未读")
-        .accessibilityAddTraits(appState.activeModule == module ? [.isSelected] : [])
     }
 }
 

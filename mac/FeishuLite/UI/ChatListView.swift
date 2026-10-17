@@ -3,12 +3,17 @@ import SwiftUI
 
 struct ChatListView: View {
     @Bindable var messages: MessagesState
+    let status: SidebarStatus
     @State private var isManaging = false
     @State private var selectedIDs: Set<String> = []
     @State private var isRestoringScroll = true
 
     private var chats: [Chat] {
         messages.showsHiddenChats ? messages.hiddenChats : messages.chats
+    }
+
+    private var isAllSelected: Bool {
+        !chats.isEmpty && selectedIDs.isSuperset(of: chats.map(\.id))
     }
 
     var body: some View {
@@ -40,6 +45,9 @@ struct ChatListView: View {
             if isManaging {
                 Divider()
                 managementFooter
+            } else if !messages.showsHiddenChats, !messages.hiddenChats.isEmpty {
+                Divider()
+                hiddenChatsEntry
             }
         }
         .overlay {
@@ -80,38 +88,51 @@ struct ChatListView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 8) {
-            if messages.showsHiddenChats {
-                Button { messages.showChatList(hidden: false) } label: {
-                    Label("返回", systemImage: "chevron.left")
-                }
-                .help("返回会话列表")
-            }
-            Text(messages.showsHiddenChats ? "隐藏会话" : "会话")
-                .font(.headline)
-            Spacer(minLength: 4)
-            if isManaging {
-                Menu("管理") {
-                    if !messages.showsHiddenChats {
-                        Button("查看隐藏会话（\(messages.hiddenChats.count)）") {
-                            messages.showChatList(hidden: true)
-                        }
+        SidebarHeader(status: status) {
+            HStack(spacing: 6) {
+                if messages.showsHiddenChats {
+                    Button { messages.showChatList(hidden: false) } label: {
+                        Image(systemName: "chevron.left")
                     }
-                    Button("全选") { selectedIDs = Set(chats.map(\.id)) }
-                        .disabled(chats.isEmpty)
-                    Button("取消全选") { selectedIDs.removeAll() }
-                        .disabled(selectedIDs.isEmpty)
-                    Divider()
-                    Button("完成管理") { endManagement() }
+                    .help("返回会话列表")
+                    .accessibilityLabel("返回")
                 }
-                .fixedSize()
+                Text(messages.showsHiddenChats ? "隐藏的会话" : "会话")
+            }
+        } actions: {
+            if isManaging {
+                Button(isAllSelected ? "取消全选" : "全选") {
+                    if isAllSelected { selectedIDs.removeAll() } else { selectedIDs = Set(chats.map(\.id)) }
+                }
+                .disabled(chats.isEmpty)
+                Button("完成") { endManagement() }
             } else {
                 Button("管理") { isManaging = true }
+                    .disabled(chats.isEmpty)
             }
         }
-        .controlSize(.small)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+    }
+
+    /// 常驻入口，没有隐藏的会话时不显示
+    private var hiddenChatsEntry: some View {
+        Button { messages.showChatList(hidden: true) } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "eye.slash")
+                Text("隐藏的会话")
+                Spacer(minLength: 4)
+                Text("\(messages.hiddenChats.count)")
+                    .monospacedDigit()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+            }
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("隐藏的会话，\(messages.hiddenChats.count) 个")
     }
 
     private var managementFooter: some View {
@@ -119,13 +140,11 @@ struct ChatListView: View {
             Text(messages.showsHiddenChats ? "取消隐藏后，会话会回到主列表。" : "隐藏后，新消息也不会让会话回到主列表。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
             HStack {
                 Text("已选 \(selectedIDs.count) 项")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button("完成") { endManagement() }
                 Button(messages.showsHiddenChats ? "取消隐藏" : "隐藏") {
                     messages.setChatsHidden(selectedIDs, hidden: !messages.showsHiddenChats)
                     selectedIDs.removeAll()

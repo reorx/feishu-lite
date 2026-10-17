@@ -3,25 +3,34 @@ import SwiftUI
 
 struct MailInboxList: View {
     let mail: MailState
+    let status: SidebarStatus
     @State private var restoring = true
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 8) {
+            SidebarHeader(status: status) {
                 Menu {
                     if mail.folders.isEmpty { Text("正在获取文件夹…") }
                     ForEach(mail.folders) { folder in
                         Button(folderTitle(folder)) {}.disabled(!folder.supported || !folder.selectable || folder.id != "INBOX")
                     }
-                } label: { Label("收件箱",systemImage:"tray") }
+                } label: {
+                    HStack(spacing: 3) {
+                        Text("收件箱")
+                        Image(systemName: "chevron.down").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    }
+                }
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .menuIndicator(.hidden)
+                .fixedSize()
                 .help("本期仅读取收件箱，其他文件夹暂不支持读取")
-                Spacer(minLength: 0)
-                Button { Task { await mail.sync(); await mail.refreshReader() } } label: { Image(systemName:"arrow.clockwise") }
-                    .help("刷新收件箱").accessibilityLabel("刷新收件箱")
-                    .disabled(!mail.canSubmit || mail.isRefreshingReader)
+            } actions: {
+                Button { mail.refreshInbox() } label: { Image(systemName:"arrow.clockwise") }
+                    .help("刷新收件箱（⌘R）").accessibilityLabel("刷新收件箱")
+                    .disabled(!mail.canRefreshInbox)
                 Button { mail.showsConfiguration = true; mail.invalidatePresentation() } label: { Image(systemName:"gearshape") }
                     .help("邮箱配置").accessibilityLabel("邮箱配置")
-            }.padding(12)
-            MailSyncStatusView(mail:mail).padding(.horizontal,12).padding(.bottom,10)
+            }
             Divider()
             GeometryReader { viewport in
                 ScrollViewReader { proxy in

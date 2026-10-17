@@ -1,52 +1,61 @@
 import FeishuLiteCore
 import SwiftUI
 
-struct MainView: View {
+/// Messages 工作区。未登录时侧栏只留头部，详情区是扫码页，窗口结构和已登录时一致。
+struct MainView<Switcher: View>: View {
     let appState: AppState
+    @Binding var sidebarVisibility: NavigationSplitViewVisibility
+    let switcher: Switcher
+
+    private var isLoggedOut: Bool { appState.messages.status?.state == .loggedOut }
 
     var body: some View {
-        NavigationSplitView {
-            ChatListView(messages: appState.messages)
-                .safeAreaInset(edge: .top, spacing: 0) {
-                    ConnectionStatusBar(appState: appState)
+        NavigationSplitView(columnVisibility: $sidebarVisibility) {
+            ModuleSidebar(switcher: switcher) {
+                if isLoggedOut {
+                    LoggedOutSidebar(status: status)
+                } else {
+                    ChatListView(messages: appState.messages, status: status)
+                        .safeAreaInset(edge: .bottom, spacing: 0) {
+                            NotificationPermissionBar(notifications: appState.notifications)
+                        }
                 }
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    NotificationPermissionBar(notifications: appState.notifications)
-                }
-                .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 420)
+            }
         } detail: {
-            if let conversation = appState.messages.conversation {
+            if let status = appState.messages.status, status.state == .loggedOut {
+                LoginView(login: appState.messages.login, sessionExpired: status.lastError != nil)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .navigationTitle("Messages")
+            } else if let conversation = appState.messages.conversation {
                 ConversationView(conversation: conversation, title: appState.messages.selectedChatName,
                                  messages: appState.messages)
                     .id(conversation.chatID)
             } else {
                 ContentUnavailableView("选择一个会话", systemImage: "bubble.left.and.bubble.right")
+                    .navigationTitle("Messages")
             }
         }
-        .environment(\.today, appState.today)
+        .toolbar { CollapsedSidebarStatus(status: status, visibility: $sidebarVisibility) }
+    }
+
+    private var status: SidebarStatus {
+        appState.messages.connectionDisplay(isEventStreamConnected: appState.isEventStreamConnected).sidebarStatus
     }
 }
 
-/// 侧栏顶部的连接状态
-private struct ConnectionStatusBar: View {
-    let appState: AppState
+/// 未登录时的侧栏：保留头部和状态，列表位置说明登录后才有会话。
+private struct LoggedOutSidebar: View {
+    let status: SidebarStatus
 
     var body: some View {
-        let display = appState.messages.connectionDisplay(isEventStreamConnected: appState.isEventStreamConnected)
-        HStack(spacing: 6) {
-            Circle()
-                .fill(display.isHealthy ? Color.green : Color.orange)
-                .frame(width: 8, height: 8)
-            Text(display.text)
-                .font(.caption)
+        VStack(spacing: 0) {
+            SidebarHeader(status: status) { Text("会话") }
+            Divider()
+            Text("扫码登录后显示会话")
+                .font(.callout)
                 .foregroundStyle(.secondary)
-                .lineLimit(1)
-            Spacer(minLength: 0)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 6)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("连接状态：\(display.text)")
     }
 }
 
@@ -56,20 +65,13 @@ private struct NotificationPermissionBar: View {
 
     var body: some View {
         if notifications.isDenied {
-            HStack(spacing: 8) {
-                Label("通知未开启，收不到新消息提醒", systemImage: "bell.slash")
+            VStack(spacing: 0) {
+                Divider()
+                NoticeBar(tone: .warning, systemImage: "bell.slash", title: "通知未开启，收不到新消息提醒",
+                          action: InlineAction(title: "去开启") { notifications.openSystemSettings() })
                     .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                Spacer(minLength: 0)
-                Button("去开启") {
-                    notifications.openSystemSettings()
-                }
-                .controlSize(.small)
+                    .controlSize(.small)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(.bar)
         }
     }
 }
@@ -77,6 +79,10 @@ private struct NotificationPermissionBar: View {
 struct ConnectionDisplay: Equatable {
     var text: String
     var isHealthy: Bool
+
+    var sidebarStatus: SidebarStatus {
+        SidebarStatus(tone: isHealthy ? .healthy : .warning, text: text)
+    }
 }
 
 extension MessagesState {

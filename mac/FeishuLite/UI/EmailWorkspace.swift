@@ -1,109 +1,139 @@
 import FeishuLiteCore
 import SwiftUI
 
-struct EmailWorkspace: View {
+/// Email 工作区。检测能力和需要更新后端时也保留分栏，窗口结构和收件箱一致。
+struct EmailWorkspace<Switcher: View>: View {
     let mail: MailState
     let notifications: MailNotificationCoordinator
     let redetect: () -> Void
+    @Binding var sidebarVisibility: NavigationSplitViewVisibility
+    let switcher: Switcher
+
+    @Environment(\.today) private var today
 
     var body: some View {
-        // NavigationSplitView's native sidebar does not reserve an outer
-        // safeAreaInset consistently. Give notices their own layout space.
-        VStack(spacing: 0) {
-            notificationNotice
-                .fixedSize(horizontal: false, vertical: true)
-            Group {
-                switch mail.capability {
-                case .unknown:
-                    VStack(spacing: 12) {
-                        ProgressView()
-                        Text("正在检测邮箱功能…").foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                case .unsupported:
-                    VStack(alignment: .leading, spacing: 16) {
-                        Label("请更新邮箱后端", systemImage: "shippingbox").font(.title2)
-                        Text("当前后端未提供邮箱功能。在终端重新安装后，再重新检测。")
-                        BackendCommandView(value: BackendConfig.installationCommand)
-                        Button("已安装，重新检测", action: redetect).buttonStyle(.borderedProminent)
-                    }
-                    .padding(24)
-                    .frame(maxWidth: 580)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                case .supported:
-                    NavigationSplitView {
-                        MailInboxList(mail: mail)
-                            .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 420)
-                    } detail: {
-                        if mail.status?.mailAccountID == nil || mail.showsConfiguration {
-                            VStack(spacing: 0) {
-                                if mail.status?.mailAccountID != nil {
-                                    HStack {
-                                        Button("返回阅读器", systemImage: "chevron.left") { mail.showsConfiguration = false }
-                                        Spacer()
-                                    }.padding(12)
-                                    Divider()
-                                }
-                                MailConfigurationView(mail: mail)
-                            }
-                        } else {
-                            MailMessageDetail(mail: mail)
-                        }
+        let status = mail.sidebarStatus(now: today)
+        NavigationSplitView(columnVisibility: $sidebarVisibility) {
+            ModuleSidebar(switcher: switcher) {
+                if mail.capability == .supported {
+                    MailInboxList(mail: mail, status: status)
+                } else {
+                    VStack(spacing: 0) {
+                        SidebarHeader(status: status) { Text("收件箱") }
+                        Divider()
+                        Spacer(minLength: 0)
                     }
                 }
             }
+        } detail: {
+            switch mail.capability {
+            case .unknown:
+                VStack(spacing: 12) {
+                    ProgressView()
+                    Text("正在检测邮箱功能…").foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .navigationTitle("Email")
+            case .unsupported:
+                VStack(alignment: .leading, spacing: 16) {
+                    Label("请更新邮箱后端", systemImage: "shippingbox").font(.title2)
+                    Text("当前后端未提供邮箱功能。在终端重新安装后，再重新检测。")
+                    BackendCommandView(value: BackendConfig.installationCommand)
+                    Button("已安装，重新检测", action: redetect).buttonStyle(.borderedProminent)
+                }
+                .padding(24)
+                .frame(maxWidth: 580)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .navigationTitle("Email")
+            case .supported:
+                // 提示条放在详情栏顶部，占自己的高度，不压住侧栏和收件箱头部。
+                VStack(spacing: 0) {
+                    notificationNotice
+                    supportedDetail
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
         }
-        .navigationTitle("Email")
+        .toolbar { CollapsedSidebarStatus(status: status, visibility: $sidebarVisibility) }
+    }
+
+    @ViewBuilder private var supportedDetail: some View {
+        if mail.status?.mailAccountID == nil || mail.showsConfiguration {
+            VStack(spacing: 0) {
+                if mail.status?.mailAccountID != nil {
+                    HStack {
+                        Button("返回阅读器", systemImage: "chevron.left") { mail.showsConfiguration = false }
+                        Spacer()
+                    }.padding(12)
+                    Divider()
+                }
+                MailConfigurationView(mail: mail)
+            }
+            .navigationTitle("邮箱配置")
+        } else {
+            MailMessageDetail(mail: mail)
+                .navigationTitle(mail.selectedMessageID == nil ? "Email" : mail.selectedSummary?.displaySubject ?? "Email")
+        }
     }
 
     @ViewBuilder private var notificationNotice: some View {
-        if mail.capability == .supported, notifications.uncertainDeliveryCount > 0 {
-            VStack(spacing: 0) {
-                HStack(alignment: .center, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("有 \(notifications.uncertainDeliveryCount) 条邮件提醒的投递结果未确认")
-                        Text("已保留待提醒邮件。再次提醒可能重复显示同一通知。")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                    .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 0)
-                    Button("再次提醒", action: notifications.retryUncertainDeliveries)
-                        .fixedSize()
-                        .disabled(!mail.isBackendReady)
-                }.padding(12)
-                Divider()
-            }
-        } else if mail.capability == .supported, let failure = notifications.lastFailure {
-            HStack(spacing: 16) {
-                Text(failure).font(.callout).fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 0)
-                Button("重试提醒", action: notifications.request).fixedSize().disabled(!mail.isBackendReady)
-            }.padding(12)
+        if notifications.uncertainDeliveryCount > 0 {
+            NoticeBar(tone: .warning, systemImage: "bell.badge",
+                      title: "有 \(notifications.uncertainDeliveryCount) 条邮件提醒的投递结果未确认",
+                      message: "已保留待提醒邮件。再次提醒可能重复显示同一通知。",
+                      action: InlineAction(title: "再次提醒", isEnabled: mail.isBackendReady,
+                                           perform: notifications.retryUncertainDeliveries))
+            Divider()
+        } else if let failure = notifications.lastFailure {
+            NoticeBar(tone: .error, systemImage: "bell.slash", title: failure,
+                      action: InlineAction(title: "重试提醒", isEnabled: mail.isBackendReady,
+                                           perform: notifications.request))
+            Divider()
         }
     }
 }
 
-struct MailSyncStatusView: View {
-    let mail: MailState
+extension MailState {
+    var canRefreshInbox: Bool { canSubmit && !isRefreshingReader }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(mail.stateDescription).font(.caption)
-            if let status = mail.status, status.mailAccountID != nil {
-                Text(status.address ?? "").font(.caption).lineLimit(1).textSelection(.enabled)
-                if status.unreadStale {
-                    Label("显示上次同步的缓存与未读数", systemImage: "clock").font(.caption).foregroundStyle(.secondary)
-                }
-                if let time = status.lastSyncAt {
-                    Text("最后同步：\(Date(timeIntervalSince1970: TimeInterval(time)).formatted(date: .abbreviated, time: .shortened))")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                if status.state == .credentialMissing || status.state == .authFailed || mail.credentialIssue != nil || mail.hasUnsavedCredential {
-                    Button("检查邮箱配置") { mail.showsConfiguration = true; mail.invalidatePresentation() }
-                }
-            }
-            if let error = mail.errorMessage { Text(error).font(.caption).foregroundStyle(.red) }
+    func refreshInbox() {
+        Task { await sync(); await refreshReader() }
+    }
+
+    /// 侧栏状态行：连接状态一句话，地址和同步时间作次要信息，需要处理时附“检查配置”。
+    func sidebarStatus(now: Date) -> SidebarStatus {
+        switch capability {
+        case .unknown: return SidebarStatus(tone: .neutral, text: "正在检测邮箱功能…")
+        case .unsupported: return SidebarStatus(tone: .warning, text: "当前后端未提供邮箱功能")
+        case .supported: break
         }
+        var tone: SidebarStatusTone
+        switch status?.state {
+        case nil, .unconfigured: tone = .neutral
+        case .online: tone = .healthy
+        case .connecting, .offline: tone = .warning
+        case .credentialMissing, .authFailed: tone = .error
+        }
+        var text = stateDescription
+        if credentialIssue != nil { tone = .error }
+        if hasUnsavedCredential {
+            if tone != .error { tone = .warning }
+            text += "，密码尚未安全保存"
+        }
+        var result = SidebarStatus(tone: tone, text: text, error: errorMessage)
+        guard let status, status.mailAccountID != nil else { return result }
+        var detail = [status.address ?? ""]
+        if let time = status.lastSyncAt { detail.append("同步于 " + ChatTimeFormat.messageLabel(time, now: now)) }
+        if status.unreadStale, status.state != .offline { detail.append("显示上次同步的缓存") }
+        let joined = detail.filter { !$0.isEmpty }.joined(separator: " · ")
+        result.detail = joined.isEmpty ? nil : joined
+        if status.state == .credentialMissing || status.state == .authFailed || credentialIssue != nil || hasUnsavedCredential {
+            result.action = InlineAction(title: "检查配置") { [self] in
+                showsConfiguration = true
+                invalidatePresentation()
+            }
+        }
+        return result
     }
 }
 
@@ -190,8 +220,8 @@ struct BackendCommandView: View {
     let value: String
     var body: some View {
         HStack(alignment: .top) {
+            // 不用 fixedSize：放进分栏后，分栏会用很窄的宽度询问最小高度，把窗口撑高。
             Text(value).font(.system(.callout, design: .monospaced)).textSelection(.enabled)
-                .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 8)
             Button("复制") {
                 NSPasteboard.general.clearContents()
