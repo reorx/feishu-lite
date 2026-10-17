@@ -335,7 +335,7 @@ R9 签收后派发，协调者届时按 R5 至 R9 的实际产出补充这一节
 | 任务 | 状态 | agent / tab | 结果提交 | 备注 |
 |---|---|---|---|---|
 | R5 | 返工（R5b） | `mailfin-r5` / tab `w3W:tA`，Codex | `d853a3c`（只有调查报告） | 没修好：拿到稳定复现 `repro2`，排除了“只是滚动锚点回写”；到 context 40% 停下，产品代码已撤回 |
-| R5b | 进行中 | `mailfin-r5b`，Codex | | 返工 brief 见「R5b」一节 |
+| R5b | 进行中 | `mailfin-r5b` / tab `w3W:tB`，Codex | | 返工 brief 见「R5b」一节；监视器 bvikv2f11 |
 | R6 | 计划中 | `mailfin-r6`，Codex | | 等 R5 签收 |
 | R7 | 计划中 | `mailfin-r7`，Claude Code | | 等 R6 签收 |
 | R8 | 计划中 | `mailfin-r8`，Claude Code | | 等 R7 签收 |
