@@ -58,18 +58,20 @@ struct EmailWorkspace<Switcher: View>: View {
     }
 
     @ViewBuilder private var supportedDetail: some View {
-        if mail.status?.mailAccountID == nil || mail.showsConfiguration {
-            VStack(spacing: 0) {
-                if mail.status?.mailAccountID != nil {
-                    HStack {
-                        Button("返回阅读器", systemImage: "chevron.left") { mail.showsConfiguration = false }
-                        Spacer()
-                    }.padding(12)
-                    Divider()
+        if mail.showsConfigurationForm {
+            MailConfigurationView(mail: mail)
+                .navigationTitle("邮箱配置")
+                .toolbar {
+                    // 返回放在工具栏的导航位置，和系统的返回按钮一致
+                    if mail.status?.mailAccountID != nil {
+                        ToolbarItem(placement: .navigation) {
+                            Button { mail.showsConfiguration = false } label: {
+                                Label("返回阅读器", systemImage: "chevron.left")
+                            }
+                            .help("返回阅读器")
+                        }
+                    }
                 }
-                MailConfigurationView(mail: mail)
-            }
-            .navigationTitle("邮箱配置")
         } else {
             MailMessageDetail(mail: mail)
                 .navigationTitle(mail.selectedMessageID == nil ? "Email" : mail.selectedSummary?.displaySubject ?? "Email")
@@ -96,6 +98,9 @@ struct EmailWorkspace<Switcher: View>: View {
 extension MailState {
     var canRefreshInbox: Bool { canSubmit && !isRefreshingReader }
 
+    /// 详情栏显示的是配置表单（未配置，或用户打开了配置）
+    var showsConfigurationForm: Bool { status?.mailAccountID == nil || showsConfiguration }
+
     func refreshInbox() {
         Task { await sync(); await refreshReader() }
     }
@@ -120,7 +125,8 @@ extension MailState {
             if tone != .error { tone = .warning }
             text += "，密码尚未安全保存"
         }
-        var result = SidebarStatus(tone: tone, text: text, error: errorMessage)
+        // 同一条错误只显示一处：配置表单显示时由表单显示，阅读器里才放进侧栏
+        var result = SidebarStatus(tone: tone, text: text, error: showsConfigurationForm ? nil : errorMessage)
         guard let status, status.mailAccountID != nil else { return result }
         var detail = [status.address ?? ""]
         if let time = status.lastSyncAt { detail.append("同步于 " + ChatTimeFormat.messageLabel(time, now: now)) }
@@ -146,9 +152,9 @@ struct MailConfigurationView: View {
     var body: some View {
         Form {
             Section {
-                TextField("邮箱地址", text: $mail.addressInput)
+                TextField("邮箱地址", text: $mail.addressInput, prompt: Text("name@company.com"))
                     .textContentType(.emailAddress)
-                SecureField("专用密码", text: $mail.passwordInput)
+                SecureField("专用密码", text: $mail.passwordInput, prompt: Text("飞书生成的专用密码"))
                     .textContentType(.password)
                 Text("使用飞书生成的第三方客户端专用密码。连接固定为 imap.feishu.cn:993（TLS）。")
                     .font(.callout).foregroundStyle(.secondary)
@@ -167,12 +173,18 @@ struct MailConfigurationView: View {
                     if mail.operation != nil { ProgressView().controlSize(.small).accessibilityLabel("正在处理邮箱请求") }
                 }
                 if let result = mail.connectionTest {
-                    Label(result.writable ? "连接成功，可同步已读状态" : "连接成功，但邮箱只读，无法同步已读状态",
-                          systemImage: result.writable ? "checkmark.circle" : "exclamationmark.triangle")
+                    Label {
+                        Text(result.writable ? "连接成功，可同步已读状态" : "连接成功，但邮箱只读，无法同步已读状态")
+                    } icon: {
+                        Image(systemName: result.writable ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                            .foregroundStyle(result.writable ? .green : .orange)
+                    }
                     Text("测试连接不会保存邮箱配置。")
                         .font(.caption).foregroundStyle(.secondary)
                 }
-                if let error = mail.errorMessage { Text(error).foregroundStyle(.red).textSelection(.enabled) }
+                if let error = mail.errorMessage {
+                    Label(error, systemImage: "exclamationmark.circle.fill").foregroundStyle(.red).textSelection(.enabled)
+                }
             } header: {
                 Text("飞书邮箱配置")
             } footer: {
@@ -199,7 +211,10 @@ struct MailConfigurationView: View {
             }
             if mail.status?.mailAccountID != nil {
                 Section {
-                    Button("移除邮箱", role: .destructive) { confirmsRemoval = true }.disabled(!mail.canSubmit)
+                    Button(role: .destructive) { confirmsRemoval = true } label: {
+                        Text("移除邮箱").foregroundStyle(mail.canSubmit ? .red : .secondary)
+                    }
+                    .disabled(!mail.canSubmit)
                 } footer: {
                     Text("移除邮箱将清除本机邮件缓存和此邮箱的钥匙串密码，聊天不受影响。")
                 }

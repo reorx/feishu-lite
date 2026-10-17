@@ -117,7 +117,9 @@ import FeishuLiteCore
         defer { prefs.removePersistentDomain(forName:suite); mail.stopReader() }
         await mail.selectMessage("mail-105")
         let empty = try plainController(mail,content:"")
-        #expect(empty.textView.string == "（正文为空）")
+        // 空正文不写占位文字（界面叠一个居中的空态），但仍要给出显示证明
+        #expect(empty.textView.string == "")
+        #expect(mail.displayedToken == empty.token)
         #expect(empty.scrollView.contentView.bounds.minY == 0)
         empty.stop()
         let content = String(repeating:"合成长文本 <script>literal</script>\n",count:6000)

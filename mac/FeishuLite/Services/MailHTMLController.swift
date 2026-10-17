@@ -67,6 +67,12 @@ import WebKit
         config.setURLSchemeHandler(document,forURLScheme:"feishu-mail-body")
         self.webView = webView ?? WKWebView(frame:.zero,configuration:config)
         super.init()
+        // 只改背景绘制：网页不画画布，正文和头部、窗口用同一个底色（深色下尤其明显）
+        // KVC 的 drawsBackground 落到 _setDrawsBackground:（macOS 26 上没有不带下划线的 setter）；都没有时保持默认，不崩溃
+        if ["setDrawsBackground:","_setDrawsBackground:"].contains(where: { self.webView.responds(to:NSSelectorFromString($0)) }) {
+            self.webView.setValue(false,forKey:"drawsBackground")
+        }
+        self.webView.underPageBackgroundColor = .clear
         self.webView.navigationDelegate = self
         self.webView.uiDelegate = self
         gate = MailHTMLLoadGate(prepare: { [weak self] in

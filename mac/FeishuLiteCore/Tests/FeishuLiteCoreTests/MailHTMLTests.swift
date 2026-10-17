@@ -27,4 +27,18 @@ struct MailHTMLTests {
         #expect((rules[0]["trigger"] as! [String:Any])["url-filter"] as? String == ".*")
         #expect((rules[0]["action"] as! [String:Any])["type"] as? String == "block")
     }
+    @Test func envelopeFramesOnlyDataTablesAndMatchesTheNativeReaderTypography() {
+        let doc = MailHTMLPolicy.document(content:"<table><tr><td>布局</td></tr></table>", nonce:"synthetic-nonce")
+        // 布局表格不画框，只有带表头的数据表格画框
+        #expect(!doc.contains("td, th { border"))
+        #expect(doc.contains("table:has(> thead > tr > th, > tbody > tr > th, > tfoot > tr > th)"))
+        #expect(doc.contains("font-size: \(Int(MailReaderLayout.bodyFontSize))px"))
+        #expect(doc.contains("line-height: \(MailReaderLayout.lineHeight)"))
+        #expect(doc.contains("max-width: \(Int(MailReaderLayout.maxReadingWidth))px"))
+        #expect(doc.contains("padding: \(Int(MailReaderLayout.verticalMargin))px \(Int(MailReaderLayout.horizontalMargin))px"))
+        #expect(doc.contains("background: transparent"))
+        // 标题不超过邮件主题（17pt）
+        for size in MailReaderLayout.headingFontSizes { #expect(size < MailReaderLayout.subjectFontSize) }
+        #expect(doc.contains("h1 { font-size: \(Int(MailReaderLayout.headingFontSizes[0]))px"))
+    }
 }

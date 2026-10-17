@@ -249,6 +249,41 @@ struct NoticeBar: View {
     }
 }
 
+/// 列表里的小空态：居中、次要色，可以带一个小图标、一句说明和一个按钮。
+/// 详情区这类主要区域的空态用 ContentUnavailableView。
+struct ListEmptyState: View {
+    let systemImage: String
+    let title: String
+    var message: String?
+    var action: InlineAction?
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Image(systemName: systemImage)
+                .font(.system(size: 22))
+                .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
+            Text(title)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            if let message {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            if let action {
+                Button(action.title, action: action.perform)
+                    .controlSize(.small)
+                    .disabled(!action.isEnabled)
+                    .padding(.top, 2)
+            }
+        }
+        .multilineTextAlignment(.center)
+        .padding(20)
+        .frame(maxWidth: .infinity)
+    }
+}
+
 /// 侧栏收起后，当前模块的状态异常时在工具栏露出来；点一下重新展开侧栏。
 struct CollapsedSidebarStatus: ToolbarContent {
     let status: SidebarStatus

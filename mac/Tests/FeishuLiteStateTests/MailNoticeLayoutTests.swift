@@ -14,7 +14,8 @@ import FeishuLiteCore
                    switcher: ModuleSwitcher(activeModule: .email, counts: UnreadCounts(messages: 3, email: 7), select: { _ in }))
 }
 
-/// 实际 AppKit 视图的位置：分栏、侧栏收件箱列表，以及详情区最上面的内容（邮件头部、正文或配置表单的滚动视图）。
+/// 实际 AppKit 视图的位置：分栏、侧栏收件箱列表，以及详情区最上面的 AppKit 内容（正文或配置表单的滚动视图）。
+/// U1-13 之后邮件头部是普通 SwiftUI 文字，不再有自己的滚动视图，所以正文状态下量到的是头部下方的正文。
 /// 浮动侧栏盖在详情栏上，详情内容可以从 x=0 开始，所以按分栏的两个子视图区分，不按坐标。
 @MainActor private struct NoticeGeometry {
     var split: CGRect
@@ -48,12 +49,18 @@ import FeishuLiteCore
         let host = NSHostingView(rootView: AnyView(emailWorkspace(mail, quiet)))
         defer { host.rootView = AnyView(EmptyView()); host.layoutSubtreeIfNeeded() }
         host.frame = NSRect(origin: .zero, size: size)
-        // 没有提示时的基准：选中正文后详情内容从顶部开始。
+        // 没有提示时的基准：正文紧跟在按内容定高的头部下面；配置表单从详情顶部开始。
         await mail.selectMessage("mail-105")
         for _ in 0..<10 { host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(10)) }
         let baseline = try NoticeGeometry(host)
         let baselineTop = try #require(baseline.detailTop)
-        #expect(baselineTop < 20)
+        #expect(baselineTop < 120)
+        mail.showsConfiguration = true
+        for _ in 0..<10 { host.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(10)) }
+        let configurationTop = try #require(try NoticeGeometry(host).detailTop)
+        #expect(configurationTop < 20)
+        mail.showsConfiguration = false
+        print("NOTICE-BASELINE", size, count, "body", baselineTop, "configuration", configurationTop)
         host.rootView = AnyView(EmptyView()); host.layoutSubtreeIfNeeded()
         quiet.stop()
         await mail.selectMessage(nil)
@@ -94,7 +101,7 @@ import FeishuLiteCore
             if state != "inbox" {
                 // A notice needs at least a native control row plus padding.
                 let top = try #require(geometry.detailTop)
-                #expect(top >= baselineTop + 40)
+                #expect(top >= (state == "configuration" ? configurationTop : baselineTop) + 40)
                 #expect(host.bounds.maxY - top >= 200)
                 if state == "body" { normalTop = top }
                 if state == "wrapped" { #expect(top > normalTop) }
@@ -130,7 +137,8 @@ import FeishuLiteCore
                 #expect(top == initial.detailTop)
             } else {
                 initial = geometry
-                #expect(top < 20)
+                // 正文紧跟在头部下面，头部按内容定高（U1-13），没有提示条占位
+                #expect(top < 120)
             }
             host.rootView = AnyView(EmptyView()); host.layoutSubtreeIfNeeded()
             host.rootView = AnyView(emailWorkspace(mail, notifications))
