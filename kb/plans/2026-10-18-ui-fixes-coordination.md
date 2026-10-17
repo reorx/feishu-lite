@@ -302,7 +302,7 @@ R9 签收后派发，协调者届时按 R5 至 R9 的实际产出补充这一节
 
 | 任务 | 状态 | agent / tab | 结果提交 | 备注 |
 |---|---|---|---|---|
-| R5 | 计划中 | `mailfin-r5`，Codex | | |
+| R5 | 进行中 | `mailfin-r5` / tab `w3W:tA`，Codex | | 2026-10-18 派发；监视器 b5rxu2icc |
 | R6 | 计划中 | `mailfin-r6`，Codex | | 等 R5 签收 |
 | R7 | 计划中 | `mailfin-r7`，Claude Code | | 等 R6 签收 |
 | R8 | 计划中 | `mailfin-r8`，Claude Code | | 等 R7 签收 |
