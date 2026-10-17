@@ -185,4 +185,4 @@ G 系列签收后的接续（协调者补）：G2a `9119dfb`、G2b `fe7a790`、G
 | G2a | 已签收 | `mailfin-g2a` / tab `w3W:t5` | `9119dfb` | 基线：后端 311、Core 74、App 98，Debug 构建通过；无确认缺陷。R3 Tab/Return 未验：系统键盘导航关闭 |
 | G2b | 已签收 | `mailfin-g2b` / tab `w3W:t6` | `fe7a790` | 四项通过，无确认缺陷。旧回调为受控回放，不证明自然时序概率；单标签内网只验外开，未验主机可达 |
 | G1 | 已签收 | `mailfin-g1` / tab `w3W:t7` | 阶段一 `094ca5b`，阶段二 `404e261` | 真实接入与浏览通过：6 个文件夹、分页到 250 封、160 次正文 GET、7 封已读 HTML 邮件在 App 里打开、4 个附件信息、深浅色，无确认缺陷。未验：层级文件夹和纯文本（真实样本里没有）；隔离 HOME 下真实钥匙串写入被系统“Keychain Not Found”提示拦住，持久化和重启恢复没验 |
-| U1 | 进行中 | `mailfin-u1` / tab 待填 | | |
+| U1 | 进行中 | `mailfin-u1` / tab `w3W:t8`（pane `w3W:pC`），Claude Code | | 2026-10-17 派发；监视器为后台任务 `b6qgve7sd` |
