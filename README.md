@@ -80,6 +80,6 @@ FeishuLite 不是飞书官方产品，它使用和飞书网页版相同的方式
 
 ### 从 FeishuChat 升级
 
-当前源码已改名为 **FeishuLite**（bundle ID `com.reorx.FeishuLite`）；已发布的 v0.1.0 仍叫 FeishuChat，下一版才提供新名称。安装命令不变。
+v0.1.1 已发布并改名为 **FeishuLite**（bundle ID `com.reorx.FeishuLite`）；历史 v0.1.0 仍叫 FeishuChat。安装命令不变，已有用户执行 `brew update && brew upgrade --cask reorx/tap/feishu-lite` 升级。
 
 升级前先取消旧 App 的开机启动并退出旧 App；新 App 需要重新允许通知、开启登录项，邮件钥匙串可能要求授权。原登录和聊天/邮箱缓存继续保存在 `~/Library/Application Support/FeishuChat/`，不会清空。手动安装用户可在退出后将旧 FeishuChat.app 移到废纸篓。详见[升级说明](kb/docs/releases.md#从-feishuchat-升级)。

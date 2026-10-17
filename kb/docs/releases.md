@@ -4,7 +4,7 @@ tags: [release, homebrew, macos]
 ---
 # 发布 FeishuLite
 
-用户通过 `brew install --cask reorx/tap/feishu-lite` 安装。下一版 Cask 安装 FeishuLite.app，同时安装 uv、Git 及与 App 对应 commit 的 Python 后端。v0.1.0 已发布到 GitHub Releases 和 tap，仍为 FeishuChat.app；不得重打该 tag 或替换旧产物。DMG 用户按照 Release 页说明手动安装后端。
+用户通过 `brew install --cask reorx/tap/feishu-lite` 安装。v0.1.1 Cask 安装 FeishuLite.app，同时安装 uv、Git 及与 App 对应 commit 的 Python 后端。v0.1.0 已发布到 GitHub Releases 和 tap，仍为 FeishuChat.app；不得重打该 tag 或替换旧产物。DMG 用户按照 Release 页说明手动安装后端。
 
 ## 发布流程
 
@@ -47,11 +47,11 @@ gh workflow run release.yml --ref master
 gh run list --workflow release.yml
 ```
 
-确认测试、签名、公证、Gatekeeper 与 artifact 上传均成功后，发布下一个版本（以下以 0.1.1 为例，0.1.0 已发布）：
+确认测试、签名、公证、Gatekeeper 与 artifact 上传均成功后，发布下一个版本（以下以 0.1.2 为例，0.1.1 已发布）：
 
 ```sh
-git tag v0.1.1
-git push origin v0.1.1
+git tag v0.1.2
+git push origin v0.1.2
 ```
 
 等待 Release 和 Homebrew 两个 job 均成功，在干净用户环境验证安装、Finder 启动、后端就绪和升级。不要用正式聊天会话做点击验收。
@@ -79,7 +79,7 @@ Cask 使用第三方 tap 仍兼容的 Ruby `postflight`，用于调用需要联�
 
 ## 从 FeishuChat 升级
 
-下一版原生客户端为 **FeishuLite.app / com.reorx.FeishuLite**，工程及 Swift 包也统一使用 FeishuLite。安装命令和 Cask token `feishu-lite` 不变；新的 DMG 为 `FeishuLite-<version>.dmg`。`render-cask.sh` 对已发布的 0.1.0 保留旧 app/DMG 名称。线上 tap 在下一版本成功发布后才更新，目前仍提供原版 0.1.0。
+从 v0.1.1 起原生客户端为 **FeishuLite.app / com.reorx.FeishuLite**，工程及 Swift 包也统一使用 FeishuLite。安装命令和 Cask token `feishu-lite` 不变；新的 DMG 为 `FeishuLite-<version>.dmg`。`render-cask.sh` 对已发布的 0.1.0 保留旧 app/DMG 名称。线上 tap 已更新至 0.1.1，旧版 0.1.0 的 Release 和 tag 保持不变。
 
 升级前退出 FeishuChat 和 FeishuLite，避免两份后端同时使用同一缓存。Homebrew 使用已安装旧 Cask 的 app artifact 卸载/暂存 FeishuChat，再安装新 Cask 的 FeishuLite；无需额外删除钩子，也不添加 zap。手动 DMG 用户在退出旧 App、取消旧 App 的「开机启动」后，将新 App 拖入 Applications，再把旧 FeishuChat.app 移到废纸篓；不要删除 Application Support 或钥匙串。
 
@@ -89,4 +89,4 @@ Cask 使用第三方 tap 仍兼容的 Ruby `postflight`，用于调用需要联�
 - **通知与登录项**：新 bundle 是新的系统身份，需要重新允许 FeishuLite 通知、在新 App 菜单勾选开机启动。升级前先在旧 App 取消开机启动，或在系统设置「通用 → 登录项」移除旧项。不能通过新 bundle 的 `SMAppService.mainApp` 替旧 App 注销；不冒用旧身份。旧通知不会迁移或自动清理，用户可手动清除，旧通知点击也不会转交新 App。
 - **日志**：新日志写入 `~/Library/Logs/FeishuLite/backend.log`，旧日志保留供排障。
 
-改名的本地验证与边界见 [改名记录](../sessions/2026-10-16-feishulite-rename.md)。正式签名、公证和从 0.1.0 的完整 Homebrew 升级需在下一版发布时验证。
+改名的本地验证与边界见 [改名记录](../sessions/2026-10-16-feishulite-rename.md)。v0.1.1 正式签名、公证、Gatekeeper、tap 更新与 brew 下载校验已通过，见 [发布记录](../sessions/2026-10-17-v0.1.1-release.md)。干净用户从 0.1.0 的完整安装升级与真实历史钥匙串授权仍待验证。
