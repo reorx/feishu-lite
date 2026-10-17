@@ -354,7 +354,7 @@ R9 签收后派发，协调者届时按 R5 至 R9 的实际产出补充这一节
 | R5 | 由 R5b 完成 | `mailfin-r5` / tab `w3W:tA`，Codex | `d853a3c`（只有调查报告） | 没修好：拿到稳定复现 `repro2`，排除了“只是滚动锚点回写”；到 context 40% 停下，产品代码已撤回 |
 | R5b | 已签收 | `mailfin-r5b` / tab `w3W:tB`，Codex | `f071225` | 根因是消息详情的 LazyVStack 和可变高度消息行之间的布局不收敛，最小序列是“最小窗口里开关图片预览→拉宽→再滚动”。改为普通 VStack；图片只在进入 viewport 后才下载；分页改由历史标题是否可见触发；锚点只在语义变化时写。6 类压力各 50 轮，共 300 轮全部通过，新增 5 项 App 测试。取舍：已加载 1030 条时内存约 532 MiB，缩放窗口时主线程最长停 1.5 秒，已记 known-issues |
 | R6 | 已签收 | `mailfin-r6` / tab `w3W:tC`，Codex | `3c22a97` | 聊天错误按 5 个场景和状态码给固定文案，原始状态码和 body 只写进 os.Logger；邮件正文有 10 种永久错误，提供 `MailState.canRetryBody`；`ImageMessageFailure` 区分永久和临时；`Message.meetingInvitation` 严格解析后端渲染的会议文本。没有改视图、wire 和 SQLite。R6 自己定的：`malformed_response` 仍然可以重试；会议主题允许多行 |
-| R7 | 进行中 | `mailfin-r7`，Claude Code | | |
+| R7 | 进行中 | `mailfin-r7` / tab `w3W:tD`，Claude Code | | 监视器 bd3y6947e |
 | R8 | 计划中 | `mailfin-r8`，Claude Code | | 等 R7 签收 |
 | R9 | 计划中 | `mailfin-r9`，Claude Code | | 等 R8 签收 |
 | V1 | 计划中 | `mailfin-v1`，Codex | | 等 R9 签收，届时补 brief |
