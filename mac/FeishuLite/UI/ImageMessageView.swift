@@ -5,6 +5,7 @@ import SwiftUI
 struct ImageMessageView: View {
     let messageID: String
     let conversation: Conversation
+    let isVisible: Bool
 
     @State private var image: NSImage?
     @State private var error: String?
@@ -39,7 +40,9 @@ struct ImageMessageView: View {
         }
         .background(.quaternary, in: .rect(cornerRadius: 12))
         .clipShape(.rect(cornerRadius: 12))
-        .task(id: attempt) { await load() }
+        .task(id: isVisible ? attempt : nil) {
+            if isVisible { await load() }
+        }
         .sheet(isPresented: $showsPreview) {
             if let image { ImagePreview(image: image) }
         }

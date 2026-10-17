@@ -37,7 +37,8 @@ struct MailInboxList: View {
                     }
                     .coordinateSpace(name:"mail-list")
                     .onPreferenceChange(VisibleScrollRows.self) { frames in
-                        guard !restoring, let first = VisibleScrollRows.first(in:frames,height:viewport.size.height) else { return }
+                        guard !restoring, let first = VisibleScrollRows.first(in:frames,height:viewport.size.height),
+                              mail.listScrollAnchor != first else { return }
                         mail.listScrollAnchor = first
                     }
                     .onChange(of: mail.items.map(\.id)) { _, ids in

@@ -21,7 +21,8 @@ struct ChatListView: View {
                         .coordinateSpace(name: "chat-list")
                         .onPreferenceChange(VisibleScrollRows.self) { frames in
                             guard !isRestoringScroll,
-                                  let id = VisibleScrollRows.first(in: frames, height: viewport.size.height) else { return }
+                                  let id = VisibleScrollRows.first(in: frames, height: viewport.size.height),
+                                  messages.listScrollAnchors[messages.showsHiddenChats] != id else { return }
                             messages.listScrollAnchors[messages.showsHiddenChats] = id
                         }
                         .task(id: messages.showsHiddenChats) {

@@ -18,8 +18,10 @@ extension View {
     func trackScrollRow(_ id: String, space: String) -> some View {
         background {
             GeometryReader { geometry in
+                // 可见性只取纵向范围；宽度变化不应单独发布一次滚动位置。
+                let frame = geometry.frame(in: .named(space))
                 Color.clear.preference(key: VisibleScrollRows.self,
-                                       value: [id: geometry.frame(in: .named(space))])
+                                       value: [id: CGRect(x: 0, y: frame.minY, width: 0, height: frame.height)])
             }
         }
     }

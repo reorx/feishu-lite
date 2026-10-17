@@ -36,17 +36,23 @@ private struct MessageScrollView: View {
     let messages: MessagesState
 
     private static let bottomID = "bottom"
+    private static let historyID = "history"
     @State private var isAtBottom = true
     @State private var isRestoringScroll = true
+    @State private var historyIsVisible = false
+    @State private var visibleImageIDs: Set<String> = []
 
     var body: some View {
         GeometryReader { viewport in
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(spacing: 0) {
+                    // 预览关闭后再缩放窗口，LazyVStack 的可变高度消息布局可能无法收敛。
+                    // 对已加载的消息确定布局，避免估算尺寸和原生文本失效反复互相触发。
+                    VStack(spacing: 0) {
                         HistoryHeader(conversation: conversation)
+                            .trackScrollRow(Self.historyID, space: "message-list")
                         ForEach(conversation.rows) { row in
-                            MessageRowView(row: row, conversation: conversation)
+                            MessageRowView(row: row, conversation: conversation, isImageVisible: visibleImageIDs.contains(row.id))
                                 .id(row.id)
                                 .trackScrollRow(row.id, space: "message-list")
                         }
@@ -60,16 +66,33 @@ private struct MessageScrollView: View {
                 .defaultScrollAnchor(.bottom)
                 .coordinateSpace(name: "message-list")
                 .onPreferenceChange(VisibleScrollRows.self) { frames in
+                    // 普通栈确定所有行的尺寸，但图片仍只在进入 viewport 时下载。
+                    let imageIDs = Set(conversation.rows.lazy.filter { $0.message.isViewableImage }.map(\.id))
+                    let visibleImages = Set(frames.compactMap { id, frame in
+                        imageIDs.contains(id) && frame.maxY > 0 && frame.minY < viewport.size.height ? id : nil
+                    })
+                    if visibleImageIDs != visibleImages { visibleImageIDs = visibleImages }
                     guard !isRestoringScroll else { return }
-                    isAtBottom = frames[Self.bottomID].map {
+                    let historyVisible = frames[Self.historyID].map {
+                        $0.maxY > 0 && $0.minY < viewport.size.height
+                    } ?? false
+                    if historyIsVisible != historyVisible { historyIsVisible = historyVisible }
+                    let atBottom = frames[Self.bottomID].map {
                         $0.minY >= 0 && $0.maxY <= viewport.size.height + 1
                     } ?? false
+                    if isAtBottom != atBottom { isAtBottom = atBottom }
                     if isAtBottom {
-                        messages.detailScrollAnchors[conversation.chatID] = Self.bottomID
-                    } else if let id = VisibleScrollRows.first(in: frames.filter { $0.key != Self.bottomID },
-                                                             height: viewport.size.height) {
+                        if messages.detailScrollAnchors[conversation.chatID] != Self.bottomID {
+                            messages.detailScrollAnchors[conversation.chatID] = Self.bottomID
+                        }
+                    } else if let id = VisibleScrollRows.first(in: frames.filter { $0.key != Self.bottomID && $0.key != Self.historyID },
+                                                             height: viewport.size.height),
+                              messages.detailScrollAnchors[conversation.chatID] != id {
                         messages.detailScrollAnchors[conversation.chatID] = id
                     }
+                }
+                .task(id: historyIsVisible) {
+                    if historyIsVisible { await conversation.loadOlder() }
                 }
                 .task {
                     let anchor = messages.detailScrollAnchors[conversation.chatID] ?? Self.bottomID
@@ -111,9 +134,6 @@ private struct HistoryHeader: View {
             if conversation.hasOlder {
                 ProgressView()
                     .controlSize(.small)
-                    .onAppear {
-                        Task { await conversation.loadOlder() }
-                    }
             } else if conversation.hasLoaded, !conversation.rows.isEmpty {
                 Text("没有更早的消息了")
                     .font(.caption)
@@ -143,6 +163,7 @@ private struct EmptyStateView: View {
 private struct MessageRowView: View {
     let row: MessageRow
     let conversation: Conversation
+    let isImageVisible: Bool
 
     @Environment(\.today) private var today
 
@@ -163,7 +184,8 @@ private struct MessageRowView: View {
                     .padding(.vertical, 6)
                     .frame(maxWidth: .infinity)
             } else {
-                MessageBubbleView(message: row.message, showsSender: row.showsSender, conversation: conversation)
+                MessageBubbleView(message: row.message, showsSender: row.showsSender, conversation: conversation,
+                                  isImageVisible: isImageVisible)
                     .padding(.top, row.showsSender ? 10 : 3)
             }
         }
@@ -174,6 +196,7 @@ private struct MessageBubbleView: View {
     let message: Message
     let showsSender: Bool
     let conversation: Conversation
+    let isImageVisible: Bool
 
     @Environment(\.today) private var today
 
@@ -190,7 +213,7 @@ private struct MessageBubbleView: View {
                         .padding(.leading, 4)
                 }
                 if message.isViewableImage {
-                    ImageMessageView(messageID: message.id, conversation: conversation)
+                    ImageMessageView(messageID: message.id, conversation: conversation, isVisible: isImageVisible)
                 } else {
                     Text(MessageText.attributed(message.text))
                         .textSelection(.enabled)
