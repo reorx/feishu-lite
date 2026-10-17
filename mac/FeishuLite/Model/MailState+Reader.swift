@@ -16,6 +16,11 @@ struct MailRenderToken: Equatable {
 }
 
 @MainActor extension MailState {
+    var canRetryBody: Bool {
+        guard case .failed = bodyLoadState else { return false }
+        return bodyFailure?.isBodyRetryable ?? true
+    }
+
     var displayedBodyRoute: NotificationRoute? {
         guard let token = displayedToken, token == renderToken, isCurrent(token),
               !showsConfiguration, case .loaded = bodyLoadState else { return nil }
@@ -186,7 +191,10 @@ struct MailRenderToken: Equatable {
                 routeError = "这封邮件已不存在或已失效，已返回收件箱。"
                 await refreshStatus()
                 requestReaderRefresh()
-            } else { bodyLoadState = .failed(readerError(error, body:true)) }
+            } else {
+                bodyLoadState = .failed(readerError(error, body:true))
+                bodyFailure = error as? MailAPIError
+            }
         }
     }
 

@@ -161,14 +161,23 @@ struct ModuleIntegrationTests {
     @Test func actualBackendClientPreservesNonLogoutConflictAndConversationDisplaysIt() async throws {
         LocalBackend.reset(conflict: #"{"detail":"resource_conflict"}"#)
         let connection = connection()
+        do {
+            _ = try await connection.requireClient().messages(chatID: sampleChat().id)
+            Issue.record("非登出冲突应该保留 HTTP 错误")
+        } catch let error as BackendError {
+            #expect(error == .http(status: 409, detail: #"{"detail":"resource_conflict"}"#))
+        }
         let conversation = Conversation(chat: sampleChat(), draft: "", connection: connection)
         await conversation.loadLatest(chatLastPosition: 1)
-        #expect(conversation.loadError?.contains("409") == true)
+        #expect(conversation.loadError == "加载消息失败：请求未完成，请稍后重试。")
+        #expect(conversation.loadError?.contains("409") == false)
+        #expect(conversation.loadError?.contains("resource_conflict") == false)
         #expect(!conversation.hasLoaded)
+        let conflictMessage = conversation.loadError
         LocalBackend.reset(conflict: #"{"detail":"logged_out"}"#)
         await conversation.loadLatest(chatLastPosition: 1)
         // 已有冲突提示未被覆盖；聊天登出仅等待状态事件，不制造另一条错误。
-        #expect(conversation.loadError?.contains("resource_conflict") == true)
+        #expect(conversation.loadError == conflictMessage)
     }
 
     @Test func loggedOutStatusInEmailDoesNotRequestQRAndReturningStartsIt() async throws {

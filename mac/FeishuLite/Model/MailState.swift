@@ -29,7 +29,11 @@ final class MailState: CustomReflectable {
     var listScrollAnchor: String?
     @ObservationIgnored let plainPositions = MailPlainPositionCache()
     @ObservationIgnored let htmlInteractions = MailHTMLInteractionCache()
-    var bodyLoadState: BodyLoadState = .idle
+    var bodyLoadState: BodyLoadState = .idle {
+        didSet { bodyFailure = nil }
+    }
+    // 必须参与 Observation，供 canRetryBody 的视图依赖；任何正文状态变化都会清除旧分类。
+    var bodyFailure: MailAPIError?
     var folders: [MailFolder] = []
     var items: [MailSummary] = []
     var selectedSummary: MailSummary?

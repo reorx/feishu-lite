@@ -46,3 +46,11 @@ def test_meeting_without_public_number_still_offers_web_entry(fields):
 
 def test_empty_meeting_content_retains_placeholder():
     assert render_content(19, b'') == '[视频会议]'
+
+
+def test_meeting_multiline_topic_and_leading_zero_number_contract():
+    content = meeting_content(topic='第一行\n会议号：标题的一部分\n第二行', meetNumber='001002003')
+    assert render_content(19, content) == (
+        '[视频会议] 第一行\n会议号：标题的一部分\n第二行\n'
+        '会议号：001 002 003\n入会入口：https://vc.feishu.cn/w/001002003'
+    )

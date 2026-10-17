@@ -68,7 +68,7 @@ final class Conversation {
             hasLoaded = true
             loadError = nil
         } catch {
-            report(error, as: \.loadError, prefix: "加载消息失败")
+            report(error, as: \.loadError, action: .loadMessages)
         }
     }
 
@@ -93,7 +93,7 @@ final class Conversation {
                 prependAnchor = PrependAnchor(messageID: anchorID, serial: prependSerial)
             }
         } catch {
-            report(error, as: \.loadError, prefix: "加载更早的消息失败")
+            report(error, as: \.loadError, action: .loadOlderMessages)
         }
     }
 
@@ -118,7 +118,7 @@ final class Conversation {
             if draft.isEmpty {
                 draft = original
             }
-            report(error, as: \.sendError, prefix: "发送失败")
+            report(error, as: \.sendError, action: .send)
         }
     }
 
@@ -130,11 +130,11 @@ final class Conversation {
         try await connection.requireClient().image(messageID: messageID)
     }
 
-    private func report(_ error: any Error, as keyPath: ReferenceWritableKeyPath<Conversation, String?>, prefix: String) {
+    private func report(_ error: any Error, as keyPath: ReferenceWritableKeyPath<Conversation, String?>, action: BackendError.Action) {
         // 凭证失效时后端会推 logged_out，界面整个切到登录页，这里不用再报
         if case BackendError.loggedOut = error { return }
         if error is CancellationError { return }
-        log.error("\(prefix, privacy: .public): \(error.localizedDescription, privacy: .public)")
-        self[keyPath: keyPath] = "\(prefix)：\(error.localizedDescription)"
+        log.error("Chat request failed: \(error.localizedDescription, privacy: .public)")
+        self[keyPath: keyPath] = BackendError.userMessage(for: error, action: action)
     }
 }

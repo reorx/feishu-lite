@@ -22,6 +22,7 @@ private final class ReaderHTTP: URLProtocol {
     static var first = [105, 104, 103]
     static var next = [103, 102, 101]
     static var bodyCode = 200
+    static var bodyErrorCode: String?
     static var readCode = 200
     static var summaryCode = 200
     static var pageCode = 200
@@ -30,7 +31,7 @@ private final class ReaderHTTP: URLProtocol {
     static var unread = 321
     static func reset() {
         requests = []; held = []; holdPath = nil; first = [105,104,103]; next = [103,102,101]
-        bodyCode = 200; readCode = 200; summaryCode = 200; pageCode = 200; account = "reader-account"; state = "online"; unread = 321
+        bodyCode = 200; bodyErrorCode = nil; readCode = 200; summaryCode = 200; pageCode = 200; account = "reader-account"; state = "online"; unread = 321
     }
     static func release() { let work = held; held = []; holdPath = nil; work.forEach { $0() } }
     static func count(_ suffix: String) -> Int { requests.filter { $0.url!.path.hasSuffix(suffix) }.count }
@@ -64,6 +65,8 @@ private final class ReaderHTTP: URLProtocol {
             payload = ["kind":"plain","content":"合成正文 <script>literal</script>"]
         }
         if code != 200 { payload = ["domain":"mail","code":code == 404 ? "message_missing" : code == 410 ? "stale_cursor" : code == 504 ? "request_timeout" : "offline"] }
+        if code != 200, path.hasPrefix("/mail/messages/mail-"), !path.hasSuffix("/summary"), !path.hasSuffix("/read"),
+           let bodyErrorCode = Self.bodyErrorCode { payload = ["domain":"mail", "code":bodyErrorCode] }
         let data = try! JSONSerialization.data(withJSONObject: payload)
         deliver(code: code, data: data)
     }
@@ -105,6 +108,58 @@ private final class ReaderHTTP: URLProtocol {
 }
 
 @Suite(.serialized) @MainActor struct MailReaderTests {
+    @Test func permanentBodyErrorExposesReasonAndNoRetry() async throws {
+        let (mail,prefs,suite) = await reader(); defer { prefs.removePersistentDomain(forName:suite); mail.stopReader() }
+        await mail.waitForReaderWork()
+        for code in ["malformed_mime", "malformed_encoding", "unsupported_charset", "mime_too_deep", "too_many_parts",
+                     "unsupported_transfer_encoding", "unsupported_body", "body_too_large", "headers_too_large", "response_too_large"] {
+            ReaderHTTP.bodyCode = 422; ReaderHTTP.bodyErrorCode = code
+            await mail.selectMessage("mail-105")
+            guard case let .failed(text) = mail.bodyLoadState else { Issue.record("正文没有失败"); return }
+            #expect(!mail.canRetryBody)
+            #expect(!text.contains("重试"))
+            #expect(mail.selectedMessageID == "mail-105")
+            #expect(mail.displayedBodyRoute == nil)
+        }
+        #expect(ReaderHTTP.count("/read") == 0)
+    }
+
+    @Test func bodyRetryClassificationResetsOnTransientFailureSuccessAndDeselection() async throws {
+        let (mail,prefs,suite) = await reader(); defer { prefs.removePersistentDomain(forName:suite); mail.stopReader() }
+        await mail.waitForReaderWork()
+        ReaderHTTP.bodyCode = 422; ReaderHTTP.bodyErrorCode = "malformed_mime"
+        await mail.selectMessage("mail-105")
+        #expect(!mail.canRetryBody)
+        ReaderHTTP.bodyCode = 503; ReaderHTTP.bodyErrorCode = "offline"
+        await mail.selectMessage("mail-104")
+        #expect(mail.canRetryBody)
+        guard case let .failed(text) = mail.bodyLoadState else { Issue.record("离线正文没有失败"); return }
+        #expect(text.contains("当前离线"))
+        ReaderHTTP.bodyCode = 200; ReaderHTTP.bodyErrorCode = nil
+        await mail.selectMessage("mail-104")
+        #expect(!mail.canRetryBody)
+        let token = try #require(mail.beginBodyPresentation())
+        mail.bodyRenderFailed(token)
+        #expect(mail.canRetryBody)
+        await mail.selectMessage(nil)
+        #expect(!mail.canRetryBody)
+    }
+
+    @Test func latePermanentFailureCannotDisableRetryForCurrentBody() async throws {
+        let (mail,prefs,suite) = await reader(); defer { prefs.removePersistentDomain(forName:suite); mail.stopReader() }
+        await mail.waitForReaderWork()
+        ReaderHTTP.bodyCode = 422; ReaderHTTP.bodyErrorCode = "malformed_mime"
+        ReaderHTTP.holdPath = "/mail/messages/mail-105"
+        let old = Task { await mail.selectMessage("mail-105") }
+        try await waitReader { !ReaderHTTP.held.isEmpty }
+        ReaderHTTP.bodyCode = 503; ReaderHTTP.bodyErrorCode = "offline"
+        await mail.selectMessage("mail-104")
+        #expect(mail.canRetryBody)
+        ReaderHTTP.release(); await old.value
+        #expect(mail.selectedMessageID == "mail-104")
+        #expect(mail.canRetryBody)
+    }
+
     @Test func firstAccountStatusStartsReaderAfterEarlierViewHadNoIdentity() async throws {
         let (mail,prefs,suite) = await reader(); defer { prefs.removePersistentDomain(forName:suite); mail.stopReader() }
         await mail.waitForReaderWork()

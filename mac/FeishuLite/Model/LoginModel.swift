@@ -78,7 +78,7 @@ final class LoginModel {
         } catch {
             log.error("QR login failed: \(error.localizedDescription, privacy: .public)")
             if !Task.isCancelled {
-                phase = .failed("获取二维码失败：\(error.localizedDescription)")
+                phase = .failed(BackendError.userMessage(for: error, action: .getQRCode))
             }
         }
     }

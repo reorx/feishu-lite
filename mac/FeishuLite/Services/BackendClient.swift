@@ -1,8 +1,10 @@
 import FeishuLiteCore
 import Foundation
+import os
 
 /// 后端 REST + SSE 接口的客户端，接口定义见 backend/src/feishu_lite/api.py
 struct BackendClient {
+    private static let log = Logger(subsystem: "com.reorx.FeishuLite", category: "backend-http")
     static let pageSize = 30
     /// SSE 每 15 秒有一次心跳，空闲超过这个时间就当连接断了
     static let eventIdleTimeout: TimeInterval = 60
@@ -169,6 +171,10 @@ struct BackendClient {
     private static func check(_ response: URLResponse, body: Data) throws {
         guard let http = response as? HTTPURLResponse else { return }
         if let error = BackendError.responseError(status: http.statusCode, body: body) {
+            // localizedDescription 只供界面；HTTP 诊断沿用有界响应前缀，仅写日志。
+            if case let .http(status, detail) = error {
+                log.error("Chat HTTP failure (\(status, privacy: .public)): \(detail, privacy: .public)")
+            }
             throw error
         }
     }

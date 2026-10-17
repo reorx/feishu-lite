@@ -6,6 +6,8 @@ public struct MailAPIError: LocalizedError, Equatable, Sendable {
     public let code: String
     public var isLocalTokenFailure: Bool { status == 401 }
     public var needsStatusRefresh: Bool { status == 504 || code == "transport_failed" }
+    /// 只判断重试同一封正文是否有意义；通信失败和未知错误保留重试入口。
+    public var isBodyRetryable: Bool { !Self.permanentBodyCodes.contains(code) }
     public init(status: Int, code: String) {
         self.status = status
         self.code = Self.knownCodes.contains(code) ? code : "unknown"
@@ -25,6 +27,16 @@ public struct MailAPIError: LocalizedError, Equatable, Sendable {
         case "command_timeout", "idle_done_timeout", "request_timeout": return "请求超时，正在重新确认邮箱状态，请稍后重试。"
         case "invalid_request": return "请检查邮箱地址和专用密码。"
         case "tls_failed": return "无法建立安全的邮箱连接，请检查网络后重试。"
+        case "malformed_mime": return "这封邮件的格式已损坏，无法解析正文。请使用飞书邮箱查看。"
+        case "malformed_encoding": return "这封邮件的正文编码已损坏，无法解码。请使用飞书邮箱查看。"
+        case "unsupported_charset": return "暂不支持这封邮件使用的字符集。请使用飞书邮箱查看。"
+        case "unsupported_transfer_encoding": return "暂不支持这封邮件使用的传输编码。请使用飞书邮箱查看。"
+        case "unsupported_body": return "这封邮件没有受支持的可读正文。请使用飞书邮箱查看。"
+        case "mime_too_deep": return "这封邮件的嵌套层级过多，无法安全解析。请使用飞书邮箱查看。"
+        case "too_many_parts": return "这封邮件的组成部分过多，无法安全解析。请使用飞书邮箱查看。"
+        case "body_too_large": return "这封邮件的正文过大，超出安全读取上限。请使用飞书邮箱查看。"
+        case "headers_too_large": return "这封邮件的头部过大，超出安全读取上限。请使用飞书邮箱查看。"
+        case "response_too_large": return "这封邮件的数据过大，超出安全读取上限。请使用飞书邮箱查看。"
         default: return "邮箱请求未完成，请稍后重试。"
         }
     }
@@ -34,6 +46,10 @@ public struct MailAPIError: LocalizedError, Equatable, Sendable {
         let code = fields?["domain"] as? String == "mail" ? fields?["code"] as? String : nil
         return MailAPIError(status: status, code: code ?? "unknown")
     }
+    private static let permanentBodyCodes: Set<String> = [
+        "malformed_mime", "malformed_encoding", "unsupported_charset", "unsupported_transfer_encoding",
+        "unsupported_body", "mime_too_deep", "too_many_parts", "body_too_large", "headers_too_large", "response_too_large"
+    ]
     private static let knownCodes: Set<String> = [
         "unconfigured", "account_mismatch", "invalid_id", "unsupported_folder", "invalid_page_size",
         "credential_missing", "authentication_failed", "mailbox_readonly", "message_missing", "folder_missing", "inbox_missing",
