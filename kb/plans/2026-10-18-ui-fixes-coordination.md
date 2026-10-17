@@ -395,7 +395,7 @@ R10 签收后派发，协调者届时按 R5 至 R10 的实际产出补充这一�
 | R6 | 已签收 | `mailfin-r6` / tab `w3W:tC`，Codex | `3c22a97` | 聊天错误按 5 个场景和状态码给固定文案，原始状态码和 body 只写进 os.Logger；邮件正文有 10 种永久错误，提供 `MailState.canRetryBody`；`ImageMessageFailure` 区分永久和临时；`Message.meetingInvitation` 严格解析后端渲染的会议文本。没有改视图、wire 和 SQLite。R6 自己定的：`malformed_response` 仍然可以重试；会议主题允许多行 |
 | R7 | 已签收 | `mailfin-r7` / tab `w3W:tD`，Claude Code | `e803fb9` | 模块切换并入每个模块的侧栏顶部，用两段控件，badge 叠在图标上；没用三栏，理由是只有两个模块，扫码页等也没有列表。扫码页和邮箱能力页也放进分栏。共用 `SidebarHeader`、`NoticeBar`；邮件提醒提示条移到详情栏顶部；⌘1/⌘2/⌘R、`SidebarCommands`；侧栏收起时，异常状态露在工具栏。新增 2 个外壳布局测试，改写 2 个提示条布局测试（原测试断言的正是“推动分栏”）。卡死压力 6 类共 300 轮通过。自己发现并修好了一处 fixedSize 把分栏撑到 1790pt 的问题。发现的 ack 忙循环转给 R10 |
 | R8 | 已签收 | `mailfin-r8` / tab `w3W:tE`，Claude Code | `cbd58d4` | 14 条邮件条目全部修好。外壳 CSS 只给带 `th` 的表格画框；WKWebView 不画背景，深色正文和头部都是 rgb(46,47,46)；头部按内容定高，收件人折叠；排版常量放进 Core 的 `MailReaderLayout`（14pt、行高 1.5、边距 20、最大宽 720）。CSP、导航、delegate 和白名单都没动，CSP 测试原样通过；纯文本和 HTML 的位置恢复逐像素一致。R8 自己定的：阅读宽度 720pt，而不是审查建议的 70–80 个汉字；收件人和附件展开后，按个数定滚动上限；同一条错误在表单开着时只显示在表单里，否则只显示在侧栏。深色底色靠 WebKit 私有 setter，以后被去掉会退回原样但不崩溃。翻页卡住的观察，协调者决定不修；推送移除后残留错误的观察，转给 R10 |
-| R9 | 进行中 | `mailfin-r9`，Claude Code | | |
+| R9 | 进行中 | `mailfin-r9` / tab `w3W:tF`，Claude Code | | 监视器 bvb21o1fn（wait_commit.sh） |
 | R10 | 计划中 | `mailfin-r10`，Codex | | 等 R9 签收 |
 | V1 | 计划中 | `mailfin-v1`，Codex | | 等 R10 签收，届时补 brief |
 
