@@ -32,6 +32,7 @@ FeishuLite 的 SwiftUI 客户端：拉起并守护 `../backend` 的 Python 后�
 - 阅读器接续先读 `../kb/sessions/2026-10-13-email-reader-d2.md`。HTML 使用非持久 WKWebView、禁 JS、CSP 和首载前编译挂载 block-all 规则；`MailHTMLLoadGate` 与两 WK delegate 的 router 是生产调用链。规则失败不得加载；只用户 HTTP(S) 点击外开。纯文本用只读、可选择的NSTextView，禁富文本/自动链接/数据检测；按实际布局恢复文字位置，最近8封位置与正文摘要仅存内存，身份/正文变化失效。HTML 用公开 `interactionState` 与有界内存文档会话缓存（最近8封、每份256KiB），不保留WK/DOM。R1 在规则挂载后恢复导航，精确URL的document例外另由CSP/frame与delegate限制主框架，只有当前新navigation完成可提供显示证明。实现依据见 `../kb/sessions/2026-10-14-email-html-scroll-r1.md`（HTML）和 `../kb/sessions/2026-10-14-email-plain-scroll-r2.md`（纯文本）；各项独立验收证据汇总在 `../kb/plans/2026-10-17-email-reader-finish-coordination.md`。
 - 接口模型、SSE 解析、通知策略、消息合并和排序都在 `FeishuLiteCore`，改这些行为先改那里的测试。
 - **`@Observable` 类里标了 `@ObservationIgnored` 的属性，视图不能直接或间接依赖**（包括由它算出来的计算属性），否则视图收不到变化。给视图用的派生值要存成被观察的属性，参考 `Conversation.rows`。
+- 分栏（NavigationSplitView）里的长文字不要用 `fixedSize(horizontal: false, vertical: true)`：分栏会按很窄的宽度询问最小高度，固定高度的文字会把整栏撑出窗口（`ShellLayoutTests` 钉住）。消息详情必须保持普通 `VStack`，改回 `LazyVStack` 会让可变高度消息行的布局不收敛、主线程卡死；分页靠历史标题的实际可见性触发（见 `../kb/sessions/2026-10-18-ui-r5b.md`）。
 - 显示"今天/昨天"这类相对时间的视图，"现在"要从环境值 `\.today` 取（`AppState.today`，跨天、改时区、唤醒时更新），不要在视图里直接用 `Date()`，否则过了零点标签不会变。
 - 输入框是包了一层的 `NSTextView`（`UI/ComposerView`），为的是拿到输入法的组字状态：候选词没上屏时回车不能发送。不要换回 `TextField` / `TextEditor`。
 - 主窗口是单例 `Window`，关掉窗口 App 不退出；窗口关掉之后要用 `WindowManager.show()` 重新打开。
@@ -61,7 +62,7 @@ make clean       # 清理构建产物与生成的 xcodeproj
 
 - 构建产物：`.build/DerivedData/Build/Products/Debug/FeishuLite.app`
 - 跑单个测试：`cd FeishuLiteCore && swift test --filter <测试名>`
-- App 状态/布局调用测试：`swift test --filter <测试名>`；`mac/Package.swift` 直接编译 App 的 Model/Services 与邮件视图，测试网络用 URLProtocol、通知/窗口用 recorder、布局用无窗口 NSHostingView，不启动 App 或真实后端。
+- App 状态/布局调用测试：`swift test --filter <测试名>`；`mac/Package.swift` 直接编译 App 的 Model/Services 和除 `RootView` 以外的视图，测试网络用 URLProtocol、通知/窗口用 recorder、布局用无窗口 NSHostingView，不启动 App 或真实后端。
 - 改了 `project.yml` 后必须 `make gen`（`make build` 已包含）
 - 直接调 xcodebuild 时固定参数：`-project FeishuLite.xcodeproj -scheme FeishuLite -destination 'platform=macOS' -derivedDataPath .build/DerivedData`，并 `set -o pipefail` 后接 `| xcbeautify`
 

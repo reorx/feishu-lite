@@ -57,7 +57,8 @@ tags:
 | R7 外壳与侧栏 | U1-10、14、15、16、17、23、30、33、34、37（侧栏状态）、42 | `mailfin-r7` | Claude Code | R6 签收 | 隔离副本里的修改前后对比截图，深浅色都截 |
 | R8 邮件阅读器 | U1-11（只改外壳 CSS）、12、13、19（邮件日期）、20、21、22、31（邮件）、35、36、37（其余）、38、39（邮件）、41（邮件） | `mailfin-r8` | Claude Code | R7 签收 | 同 R7 |
 | R9 聊天 | U1-02、03（展示）、04、05、18、31（聊天）、32、39（图片）、40、41（气泡） | `mailfin-r9` | Claude Code | R8 签收 | 同 R7 |
-| V1 独立复验 | 全部 | `mailfin-v1` | Codex | R9 签收 | 全量测试；逐条前后对比；回归 |
+| R10 邮件提醒 ack 忙循环 | R7 的发现 | `mailfin-r10` | Codex | R9 签收 | 复现测试先红后绿 |
+| V1 独立复验 | 全部 | `mailfin-v1` | Codex | R10 签收 | 全量测试；逐条前后对比；回归 |
 
 ### R5：会话详情卡死（U1-01）
 
@@ -232,7 +233,16 @@ R6 的接续（协调者补）：R6 已在 `3c22a97` 签收，没有改视图。
 - `kb/docs/email-foundation.md` 的正文安全边界部分。
 - [D2 session](../sessions/2026-10-13-email-reader-d2.md)。
 - [R1 报告](../sessions/2026-10-14-email-html-scroll-r1.md)（HTML 滚动位置恢复）和 [R2 报告](../sessions/2026-10-14-email-plain-scroll-r2.md)（纯文本位置恢复）。
-- R6 和 R7 总结里的接口说明。
+- R6 和 R7 总结里的接口说明（[R6](../sessions/2026-10-18-ui-r6.md)、[R7](../sessions/2026-10-18-ui-r7.md)）。
+
+R7 的接续（协调者补）：R7 已在 `e803fb9` 签收，测试基线变为后端 312、Core 88、App 112。和 R8 有关的几点：
+
+- “已读同步未完成”提示条用 R7 的 `NoticeBar`，用法见 R7 总结的「接口说明」。不要给它或它的外层加 `fixedSize(vertical:)`。
+- U1-22：`mail.errorMessage` 现在同时出现在侧栏状态（`SidebarStatus.error`）和配置表单里（`r7/e24-config-test-auth-error-*`）。由你决定保留哪一处，改 `MailState.sidebarStatus(now:)` 就行。审查建议配置相关的错误只放在表单里。
+- 侧栏状态行里的同步时间已经改成 `ChatTimeFormat.messageLabel`。收件箱列表和邮件详情的日期（U1-19）还是英文，归你改，格式和它保持一致。
+- “收件箱”菜单改成了 plain 样式，菜单内容（文件夹列表、`folderTitle`）没动，留给你做 U1-21。“加载更早的邮件”按钮和列表底部的 `listError` 区也没动。
+- 隔离副本、截图脚本和 Probe 可以直接复用 `tmp/2026-10-18-ui-fixes/r7/`（`tools/rebuild.sh`、`tools/capture.py`）。R7 已经修好 Probe 里 e36 的批次 id，换成自己的 bundle id 和端口即可。
+- 分栏里的长文字不要用 `fixedSize(horizontal: false, vertical: true)`，原因见 mac/AGENTS.md。
 
 范围：
 
@@ -287,9 +297,26 @@ R6 的接续（协调者补）：R6 已在 `3c22a97` 签收，没有改视图。
 - 同 R7。
 - 实际键入多行文字再发送，截图证明输入框缩回；英文键入时回车发送仍然正常。输入法组字时回车不发送由 V1 复验。
 
+### R10：邮件提醒 ack 忙循环（R7 的发现）
+
+R9 签收后派发。R7 截“未知投递”状态时发现：合成服务的 ack 接口不清除 pending，App 在约 6 秒里发了 5000 多次 `/mail/notifications/ack` 和 `/mail/status`，没有退避。用改动前的 `fa31219` 对照也一样，所以是原有行为，和 R7 无关（`tmp/2026-10-18-ui-fixes/r7/ack-check-*.json`、`r7/tools/ack_check.py`，R7 总结「交给协调者」第 4 条）。真实后端 ack 后会移除批次，所以不一定会在真实环境出现。但只要后端因为某种原因没清掉 pending，App 就会对本机后端忙循环。
+
+额外必读：`MailNotificationCoordinator` 和 [E 报告](../sessions/2026-10-14-email-notifications-e.md)、`kb/docs/email-foundation.md` 里提醒批次和 ack 的规则。
+
+范围：
+
+1. 弄清为什么存在未确认收据（handled=false 的持久 intent）时仍然会 ack，以及 ack 之后看到 pending 仍在时为什么立刻再来一轮。对照 E 报告和 email-foundation 的规则，判断哪一步不符合设计。
+2. 判断真实后端有没有可能出现“ack 成功但 pending 没清”或“ack 失败”的情况，比如批次 id 不匹配、存储失败、批次在 ack 前已被替换。
+3. 修复：同一批次重复 ack 要有退避或上限，ack 失败不能变成忙循环。“未知结果不重弹、不 ack，保留 pending，由再次提醒显式恢复”这条不变量不能破坏。
+4. 先写复现测试（用 recorder 和 URLProtocol 模拟“ack 后 pending 不变”），确认它在旧代码上表现为请求数无上限，再修。
+
+不做：界面改动。
+
+完成标准：根因说明；测试先红后绿；后端、Core、App 测试的数量和结果；Debug 构建通过；在隔离副本里用 R7 的 `ack_check.py` 复测，请求数有上限。
+
 ### V1：独立复验
 
-R9 签收后派发，协调者届时按 R5 至 R9 的实际产出补充这一节。初定范围：
+R10 签收后派发，协调者届时按 R5 至 R10 的实际产出补充这一节。初定范围：
 
 1. **全量基线**：后端、Core、App 测试和 Debug 构建，数量和 U1 时对比。
 2. **逐条复验 32 条**：在隔离副本里造出审查截图对应的状态，截修改后的图，和 U1 的修改前截图对比。每条判定为修好、部分修好、没修好或有新问题。用户决定不做的部分（U1-11 的样式恢复和图片占位、菜单语言）记为“按决定不做”。
@@ -347,16 +374,17 @@ R9 签收后派发，协调者届时按 R5 至 R9 的实际产出补充这一节
 
 ## 状态区（只有协调者改）
 
-审阅基线：`3c22a97`（R6）。测试基线：后端 312、Core 88、App 110。
+审阅基线：`e803fb9`（R7）。测试基线：后端 312、Core 88、App 112。
 
 | 任务 | 状态 | agent / tab | 结果提交 | 备注 |
 |---|---|---|---|---|
 | R5 | 由 R5b 完成 | `mailfin-r5` / tab `w3W:tA`，Codex | `d853a3c`（只有调查报告） | 没修好：拿到稳定复现 `repro2`，排除了“只是滚动锚点回写”；到 context 40% 停下，产品代码已撤回 |
 | R5b | 已签收 | `mailfin-r5b` / tab `w3W:tB`，Codex | `f071225` | 根因是消息详情的 LazyVStack 和可变高度消息行之间的布局不收敛，最小序列是“最小窗口里开关图片预览→拉宽→再滚动”。改为普通 VStack；图片只在进入 viewport 后才下载；分页改由历史标题是否可见触发；锚点只在语义变化时写。6 类压力各 50 轮，共 300 轮全部通过，新增 5 项 App 测试。取舍：已加载 1030 条时内存约 532 MiB，缩放窗口时主线程最长停 1.5 秒，已记 known-issues |
 | R6 | 已签收 | `mailfin-r6` / tab `w3W:tC`，Codex | `3c22a97` | 聊天错误按 5 个场景和状态码给固定文案，原始状态码和 body 只写进 os.Logger；邮件正文有 10 种永久错误，提供 `MailState.canRetryBody`；`ImageMessageFailure` 区分永久和临时；`Message.meetingInvitation` 严格解析后端渲染的会议文本。没有改视图、wire 和 SQLite。R6 自己定的：`malformed_response` 仍然可以重试；会议主题允许多行 |
-| R7 | 进行中 | `mailfin-r7` / tab `w3W:tD`，Claude Code | | 监视器 bd3y6947e |
-| R8 | 计划中 | `mailfin-r8`，Claude Code | | 等 R7 签收 |
+| R7 | 已签收 | `mailfin-r7` / tab `w3W:tD`，Claude Code | `e803fb9` | 模块切换并入每个模块的侧栏顶部，用两段控件，badge 叠在图标上；没用三栏，理由是只有两个模块，扫码页等也没有列表。扫码页和邮箱能力页也放进分栏。共用 `SidebarHeader`、`NoticeBar`；邮件提醒提示条移到详情栏顶部；⌘1/⌘2/⌘R、`SidebarCommands`；侧栏收起时，异常状态露在工具栏。新增 2 个外壳布局测试，改写 2 个提示条布局测试（原测试断言的正是“推动分栏”）。卡死压力 6 类共 300 轮通过。自己发现并修好了一处 fixedSize 把分栏撑到 1790pt 的问题。发现的 ack 忙循环转给 R10 |
+| R8 | 进行中 | `mailfin-r8`，Claude Code | | |
 | R9 | 计划中 | `mailfin-r9`，Claude Code | | 等 R8 签收 |
-| V1 | 计划中 | `mailfin-v1`，Codex | | 等 R9 签收，届时补 brief |
+| R10 | 计划中 | `mailfin-r10`，Codex | | 等 R9 签收 |
+| V1 | 计划中 | `mailfin-v1`，Codex | | 等 R10 签收，届时补 brief |
 
 上一轮留下的 tab：`mailfin-g2a`（`w3W:t5`）、`mailfin-g2b`（`w3W:t6`）、`mailfin-g1`（`w3W:t7`）、`mailfin-u1`（`w3W:t8`）都已完成，资源已清理，等用户决定是否关闭。
