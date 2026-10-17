@@ -382,7 +382,7 @@ R10 签收后派发，协调者届时按 R5 至 R10 的实际产出补充这一�
 | R5b | 已签收 | `mailfin-r5b` / tab `w3W:tB`，Codex | `f071225` | 根因是消息详情的 LazyVStack 和可变高度消息行之间的布局不收敛，最小序列是“最小窗口里开关图片预览→拉宽→再滚动”。改为普通 VStack；图片只在进入 viewport 后才下载；分页改由历史标题是否可见触发；锚点只在语义变化时写。6 类压力各 50 轮，共 300 轮全部通过，新增 5 项 App 测试。取舍：已加载 1030 条时内存约 532 MiB，缩放窗口时主线程最长停 1.5 秒，已记 known-issues |
 | R6 | 已签收 | `mailfin-r6` / tab `w3W:tC`，Codex | `3c22a97` | 聊天错误按 5 个场景和状态码给固定文案，原始状态码和 body 只写进 os.Logger；邮件正文有 10 种永久错误，提供 `MailState.canRetryBody`；`ImageMessageFailure` 区分永久和临时；`Message.meetingInvitation` 严格解析后端渲染的会议文本。没有改视图、wire 和 SQLite。R6 自己定的：`malformed_response` 仍然可以重试；会议主题允许多行 |
 | R7 | 已签收 | `mailfin-r7` / tab `w3W:tD`，Claude Code | `e803fb9` | 模块切换并入每个模块的侧栏顶部，用两段控件，badge 叠在图标上；没用三栏，理由是只有两个模块，扫码页等也没有列表。扫码页和邮箱能力页也放进分栏。共用 `SidebarHeader`、`NoticeBar`；邮件提醒提示条移到详情栏顶部；⌘1/⌘2/⌘R、`SidebarCommands`；侧栏收起时，异常状态露在工具栏。新增 2 个外壳布局测试，改写 2 个提示条布局测试（原测试断言的正是“推动分栏”）。卡死压力 6 类共 300 轮通过。自己发现并修好了一处 fixedSize 把分栏撑到 1790pt 的问题。发现的 ack 忙循环转给 R10 |
-| R8 | 进行中 | `mailfin-r8`，Claude Code | | |
+| R8 | 进行中 | `mailfin-r8` / tab `w3W:tE`，Claude Code | | 监视器 brmtm6b8s（wait_commit.sh） |
 | R9 | 计划中 | `mailfin-r9`，Claude Code | | 等 R8 签收 |
 | R10 | 计划中 | `mailfin-r10`，Codex | | 等 R9 签收 |
 | V1 | 计划中 | `mailfin-v1`，Codex | | 等 R10 签收，届时补 brief |
