@@ -1,4 +1,6 @@
 import Foundation
+import AppKit
+import SwiftUI
 import Testing
 import FeishuLiteCore
 @testable import FeishuLiteState
@@ -7,11 +9,15 @@ private final class ChatErrorHTTP: URLProtocol {
     static var status = 502
     static var transportError: URLError?
     static var payload = Data(#"{"detail":"synthetic-private-body"}"#.utf8)
+    static var beforePositions: [Int] = []
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func stopLoading() {}
     override func startLoading() {
         Task { @MainActor in
+            if let before = URLComponents(url:request.url!, resolvingAgainstBaseURL:false)?.queryItems?.first(where: { $0.name == "before_position" })?.value.flatMap(Int.init) {
+                Self.beforePositions.append(before)
+            }
             if let error = Self.transportError {
                 client?.urlProtocol(self, didFailWithError: error)
                 return
@@ -32,6 +38,64 @@ private final class ChatErrorHTTP: URLProtocol {
 }
 
 @Suite(.serialized) @MainActor struct ChatModelErrorTests {
+    @Test func shortConversationStartsVisibleHistoryAfterScrollRestoration() async throws {
+        let link = connection()
+        let model = conversation(link)
+        ChatErrorHTTP.status = 200
+        ChatErrorHTTP.payload = Data(#"[{"id":"synthetic-message","chat_id":"synthetic-chat","position":200,"sender_id":"synthetic-user","sender_name":"合成用户","is_self":false,"create_time":0,"type":"text","text":"一条短消息"}]"#.utf8)
+        await model.loadLatest(chatLastPosition:200)
+        ChatErrorHTTP.payload = Data("[]".utf8)
+        ChatErrorHTTP.beforePositions = []
+        let messages = MessagesState(connection:link, notifications:SilentChatNotifications())
+        let host = NSHostingView(rootView:ConversationView(conversation:model, title:"合成会话", messages:messages))
+        host.frame = NSRect(x:0, y:0, width:600, height:400)
+        let window = NSWindow(contentRect:host.frame, styleMask:[.borderless], backing:.buffered, defer:false)
+        window.contentView = host
+        defer { window.contentView = nil }
+        for _ in 0..<20 {
+            host.layoutSubtreeIfNeeded()
+            try await Task.sleep(for:.milliseconds(20))
+        }
+        #expect(ChatErrorHTTP.beforePositions.count == Conversation.maxEmptyPages)
+        #expect(model.needsOlderContinuation)
+        #expect(!model.isLoadingOlder)
+        // Re-layout/re-entering the viewport must not silently spend another empty-page budget.
+        host.frame.size.height = 50
+        host.layoutSubtreeIfNeeded()
+        try await Task.sleep(for:.milliseconds(100))
+        host.frame.size.height = 400
+        for _ in 0..<10 {
+            host.layoutSubtreeIfNeeded()
+            try await Task.sleep(for:.milliseconds(20))
+        }
+        #expect(ChatErrorHTTP.beforePositions.count == Conversation.maxEmptyPages)
+        #expect(model.needsOlderContinuation)
+    }
+
+    @Test func emptyHistoryBudgetOffersContinuationAndKeepsCursorProgress() async throws {
+        let model = conversation(connection())
+        ChatErrorHTTP.status = 200
+        ChatErrorHTTP.payload = Data(#"[{"id":"synthetic-message","chat_id":"synthetic-chat","position":1000,"sender_id":"synthetic-user","sender_name":"合成用户","is_self":false,"create_time":0,"type":"text","text":"合成消息"}]"#.utf8)
+        await model.loadLatest(chatLastPosition:1000)
+        ChatErrorHTTP.payload = Data("[]".utf8)
+        ChatErrorHTTP.beforePositions = []
+        await model.loadOlder()
+        #expect(ChatErrorHTTP.beforePositions.count == Conversation.maxEmptyPages)
+        #expect(model.hasOlder && !model.isLoadingOlder)
+        #expect(model.needsOlderContinuation)
+        #expect(model.olderLoadError == nil)
+        let lastBefore = try #require(ChatErrorHTTP.beforePositions.last)
+        ChatErrorHTTP.payload = Data(#"[{"id":"synthetic-older","chat_id":"synthetic-chat","position":10,"sender_id":"synthetic-user","sender_name":"合成用户","is_self":false,"create_time":0,"type":"text","text":"更早的消息"}]"#.utf8)
+        await model.loadOlder()
+        #expect(ChatErrorHTTP.beforePositions.last == lastBefore - BackendClient.pageSize)
+        #expect(model.rows.count == 2)
+        #expect(!model.needsOlderContinuation)
+        ChatErrorHTTP.payload = Data("[]".utf8)
+        while model.hasOlder { await model.loadOlder() }
+        #expect(!model.needsOlderContinuation)
+        #expect(!model.isLoadingOlder)
+    }
+
     private func connection() -> BackendConnection {
         ChatErrorHTTP.status = 502
         ChatErrorHTTP.transportError = nil

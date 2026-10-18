@@ -18,6 +18,8 @@ final class Conversation {
     private(set) var isLoading = false
     private(set) var isLoadingOlder = false
     private(set) var hasOlder = false
+    /// 空页预算耗尽后由用户继续，避免历史标题仍可见却只剩一个转圈。
+    private(set) var needsOlderContinuation = false
     /// 首屏加载失败的原因；列表已经有内容时不显示
     private(set) var loadError: String?
     /// 往前翻页失败的原因，显示在列表顶部，由用户点“重试”再翻
@@ -68,6 +70,7 @@ final class Conversation {
                 cursor = HistoryCursor(lastPosition: top, pageSize: BackendClient.pageSize)
                 hasOlder = cursor?.hasMore ?? false
                 olderLoadError = nil
+                needsOlderContinuation = false
             }
             hasLoaded = true
             loadError = nil
@@ -82,6 +85,7 @@ final class Conversation {
         isLoadingOlder = true
         defer { isLoadingOlder = false }
         olderLoadError = nil
+        needsOlderContinuation = false
         let anchorID = timeline.messages.first?.id
         do {
             let client = try connection.requireClient()
@@ -92,6 +96,7 @@ final class Conversation {
             }
             self.cursor = cursor
             hasOlder = cursor.hasMore
+            needsOlderContinuation = hasOlder && timeline.messages.first?.id == anchorID
             if let anchorID, timeline.messages.first?.id != anchorID {
                 prependSerial += 1
                 prependAnchor = PrependAnchor(messageID: anchorID, serial: prependSerial)

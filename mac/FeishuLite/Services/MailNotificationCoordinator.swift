@@ -31,6 +31,21 @@ struct MailNotificationReceipt: Codable {
     private var dirty = false
     private var stopped = false
     private var resetAccounts: Set<String> = []
+    private struct AckKey: Hashable {
+        let account: String
+        let validity: Int
+        let batch: String
+        init(_ batch: MailNotification) {
+            account = batch.accountID; validity = batch.uidvalidity; self.batch = batch.id
+        }
+    }
+    private struct AckAttempt {
+        let count: Int
+        let next: TimeInterval
+    }
+    @ObservationIgnored private var ackAttempts: [AckKey: AckAttempt] = [:]
+    /// Monotonic time; replaceable by the isolated HTTP/recorder tests.
+    @ObservationIgnored var ackClock: () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     private(set) var lastFailure: String?
     var workCount: Int { work == nil ? 0 : 1 }
     var uncertainDeliveryCount: Int { receipts.values.filter { !$0.handled && $0.id != activeIntentID }.count }
@@ -61,6 +76,7 @@ struct MailNotificationReceipt: Codable {
     func retryUncertainDeliveries() { retryUncertain = true; request() }
     func backendChanged() {
         epoch += 1; work?.cancel(); dirty = false
+        ackAttempts.removeAll()
         // Keep the serial owner until an in-flight add completes and is cleaned up.
     }
     func stop() { stopped = true; backendChanged() }
@@ -124,6 +140,8 @@ struct MailNotificationReceipt: Codable {
             // Every authoritative status can repair missed read/delete/reset/account events after restart.
             try await clean(existing:existing, status:status, client:client, epoch:epoch, version:version)
             guard let identity, current(identity,epoch:epoch), version == revision else { return }
+            let pendingKeys = Set(mail.pending.map(AckKey.init))
+            ackAttempts = ackAttempts.filter { pendingKeys.contains($0.key) }
             if retryUncertain {
                 // Query/recover above first: a proven center entry does not need another add.
                 for id in receipts.keys where receipts[id]?.handled == false { receipts.removeValue(forKey:id) }
@@ -138,17 +156,29 @@ struct MailNotificationReceipt: Codable {
                 try await deliver(batch, permission:permission, identity:identity, epoch:epoch)
                 guard current(identity,epoch:epoch), let active = mail.pending.first(where:{ $0.id == batch.id }) else { continue }
                 let targets = notificationTargets(active)
-                guard targets.allSatisfy({ receipts[$0.id]?.handled == true }) else { continue }
+                guard !targets.isEmpty, targets.allSatisfy({ receipts[$0.id]?.handled == true }) else { continue }
+                let key = AckKey(active)
+                if let attempt = ackAttempts[key], ackClock() < attempt.next { continue }
+                let count = min((ackAttempts[key]?.count ?? 0) + 1, 7)
+                // Both an HTTP failure and a successful-but-unchanged pending snapshot need backoff.
+                // Retry only on a later sync/recovery trigger, never by spinning or scheduling a task per batch.
+                ackAttempts[key] = AckAttempt(count:count, next:ackClock() + min(60, pow(2, Double(count - 1))))
                 let revision = mail.notificationRevision
                 let new = try await client.ackMail(active)
                 guard current(identity,epoch:epoch) else { return }
-                for id in receipts.keys where receipts[id]?.batchID == batch.id { receipts[id]?.acknowledged = true }
+                if !new.pending.contains(where: { $0.id == batch.id }) {
+                    ackAttempts.removeValue(forKey:key)
+                    for id in receipts.keys where receipts[id]?.accountID == active.accountID &&
+                        receipts[id]?.uidvalidity == active.uidvalidity && receipts[id]?.batchID == batch.id {
+                        receipts[id]?.acknowledged = true
+                    }
+                }
                 persist()
                 // A concurrent SSE snapshot is newer than an ack response; never overwrite it.
                 mail.applyNotificationAck(new, expected:identity, revision:revision)
             }
             prune()
-            lastFailure = nil
+            lastFailure = ackAttempts.isEmpty ? nil : "邮件提醒暂未完成，将在下次同步时重试。"
         } catch {
             // Only a known failed add is retryable automatically. Unrelated uncertain intents survive.
             if let id = activeIntentID, receipts[id]?.handled == false { receipts.removeValue(forKey:id) }

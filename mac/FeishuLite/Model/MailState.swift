@@ -239,6 +239,7 @@ final class MailState: CustomReflectable {
         generationBaseline = new.generation
         readerGeneration = new.generation
         if status?.mailAccountID != new.mailAccountID {
+            errorMessage = nil
             if let oldID = status?.mailAccountID {
                 retiredAccounts.insert(oldID)
                 secrets.removeValue(forKey: oldID)
@@ -277,6 +278,7 @@ final class MailState: CustomReflectable {
 
     func applyNotificationAck(_ new: MailStatus, expected: MailReaderIdentity, revision: Int) {
         guard readerIdentity == expected, self.revision == revision else { return }
+        guard new != status || new.pending != pending else { return }
         apply(new)
     }
 

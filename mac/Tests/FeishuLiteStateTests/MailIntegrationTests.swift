@@ -86,6 +86,25 @@ private func mailConnection() -> BackendConnection {
 @Suite(.serialized)
 @MainActor
 struct MailIntegrationTests {
+    @Test func pushedAccountRemovalClearsOldConfigurationError() async throws {
+        MailHTTP.reset()
+        let keychain = FakeMailKeychain()
+        defer { keychain.preferences.removePersistentDomain(forName:keychain.suite) }
+        let mail = MailState(connection:mailConnection(), credentials:keychain, externalBackend:true, preferences:keychain.preferences)
+        mail.backendChanged(ready:true)
+        await mail.setCapability(features:["mail"])
+        mail.addressInput = "synthetic@example.invalid"; mail.passwordInput = "synthetic-secret"
+        MailHTTP.code = 503
+        await mail.testConnection()
+        #expect(mail.errorMessage != nil)
+        let event = try JSONDecoder().decode(MailEvent.self, from:Data(#"{"type":"mail.status","account_id":null,"generation":2,"folder_id":"INBOX","uidvalidity":null,"read_ids":[],"deleted_ids":[],"reset":false,"status":{"mail_account_id":null,"address":null,"state":"unconfigured","generation":2,"uidvalidity":null,"last_sync_at":null,"unread_count":0,"unread_stale":false,"pending":[],"error":null}}"#.utf8))
+        mail.receive(event)
+        #expect(mail.status?.state == .unconfigured)
+        #expect(mail.errorMessage == nil)
+        #expect(mail.addressInput.isEmpty)
+        #expect(mail.passwordInput.isEmpty)
+    }
+
     @Test func configurationMissingCredentialRequiresInputWithoutReadingPeer() async {
         MailHTTP.reset()
         let suite = "r4-mail-test-" + UUID().uuidString

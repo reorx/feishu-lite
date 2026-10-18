@@ -74,11 +74,12 @@ private struct MessageScrollView: View {
                         imageIDs.contains(id) && frame.maxY > 0 && frame.minY < viewport.size.height ? id : nil
                     })
                     if visibleImageIDs != visibleImages { visibleImageIDs = visibleImages }
-                    guard !isRestoringScroll else { return }
+                    // 恢复期间也保留真实可见性；短内容恢复后可能不再发布新的几何值。
                     let historyVisible = frames[Self.historyID].map {
                         $0.maxY > 0 && $0.minY < viewport.size.height
                     } ?? false
                     if historyIsVisible != historyVisible { historyIsVisible = historyVisible }
+                    guard !isRestoringScroll else { return }
                     let atBottom = frames[Self.bottomID].map {
                         $0.minY >= 0 && $0.maxY <= viewport.size.height + 1
                     } ?? false
@@ -93,8 +94,10 @@ private struct MessageScrollView: View {
                         messages.detailScrollAnchors[conversation.chatID] = id
                     }
                 }
-                .task(id: historyIsVisible) {
-                    if historyIsVisible { await conversation.loadOlder() }
+                .task(id: historyIsVisible && !isRestoringScroll) {
+                    if historyIsVisible, !isRestoringScroll, !conversation.needsOlderContinuation {
+                        await conversation.loadOlder()
+                    }
                 }
                 .task {
                     let anchor = messages.detailScrollAnchors[conversation.chatID] ?? Self.bottomID
@@ -146,6 +149,12 @@ private struct HistoryHeader: View {
                     .controlSize(.small)
                     .fixedSize()
                 }
+                .font(.caption)
+            } else if conversation.needsOlderContinuation, !conversation.isLoadingOlder {
+                Button("加载更早的消息") {
+                    Task { await conversation.loadOlder() }
+                }
+                .controlSize(.small)
                 .font(.caption)
             } else if conversation.hasOlder {
                 ProgressView()

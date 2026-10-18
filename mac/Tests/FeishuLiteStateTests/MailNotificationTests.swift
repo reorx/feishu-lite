@@ -51,13 +51,14 @@ private final class NotificationHTTP: URLProtocol {
     static var batches: [[String: Any]] = []
     static var requests: [URLRequest] = []
     static var ackCode = 200
+    static var keepPendingAfterAck = false
     static var unseen: Set<Int> = [1,2,3,4]
     static var missing: Set<Int> = []
     static var holdPath: String?
     static var held: [() -> Void] = []
     static func reset() {
         account = "00000000-0000-4000-8000-0000000000e0"; validity = 77; generation = 1
-        state = "online"; batches = []; requests = []; ackCode = 200
+        state = "online"; batches = []; requests = []; ackCode = 200; keepPendingAfterAck = false
         unseen = [1,2,3,4]; missing = []; holdPath = nil; held = []
     }
     static func release() { let callbacks = held; held = []; holdPath = nil; callbacks.forEach { $0() } }
@@ -93,7 +94,9 @@ private final class NotificationHTTP: URLProtocol {
             code = Self.ackCode
             if code == 200 {
                 let body = try! JSONSerialization.jsonObject(with: request.httpBody ?? Self.readBody(request)) as! [String: Any]
-                Self.batches.removeAll { $0["id"] as? String == body["batch_id"] as? String }
+                if !Self.keepPendingAfterAck {
+                    Self.batches.removeAll { $0["id"] as? String == body["batch_id"] as? String }
+                }
                 payload = Self.snapshot()
             }
         } else if path.hasSuffix("/summary") {
@@ -158,6 +161,60 @@ private final class NotificationHTTP: URLProtocol {
 }
 
 @Suite(.serialized) @MainActor struct MailNotificationTests {
+    @Test(arguments:[200, 504])
+    func ackBackoffSurvivesRepeatedTriggersAndLaterRecovers(code: Int) async throws {
+        NotificationHTTP.reset(); NotificationHTTP.batches = [NotificationHTTP.batch([1])]
+        NotificationHTTP.ackCode = code; NotificationHTTP.keepPendingAfterAck = true
+        let h = NotificationHarness(); defer { h.close() }
+        var now: TimeInterval = 0
+        h.app.mailNotifications.ackClock = { now }
+        await h.ready()
+        for _ in 0..<30 {
+            h.app.mailNotifications.request()
+            await h.app.mailNotifications.waitForWork()
+        }
+        #expect(NotificationHTTP.count("/ack") == 1)
+        #expect(h.app.mailNotifications.lastFailure != nil)
+        now = 1
+        h.app.mailNotifications.request(); await h.app.mailNotifications.waitForWork()
+        #expect(NotificationHTTP.count("/ack") == 2)
+        now = 2.99
+        h.app.mailNotifications.request(); await h.app.mailNotifications.waitForWork()
+        #expect(NotificationHTTP.count("/ack") == 2)
+        // A different batch must not wait for the old one's backoff.
+        NotificationHTTP.batches.append(NotificationHTTP.batch([2],id:"new-batch"))
+        await h.app.mail.refreshStatus(); await h.app.mailNotifications.waitForWork()
+        #expect(NotificationHTTP.count("/ack") == 3)
+        #expect(h.center.posts.count == 2)
+        NotificationHTTP.ackCode = 200; NotificationHTTP.keepPendingAfterAck = false
+        now = 4
+        h.app.mailNotifications.request(); await h.app.mailNotifications.waitForWork()
+        #expect(h.app.mail.pending.isEmpty)
+        #expect(NotificationHTTP.count("/ack") == 5)
+        #expect(h.center.posts.count == 2)
+        #expect(h.app.mailNotifications.lastFailure == nil)
+    }
+
+    @Test func unchangedPendingAfterSuccessfulAckSettlesWithoutARequestLoop() async throws {
+        NotificationHTTP.reset(); NotificationHTTP.batches = [NotificationHTTP.batch([1])]
+        NotificationHTTP.keepPendingAfterAck = true
+        let h = NotificationHarness(); defer { h.close() }
+        await h.app.mail.setCapability(features:["mail"])
+        // Do not await waitForWork on the broken code: its loop never settles.
+        try await Task.sleep(for:.milliseconds(300))
+        let first = NotificationHTTP.count("/ack")
+        try await Task.sleep(for:.milliseconds(300))
+        let second = NotificationHTTP.count("/ack")
+        #expect(first == 1)
+        #expect(second == first)
+        #expect(h.app.mailNotifications.workCount == 0)
+        #expect(h.app.mail.pending.count == 1)
+        #expect(h.center.posts.count == 1)
+        let data = try #require(h.preferences.data(forKey:"mail-notification-receipts-v1"))
+        let saved = try JSONDecoder().decode([String:MailNotificationReceipt].self,from:data)
+        #expect(saved.values.allSatisfy { $0.handled && !$0.acknowledged })
+    }
+
     private func wait(_ condition: () -> Bool) async throws {
         for _ in 0..<400 { if condition() { return }; try await Task.sleep(for:.milliseconds(5)) }
         Issue.record("等待合成通知操作超时")
