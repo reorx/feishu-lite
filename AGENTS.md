@@ -28,7 +28,7 @@ MVP 功能已经做完并通过验收：扫码登录、会话列表、历史消�
 
 会话列表支持多选隐藏、隐藏列表和取消隐藏；偏好按账号保存在 App 的 UserDefaults，收到新消息不会解除隐藏，不改变未读和通知策略。验收见 `kb/sessions/2026-10-08-hidden-chats.md`。
 
-Messages / Email 双模块和单邮箱阅读器已实现并完成验收：列出全部文件夹、只读收件箱、100/50 分页、原生详情与隔离 HTML、可见性已读、持久通知批次与 ack、钥匙串配置。真实账号的接入与浏览、隔离 UI/WebKit 安全与竞态、真实系统通知与 Dock、Debug/Release 钥匙串隔离都有独立报告，已读双向同步由用户手动验证；真实新邮件提醒、断网/睡眠恢复和正常钥匙串下的重启恢复仍未在真实环境验证，见 `kb/known-issues.md`。验收汇总见 `kb/plans/2026-10-17-email-reader-finish-coordination.md`，范围见 `kb/plans/2026-10-13-email-reader-plan.md`；实现 IMAP 前读 `kb/notes/2026-10-13-email-imap-probe.md`，App 接续先读 C3b、D1、D2、E 的 session（wire、错误、重启、显示契约）。
+Messages / Email 双模块和单邮箱阅读器已实现并完成验收：列出全部文件夹、只读收件箱、100/50 分页、原生详情与隔离 HTML、可见性已读、持久通知批次与 ack、钥匙串配置。真实账号的接入与浏览、隔离 UI/WebKit 安全与竞态、真实系统通知与 Dock、Debug/Release 钥匙串隔离都有独立报告，已读双向同步和正常钥匙串下的重启恢复由用户手动验证；真实新邮件提醒、断网/睡眠恢复仍未在真实环境验证，见 `kb/known-issues.md`。验收汇总见 `kb/plans/2026-10-17-email-reader-finish-coordination.md`，范围见 `kb/plans/2026-10-13-email-reader-plan.md`；实现 IMAP 前读 `kb/notes/2026-10-13-email-imap-probe.md`，App 接续先读 C3b、D1、D2、E 的 session（wire、错误、重启、显示契约）。
 
 2026-10-18 按[全界面 UI 审查](kb/reviews/2026-10-17-ui-review.md)完成了 32 条返修，并做了独立复验：去掉自绘导航列，模块切换并入系统侧栏；两个模块共用侧栏头部和提示条组件；邮件阅读器和聊天的排版、错误与空态都改过。会话详情偶发卡死已修好，代价是消息列表不再懒加载（见 `kb/known-issues.md`）。协调记录和各任务总结见 `kb/plans/2026-10-18-ui-fixes-coordination.md`。改界面前先读 `mac/AGENTS.md` 里的布局约束：分栏里不要用 `fixedSize(vertical:)`；消息详情保持普通 `VStack`；会换行的多行头部用 `TopDownStack`。
 
