@@ -525,3 +525,4 @@ R8b 签收后派发。R8b 已在 `00d5f42` 签收，测试基线变为后端 312
   - R8b 观察到的展开区空白：修，追加 R8c，交给 Astra。
   - 本轮的 10 个 tab（`w3W:tA`–`tK`）已由协调者关闭；上一轮的 `w3W:t5`–`t8` 此前已不在。
   - 正常钥匙串下重启恢复：用户确认日常使用的正式 App 退出再打开后，邮箱仍在线、不要求重新输入密码。已从 known-issues 和根 AGENTS.md 里划掉这一项。
+  - R8c 签收后：R8c 的 tab `w3W:tN` 已关闭；本轮各隔离副本删除偏好域后，`~/Library/Preferences/` 里残留的 9 个空 plist（`com.reorx.FeishuLite.{r5,r5b,r7,r8,r8b,r8c,r9}-ui`、`v1a-verify`、`v1b-verify`）已由协调者删除，正式偏好没动；`kb/todo.md` 里那条过时的“继续 2026-10-14 笔记”按用户要求删除。
