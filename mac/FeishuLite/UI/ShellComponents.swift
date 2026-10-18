@@ -217,6 +217,8 @@ struct NoticeBar: View {
     let title: String
     var message: String?
     var action: InlineAction?
+    /// 可选的关闭按钮，放在最右边
+    var dismiss: (() -> Void)?
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
@@ -240,6 +242,13 @@ struct NoticeBar: View {
                 Button(action.title, action: action.perform)
                     .disabled(!action.isEnabled)
                     .fixedSize()
+            }
+            if let dismiss {
+                Button("关闭提示", systemImage: "xmark", action: dismiss)
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+                    .help("关闭")
             }
         }
         .padding(.horizontal, 12)

@@ -51,10 +51,8 @@ private struct LoggedOutSidebar: View {
         VStack(spacing: 0) {
             SidebarHeader(status: status) { Text("会话") }
             Divider()
-            Text("扫码登录后显示会话")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            ListEmptyState(systemImage: "qrcode", title: "扫码登录后显示会话")
+                .frame(maxHeight: .infinity)
         }
     }
 }

@@ -18,7 +18,10 @@ final class Conversation {
     private(set) var isLoading = false
     private(set) var isLoadingOlder = false
     private(set) var hasOlder = false
+    /// 首屏加载失败的原因；列表已经有内容时不显示
     private(set) var loadError: String?
+    /// 往前翻页失败的原因，显示在列表顶部，由用户点“重试”再翻
+    private(set) var olderLoadError: String?
     private(set) var isSending = false
     private(set) var sendError: String?
     /// 每翻出更早的一页就换一个值：翻之前最上面那条消息的 id，视图用它保持滚动位置
@@ -64,6 +67,7 @@ final class Conversation {
                 let top = page.last?.position ?? chatLastPosition
                 cursor = HistoryCursor(lastPosition: top, pageSize: BackendClient.pageSize)
                 hasOlder = cursor?.hasMore ?? false
+                olderLoadError = nil
             }
             hasLoaded = true
             loadError = nil
@@ -77,6 +81,7 @@ final class Conversation {
         guard var cursor, cursor.hasMore, !isLoadingOlder, !isLoading else { return }
         isLoadingOlder = true
         defer { isLoadingOlder = false }
+        olderLoadError = nil
         let anchorID = timeline.messages.first?.id
         do {
             let client = try connection.requireClient()
@@ -87,13 +92,12 @@ final class Conversation {
             }
             self.cursor = cursor
             hasOlder = cursor.hasMore
-            loadError = nil
             if let anchorID, timeline.messages.first?.id != anchorID {
                 prependSerial += 1
                 prependAnchor = PrependAnchor(messageID: anchorID, serial: prependSerial)
             }
         } catch {
-            report(error, as: \.loadError, action: .loadOlderMessages)
+            report(error, as: \.olderLoadError, action: .loadOlderMessages)
         }
     }
 

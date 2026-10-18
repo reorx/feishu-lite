@@ -52,8 +52,8 @@ struct ChatListView: View {
         }
         .overlay {
             if chats.isEmpty {
-                Text(messages.showsHiddenChats ? "没有隐藏的会话" : "暂无会话")
-                    .foregroundStyle(.secondary)
+                ListEmptyState(systemImage: messages.showsHiddenChats ? "eye.slash" : "bubble.left.and.bubble.right",
+                               title: messages.showsHiddenChats ? "没有隐藏的会话" : "暂无会话")
             }
         }
         .onChange(of: messages.showsHiddenChats) { _, _ in endManagement() }
@@ -64,17 +64,10 @@ struct ChatListView: View {
     private var chatList: some View {
         if isManaging {
             List(chats) { chat in
-                Toggle(isOn: Binding(
-                    get: { selectedIDs.contains(chat.id) },
-                    set: { selected in
-                        if selected { selectedIDs.insert(chat.id) }
-                        else { selectedIDs.remove(chat.id) }
-                    }
-                )) {
-                    ChatRowView(chat: chat)
+                ManagedChatRow(chat: chat, isSelected: selectedIDs.contains(chat.id)) {
+                    if selectedIDs.contains(chat.id) { selectedIDs.remove(chat.id) }
+                    else { selectedIDs.insert(chat.id) }
                 }
-                .toggleStyle(.checkbox)
-                .accessibilityLabel("选择\(chat.displayName)")
                 .id(chat.id)
                 .trackScrollRow(chat.id, space: "chat-list")
             }
@@ -160,6 +153,30 @@ struct ChatListView: View {
     private func endManagement() {
         isManaging = false
         selectedIDs.removeAll()
+    }
+}
+
+/// 管理模式的一行：选择圆圈和头像垂直居中，点整行切换选中
+private struct ManagedChatRow: View {
+    let chat: Chat
+    let isSelected: Bool
+    let toggle: () -> Void
+
+    var body: some View {
+        Button(action: toggle) {
+            HStack(spacing: 8) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(isSelected ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(Color.primary.opacity(0.45)))
+                    .frame(width: 20)
+                ChatRowView(chat: chat)
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("选择\(chat.displayName)")
+        .accessibilityValue(isSelected ? "已选" : "未选")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 

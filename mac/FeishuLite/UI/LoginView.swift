@@ -65,10 +65,11 @@ struct LoginView: View {
                 .foregroundStyle(.secondary)
         case let .failed(message):
             VStack(spacing: 10) {
-                Text(message)
-                    .foregroundStyle(.secondary)
+                Label(message, systemImage: "exclamationmark.triangle.fill")
+                    .symbolRenderingMode(.multicolor)
                     .multilineTextAlignment(.center)
                 Button("重试") { login.retry() }
+                    .buttonStyle(.borderedProminent)
             }
         }
     }

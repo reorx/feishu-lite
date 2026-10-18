@@ -203,6 +203,15 @@ final class MessagesState {
         }
     }
 
+    /// 首屏加载失败后用户点“重试”：和打开会话一样，加载成功后标记已读
+    func retryConversation() async {
+        guard let conversation, let chat = chatList[conversation.chatID] else { return }
+        await conversation.loadLatest(chatLastPosition: chat.lastPosition)
+        if self.conversation === conversation {
+            markReadIfViewing(onlyIfUnread: false)
+        }
+    }
+
     /// 点通知进来：把窗口叫出来并选中会话
     func openChat(_ chatID: String) {
         guard isLoggedIn else { return }

@@ -25,7 +25,7 @@ private struct MessageListView: View {
         if conversation.hasLoaded, !conversation.rows.isEmpty {
             MessageScrollView(conversation: conversation, messages: messages)
         } else {
-            EmptyStateView(conversation: conversation)
+            EmptyStateView(conversation: conversation, messages: messages)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
@@ -51,8 +51,10 @@ private struct MessageScrollView: View {
                     VStack(spacing: 0) {
                         HistoryHeader(conversation: conversation)
                             .trackScrollRow(Self.historyID, space: "message-list")
+                        let bubbleWidth = MessageBubbleView.maxWidth(forListWidth: viewport.size.width - 32)
                         ForEach(conversation.rows) { row in
-                            MessageRowView(row: row, conversation: conversation, isImageVisible: visibleImageIDs.contains(row.id))
+                            MessageRowView(row: row, conversation: conversation, isImageVisible: visibleImageIDs.contains(row.id),
+                                           maxBubbleWidth: bubbleWidth)
                                 .id(row.id)
                                 .trackScrollRow(row.id, space: "message-list")
                         }
@@ -125,13 +127,27 @@ private struct MessageScrollView: View {
     }
 }
 
-/// 消息列表最上面的一行：滚到这里就加载更早的消息
+/// 消息列表最上面的一行：滚到这里就加载更早的消息；失败时显示原因和重试
 private struct HistoryHeader: View {
     let conversation: Conversation
 
     var body: some View {
         Group {
-            if conversation.hasOlder {
+            if let error = conversation.olderLoadError {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                        .accessibilityHidden(true)
+                    Text(error)
+                        .foregroundStyle(.secondary)
+                    Button("重试") {
+                        Task { await conversation.loadOlder() }
+                    }
+                    .controlSize(.small)
+                    .fixedSize()
+                }
+                .font(.caption)
+            } else if conversation.hasOlder {
                 ProgressView()
                     .controlSize(.small)
             } else if conversation.hasLoaded, !conversation.rows.isEmpty {
@@ -147,13 +163,23 @@ private struct HistoryHeader: View {
 
 private struct EmptyStateView: View {
     let conversation: Conversation
+    let messages: MessagesState
 
     var body: some View {
         if let error = conversation.loadError {
-            ContentUnavailableView("加载失败", systemImage: "exclamationmark.triangle", description: Text(error))
+            ContentUnavailableView {
+                Label("加载失败", systemImage: "exclamationmark.triangle")
+            } description: {
+                Text(error)
+            } actions: {
+                Button("重试") {
+                    Task { await messages.retryConversation() }
+                }
+                .disabled(conversation.isLoading)
+            }
         } else if conversation.hasLoaded {
-            Text("还没有消息")
-                .foregroundStyle(.secondary)
+            ContentUnavailableView("还没有消息", systemImage: "bubble.left.and.bubble.right",
+                                   description: Text("发出的第一条消息会显示在这里"))
         } else {
             ProgressView()
         }
@@ -164,6 +190,7 @@ private struct MessageRowView: View {
     let row: MessageRow
     let conversation: Conversation
     let isImageVisible: Bool
+    let maxBubbleWidth: CGFloat
 
     @Environment(\.today) private var today
 
@@ -185,7 +212,7 @@ private struct MessageRowView: View {
                     .frame(maxWidth: .infinity)
             } else {
                 MessageBubbleView(message: row.message, showsSender: row.showsSender, conversation: conversation,
-                                  isImageVisible: isImageVisible)
+                                  isImageVisible: isImageVisible, maxWidth: maxBubbleWidth)
                     .padding(.top, row.showsSender ? 10 : 3)
             }
         }
@@ -197,23 +224,34 @@ private struct MessageBubbleView: View {
     let showsSender: Bool
     let conversation: Conversation
     let isImageVisible: Bool
+    let maxWidth: CGFloat
 
     @Environment(\.today) private var today
 
+    /// 气泡最多占消息区宽度的 70%，宽窗口下再封顶，长消息不会拉成一整行
+    static func maxWidth(forListWidth width: CGFloat) -> CGFloat {
+        min(560, max(240, width * 0.7))
+    }
+
     var body: some View {
+        let meeting = message.meetingInvitation
         HStack(spacing: 0) {
             if message.isSelf {
                 Spacer(minLength: 80)
             }
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: message.isSelf ? .trailing : .leading, spacing: 3) {
                 if showsSender {
+                    // 和气泡的左边对齐
                     Text(message.senderName.isEmpty ? "未知用户" : message.senderName)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .padding(.leading, 4)
                 }
                 if message.isViewableImage {
                     ImageMessageView(messageID: message.id, conversation: conversation, isVisible: isImageVisible)
+                } else if let meeting {
+                    MeetingCardView(meeting: meeting)
+                        .frame(width: min(300, maxWidth))
+                        .help(ChatTimeFormat.messageLabel(message.createTime, now: today))
                 } else {
                     Text(MessageText.attributed(message.text))
                         .textSelection(.enabled)
@@ -223,6 +261,7 @@ private struct MessageBubbleView: View {
                         .padding(.vertical, 7)
                         .background(message.isSelf ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary),
                                     in: .rect(cornerRadius: 12))
+                        .frame(maxWidth: maxWidth, alignment: message.isSelf ? .trailing : .leading)
                         .help(ChatTimeFormat.messageLabel(message.createTime, now: today))
                 }
             }
@@ -230,7 +269,62 @@ private struct MessageBubbleView: View {
                 Spacer(minLength: 80)
             }
         }
-        .accessibilityElement(children: .combine)
+        // 会议卡片里的“加入会议”要能单独操作，不和整行合并
+        .accessibilityElement(children: meeting == nil ? .combine : .contain)
+    }
+}
+
+/// 会议邀请卡片：图标、主题、会议号和“加入会议”。数据来自 Core 对后端会议文本的解析。
+private struct MeetingCardView: View {
+    let meeting: MeetingInvitation
+
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "video.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 30, height: 30)
+                    .background(Color.teal.gradient, in: .rect(cornerRadius: 8))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("视频会议")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(meeting.topic ?? "未命名会议")
+                        .fontWeight(.semibold)
+                        .foregroundStyle(meeting.topic == nil ? .secondary : .primary)
+                        .lineLimit(4)
+                }
+            }
+            Divider()
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("会议号")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(meeting.formattedNumber)
+                        .monospacedDigit()
+                        .textSelection(.enabled)
+                }
+                Spacer(minLength: 8)
+                Button("加入会议") { openURL(meeting.joinURL) }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .help(meeting.joinURL.absoluteString)
+                    .fixedSize()
+            }
+        }
+        .padding(12)
+        .background(Color(nsColor: .controlBackgroundColor), in: .rect(cornerRadius: 12))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(.separator)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("视频会议邀请：\(meeting.topic ?? "未命名会议")，会议号 \(meeting.formattedNumber)")
     }
 }
 

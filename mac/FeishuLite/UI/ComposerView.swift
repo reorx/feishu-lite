@@ -7,20 +7,17 @@ struct ComposerView: View {
     @State private var inputHeight: CGFloat = ComposerTextView.minHeight
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(spacing: 0) {
             if let error = conversation.sendError {
-                HStack(spacing: 6) {
-                    Label(error, systemImage: "exclamationmark.circle")
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                        .lineLimit(2)
-                    Spacer(minLength: 0)
-                    Button("关闭", systemImage: "xmark") {
-                        conversation.dismissSendError()
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                }
+                // 草稿已经放回输入框，可以直接重新发送
+                NoticeBar(tone: .error, systemImage: "exclamationmark.circle.fill", title: error,
+                          action: InlineAction(title: "重新发送", isEnabled: canSend) {
+                              Task { await conversation.send() }
+                          },
+                          dismiss: { conversation.dismissSendError() })
+                    .font(.callout)
+                    .controlSize(.small)
+                Divider()
             }
             HStack(alignment: .bottom, spacing: 8) {
                 ComposerTextView(text: $conversation.draft, height: $inputHeight) {
@@ -49,8 +46,8 @@ struct ComposerView: View {
                 .controlSize(.large)
                 .disabled(!canSend)
             }
+            .padding(12)
         }
-        .padding(12)
         .background(.bar)
     }
 
@@ -98,8 +95,8 @@ struct ComposerTextView: NSViewRepresentable {
 
         DispatchQueue.main.async {
             textView.window?.makeFirstResponder(textView)
-            context.coordinator.updateHeight(of: textView)
         }
+        context.coordinator.scheduleHeightUpdate(of: textView)
         return scrollView
     }
 
@@ -109,7 +106,7 @@ struct ComposerTextView: NSViewRepresentable {
         // 组字过程中不能动内容，否则候选词会丢
         if textView.string != text, !textView.hasMarkedText() {
             textView.string = text
-            context.coordinator.updateHeight(of: textView)
+            context.coordinator.scheduleHeightUpdate(of: textView)
         }
     }
 
@@ -147,6 +144,15 @@ struct ComposerTextView: NSViewRepresentable {
             }
             parent.onSubmit()
             return true
+        }
+
+        /// 发送清空草稿、切换会话恢复草稿时，内容是在 SwiftUI 更新视图的过程中写进来的。
+        /// 这时改 height 绑定会被丢掉，输入框停在旧高度，所以放到这次更新结束之后再算。
+        func scheduleHeightUpdate(of textView: NSTextView) {
+            DispatchQueue.main.async { [weak self, weak textView] in
+                guard let self, let textView else { return }
+                updateHeight(of: textView)
+            }
         }
 
         func updateHeight(of textView: NSTextView) {
