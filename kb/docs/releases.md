@@ -1,10 +1,11 @@
 ---
 created: 2026-10-16
+updated: 2026-10-18
 tags: [release, homebrew, macos]
 ---
 # 发布 FeishuLite
 
-用户通过 `brew install --cask reorx/tap/feishu-lite` 安装。v0.1.1 Cask 安装 FeishuLite.app，同时安装 uv、Git 及与 App 对应 commit 的 Python 后端。v0.1.0 已发布到 GitHub Releases 和 tap，仍为 FeishuChat.app；不得重打该 tag 或替换旧产物。DMG 用户按照 Release 页说明手动安装后端。
+用户通过 `brew install --cask reorx/tap/feishu-lite` 安装。当前正式版 v0.1.2 的 Cask 安装 FeishuLite.app，同时安装 uv、Git 及与 App 对应 commit 的 Python 后端。v0.1.0 已发布到 GitHub Releases 和 tap，仍为 FeishuChat.app；不得重打该 tag 或替换旧产物。DMG 用户按照 Release 页说明手动安装后端。
 
 ## 发布流程
 
@@ -44,7 +45,7 @@ bash ~/Code/devblocks/macos-app-release/scripts/setup-secrets.sh --repo reorx/fe
 
 Apple 签名凭据的权威来源是 `~/Sync/apple-developer/`，先读该目录的 `AGENTS.md`，通过 envops 获取 `secrets.env`，文件类 Secret 直接 base64 编码后送给 `gh secret set`；不要输出或在仓库保存密钥。不能从其他 GitHub 仓库下载 Secret 明文。
 
-2026-10-16 已从该目录同步六项签名 Secrets。2026-10-18 将 tap 写凭据从账号级 OAuth token 迁移为本 App 专用 deploy key，并删除仓库中保存的旧 token secret；deploy key 的实际推送待下一次发布验证。v0.1.0 已通过 Apple 公证、staple 和 Gatekeeper 验证，历史协议 403 未重现。没有成功公证的包不会上传或发布。
+2026-10-16 已从该目录同步六项签名 Secrets。2026-10-18 将 tap 写凭据从账号级 OAuth token 迁移为本 App 专用 deploy key，并删除仓库中保存的旧 token secret；deploy key 已在 v0.1.2 发布中成功推送 tap。v0.1.0 已通过 Apple 公证、staple 和 Gatekeeper 验证，历史协议 403 未重现。没有成功公证的包不会上传或发布。
 
 ## 验证与正式发布
 
@@ -55,11 +56,11 @@ gh workflow run release.yml --ref master
 gh run list --workflow release.yml
 ```
 
-确认测试、签名、公证、Gatekeeper 与 artifact 上传均成功后，发布下一个版本（以下以 0.1.2 为例，0.1.1 已发布）：
+确认测试、签名、公证、Gatekeeper 与 artifact 上传均成功后，发布下一个版本（以下以 0.1.3 为例，0.1.2 已发布）：
 
 ```sh
-git tag v0.1.2
-git push origin v0.1.2
+git tag v0.1.3
+git push origin v0.1.3
 ```
 
 等待 Release 和 Homebrew 两个 job 均成功，在干净用户环境验证安装、Finder 启动、后端就绪和升级。不要用正式聊天会话做点击验收。
@@ -87,7 +88,7 @@ Cask 使用第三方 tap 仍兼容的 Ruby `postflight`，用于调用需要联�
 
 ## 从 FeishuChat 升级
 
-从 v0.1.1 起原生客户端为 **FeishuLite.app / com.reorx.FeishuLite**，工程及 Swift 包也统一使用 FeishuLite。安装命令和 Cask token `feishu-lite` 不变；新的 DMG 为 `FeishuLite-<version>.dmg`。`render-cask.sh` 对已发布的 0.1.0 保留旧 app/DMG 名称。线上 tap 已更新至 0.1.1，旧版 0.1.0 的 Release 和 tag 保持不变。
+从 v0.1.1 起原生客户端为 **FeishuLite.app / com.reorx.FeishuLite**，工程及 Swift 包也统一使用 FeishuLite。安装命令和 Cask token `feishu-lite` 不变；新的 DMG 为 `FeishuLite-<version>.dmg`。`render-cask.sh` 对已发布的 0.1.0 保留旧 app/DMG 名称。线上 tap 已更新至 0.1.2，旧版 0.1.0 的 Release 和 tag 保持不变。
 
 升级前退出 FeishuChat 和 FeishuLite，避免两份后端同时使用同一缓存。Homebrew 使用已安装旧 Cask 的 app artifact 卸载/暂存 FeishuChat，再安装新 Cask 的 FeishuLite；无需额外删除钩子，也不添加 zap。手动 DMG 用户在退出旧 App、取消旧 App 的「开机启动」后，将新 App 拖入 Applications，再把旧 FeishuChat.app 移到废纸篓；不要删除 Application Support 或钥匙串。
 
@@ -98,3 +99,5 @@ Cask 使用第三方 tap 仍兼容的 Ruby `postflight`，用于调用需要联�
 - **日志**：新日志写入 `~/Library/Logs/FeishuLite/backend.log`，旧日志保留供排障。
 
 改名的本地验证与边界见 [改名记录](../sessions/2026-10-16-feishulite-rename.md)。v0.1.1 正式签名、公证、Gatekeeper、tap 更新与 brew 下载校验已通过，见 [发布记录](../sessions/2026-10-17-v0.1.1-release.md)。干净用户从 0.1.0 的完整安装升级与真实历史钥匙串授权仍待验证。
+
+最新 v0.1.2 的发布、公证、tap deploy key 推送及本地下载验证见 [发布记录](../sessions/2026-10-18-v0.1.2-release.md)。

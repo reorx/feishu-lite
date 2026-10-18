@@ -4,5 +4,5 @@
 
 ## 下次干净 macOS 用户环境验收时
 
-- **补齐 Cask 全安装验收**：v0.1.1 已正式发布，签名、公证、tap 更新、brew 下载校验和与下载后 App Gatekeeper 通过；干净用户环境仍需验证完整 `brew install --cask reorx/tap/feishu-lite`、Finder 启动及从 v0.1.0 升级。改名升级需验证旧 app 被替换、偏好继承、邮件钥匙串 ACL、通知重新授权及登录项切换；保持 v0.1.0 原产物不变。
-  → 操作见 `kb/docs/releases.md`，结果记到 `kb/sessions/2026-10-17-v0.1.1-release.md`。
+- **补齐 Cask 全安装验收**：v0.1.2 已正式发布，签名、公证、tap 更新、brew 下载校验和与下载后 App Gatekeeper 通过；干净用户环境仍需验证完整 `brew install --cask reorx/tap/feishu-lite`、Finder 启动及从 v0.1.0 升级。改名升级需验证旧 app 被替换、偏好继承、邮件钥匙串 ACL、通知重新授权及登录项切换；保持 v0.1.0 原产物不变。
+  → 操作见 `kb/docs/releases.md`，结果记到 `kb/sessions/2026-10-18-v0.1.2-release.md`。
