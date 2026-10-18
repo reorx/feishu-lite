@@ -30,6 +30,8 @@ MVP 功能已经做完并通过验收：扫码登录、会话列表、历史消�
 
 Messages / Email 双模块和单邮箱阅读器已实现并完成验收：列出全部文件夹、只读收件箱、100/50 分页、原生详情与隔离 HTML、可见性已读、持久通知批次与 ack、钥匙串配置。真实账号的接入与浏览、隔离 UI/WebKit 安全与竞态、真实系统通知与 Dock、Debug/Release 钥匙串隔离都有独立报告，已读双向同步由用户手动验证；真实新邮件提醒、断网/睡眠恢复和正常钥匙串下的重启恢复仍未在真实环境验证，见 `kb/known-issues.md`。验收汇总见 `kb/plans/2026-10-17-email-reader-finish-coordination.md`，范围见 `kb/plans/2026-10-13-email-reader-plan.md`；实现 IMAP 前读 `kb/notes/2026-10-13-email-imap-probe.md`，App 接续先读 C3b、D1、D2、E 的 session（wire、错误、重启、显示契约）。
 
+2026-10-18 按[全界面 UI 审查](kb/reviews/2026-10-17-ui-review.md)完成了 32 条返修，并做了独立复验：去掉自绘导航列，模块切换并入系统侧栏；两个模块共用侧栏头部和提示条组件；邮件阅读器和聊天的排版、错误与空态都改过。会话详情偶发卡死已修好，代价是消息列表不再懒加载（见 `kb/known-issues.md`）。协调记录和各任务总结见 `kb/plans/2026-10-18-ui-fixes-coordination.md`。改界面前先读 `mac/AGENTS.md` 里的布局约束：分栏里不要用 `fixedSize(vertical:)`；消息详情保持普通 `VStack`；会换行的多行头部用 `TopDownStack`。
+
 邮件实现的不变量：SQLite/emit 只在事件循环线程使用，IMAP/MIME 工作线程不能访问 Store；DNS stop_timeout 后必须等待旧所有者 closed 才新建网络实例；后端密码只留内存，正文 GET 没有已读副作用，邮件错误不使用聊天 409；页外路由用鉴权 `GET /mail/messages/{id}/summary` 取缓存摘要，不联网、不写 Seen；正文可见证据来自 `mail.displayedBodyRoute`，不是 pending 或裸选择；未知通知 intent 不重弹、不 ack，保留 pending 并提供明确的再次提醒入口。Debug 与 Release 用不同的钥匙串 service（Release 保留旧 service），缺失时要求重新输入，不回退、不迁移；密码写失败只留 App 内存，旧条目删除失败只持久化账号 id，以便重建后精确重试。
 
 ## 文档
