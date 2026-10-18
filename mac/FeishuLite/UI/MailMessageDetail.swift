@@ -57,7 +57,7 @@ struct MailMessageDetail: View {
 /// 高度跟随内容。收件人和抄送默认一行，人多时“等 N 人”，展开后超过上限才滚动。
 private struct MailMessageHeader: View {
     let row: MailSummary
-    /// 展开后超过这么多人才放进固定高度的滚动区
+    /// 少量地址保留直接换行的展示；更多地址按内容定高、最多 72pt。
     private static let scrollingCount = 8
     @Environment(\.today) private var today
     @State private var expandsTo = false
@@ -115,13 +115,7 @@ private struct MailMessageHeader: View {
             if expanded.wrappedValue {
                 VStack(alignment:.leading,spacing:2) {
                     if values.count > Self.scrollingCount {
-                        ScrollView {
-                            Text(MailAddressList.full(values)).textSelection(.enabled)
-                                .frame(maxWidth:.infinity,alignment:.leading)
-                        }
-                        .scrollIndicators(.visible)
-                        .frame(height:72)
-                        Text("共 \(values.count) 人，滚动查看全部").font(.caption).foregroundStyle(.secondary)
+                        MailAddressScroll(values:values)
                     } else {
                         Text(MailAddressList.full(values)).textSelection(.enabled)
                     }
@@ -140,6 +134,58 @@ private struct MailMessageHeader: View {
             .buttonStyle(.link)
             .fixedSize()
             .accessibilityLabel(text + title)
+    }
+}
+
+/// 测量副本只参与 Layout，不显示、不接收事件，也不进入辅助功能树。
+struct MailAddressScroll: View {
+    let values: [MailAddress]
+
+    var body: some View {
+        CappedAddressLayout {
+            addresses.hidden().accessibilityHidden(true)
+            ScrollView {
+                addresses.textSelection(.enabled)
+                    .frame(maxWidth:.infinity,alignment:.leading)
+            }
+            .scrollIndicators(.visible)
+            Text("共 \(values.count) 人，滚动查看全部")
+                .font(.caption).foregroundStyle(.secondary)
+                .frame(minWidth:0,maxWidth:.infinity,minHeight:0,maxHeight:.infinity,alignment:.topLeading)
+                .clipped()
+                // 滚动区已有原生辅助功能；裁切为零时不能留下误导性的滚动提示。
+                .accessibilityHidden(true)
+        }
+    }
+
+    private var addresses: Text { Text(MailAddressList.full(values)) }
+}
+
+/// 用同一宽度测量文字和安排滚动区；没有几何回调或状态回写。
+/// 子视图依次为不可见的文字测量副本、滚动区、提示。提示不需要时分配零高度并裁切。
+struct CappedAddressLayout: Layout {
+    private let limit: CGFloat = 72
+    private let spacing: CGFloat = 2
+
+    private func sizes(width: CGFloat?, subviews: Subviews) -> (width: CGFloat, content: CGFloat, hint: CGFloat) {
+        let text = subviews[0].sizeThatFits(ProposedViewSize(width:width,height:nil))
+        let hint = text.height > limit
+            ? subviews[2].sizeThatFits(ProposedViewSize(width:width,height:nil)).height : 0
+        return (width ?? text.width, min(text.height,limit), hint)
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let size = sizes(width:proposal.width,subviews:subviews)
+        return CGSize(width:size.width,height:size.content + (size.hint > 0 ? spacing + size.hint : 0))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let size = sizes(width:bounds.width,subviews:subviews)
+        subviews[0].place(at:bounds.origin,anchor:.topLeading,proposal:ProposedViewSize(width:bounds.width,height:0))
+        subviews[1].place(at:bounds.origin,anchor:.topLeading,
+                          proposal:ProposedViewSize(width:bounds.width,height:size.content))
+        subviews[2].place(at:CGPoint(x:bounds.minX,y:bounds.minY + size.content + (size.hint > 0 ? spacing : 0)),
+                          anchor:.topLeading,proposal:ProposedViewSize(width:bounds.width,height:size.hint))
     }
 }
 
