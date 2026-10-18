@@ -35,6 +35,7 @@ tags:
 | U1-39 的分工 | Codex 在 Core/Model 里区分永久错误和临时错误；Claude Code 按这个分类改界面，永久错误不显示重试 | 协调者，沿用审查的建议 |
 | Codex 任务能不能改视图 | R6 不改 `mac/FeishuLite/UI/`，只提供 Core/Model 接口和测试。R5 例外，因为卡死的根源就在视图的滚动锚点机制里 | 协调者 |
 | 复验方式 | 每个 Claude Code 任务在隔离副本里截修改前后的对比图自证；全部做完后，由没参与修改的 Codex tab（V1）统一复验。不逐个复验，因为 R7 到 R9 是连续的界面改动，逐个复验要多开好几个 tab，而且问题多半出在整体效果上 | 协调者 |
+| R9 改了两处模型（`Conversation.olderLoadError`、`MessagesState.retryConversation()`） | 接受。严格说这是功能代码，应该交给 Codex。但改动很小，和重试入口绑在一起，而且先写了测试；由 V1（Codex）复验 | 协调者，签收 R9 时 |
 | R8 观察到的翻页卡住（刷新时翻页请求还没返回，`isPaging` 一直为真） | 不修。真实后端有 HTTP 超时兜底，R8 已在界面上规避（列表为空时不显示翻页行），影响只是超时前不能再点“加载更早的邮件” | 协调者 |
 | 共享文件 | known-issues、next-up、根和 mac 的 AGENTS.md、README、`kb/docs/`、审查文档、本文，都由协调者在签收后更新。执行者把要改的内容写进总结的「交给协调者」 | 协调者（沿用） |
 
@@ -58,7 +59,7 @@ tags:
 | R7 外壳与侧栏 | U1-10、14、15、16、17、23、30、33、34、37（侧栏状态）、42 | `mailfin-r7` | Claude Code | R6 签收 | 隔离副本里的修改前后对比截图，深浅色都截 |
 | R8 邮件阅读器 | U1-11（只改外壳 CSS）、12、13、19（邮件日期）、20、21、22、31（邮件）、35、36、37（其余）、38、39（邮件）、41（邮件） | `mailfin-r8` | Claude Code | R7 签收 | 同 R7 |
 | R9 聊天 | U1-02、03（展示）、04、05、18、31（聊天）、32、39（图片）、40、41（气泡） | `mailfin-r9` | Claude Code | R8 签收 | 同 R7 |
-| R10 邮件提醒 ack 忙循环 | R7 的发现 | `mailfin-r10` | Codex | R9 签收 | 复现测试先红后绿 |
+| R10 功能小修 | R7–R9 的发现（ack 忙循环、推送移除残留错误、空页转圈） | `mailfin-r10` | Codex | R9 签收 | 复现测试先红后绿；动了视图就跑卡死压力 |
 | V1 独立复验 | 全部 | `mailfin-v1` | Codex | R10 签收 | 全量测试；逐条前后对比；回归 |
 
 ### R5：会话详情卡死（U1-01）
@@ -305,9 +306,11 @@ R8 的接续（协调者补）：R8 已在 `cbd58d4` 签收，测试基线变为
 - 同 R7。
 - 实际键入多行文字再发送，截图证明输入框缩回；英文键入时回车发送仍然正常。输入法组字时回车不发送由 V1 复验。
 
-### R10：邮件提醒 ack 忙循环（R7 的发现）
+### R10：功能小修（邮件提醒 ack 忙循环等三项）
 
-R9 签收后派发。R7 截“未知投递”状态时发现：合成服务的 ack 接口不清除 pending，App 在约 6 秒里发了 5000 多次 `/mail/notifications/ack` 和 `/mail/status`，没有退避。用改动前的 `fa31219` 对照也一样，所以是原有行为，和 R7 无关（`tmp/2026-10-18-ui-fixes/r7/ack-check-*.json`、`r7/tools/ack_check.py`，R7 总结「交给协调者」第 4 条）。真实后端 ack 后会移除批次，所以不一定会在真实环境出现。但只要后端因为某种原因没清掉 pending，App 就会对本机后端忙循环。
+R9 已在 `337b21e` 签收，测试基线是后端 312、Core 103、App 115。R10 修 R7、R8、R9 在范围外发现的三个功能问题，主项是第 1–4 条。
+
+**主项：邮件提醒 ack 忙循环。**R7 截“未知投递”状态时发现：合成服务的 ack 接口不清除 pending，App 在约 6 秒里发了 5000 多次 `/mail/notifications/ack` 和 `/mail/status`，没有退避。用改动前的 `fa31219` 对照也一样，所以是原有行为，和 R7 无关（`tmp/2026-10-18-ui-fixes/r7/ack-check-*.json`、`r7/tools/ack_check.py`，R7 总结「交给协调者」第 4 条）。真实后端 ack 后会移除批次，所以不一定会在真实环境出现。但只要后端因为某种原因没清掉 pending，App 就会对本机后端忙循环。
 
 额外必读：`MailNotificationCoordinator` 和 [E 报告](../sessions/2026-10-14-email-notifications-e.md)、`kb/docs/email-foundation.md` 里提醒批次和 ack 的规则。
 
@@ -318,11 +321,12 @@ R9 签收后派发。R7 截“未知投递”状态时发现：合成服务的 a
 3. 修复：同一批次重复 ack 要有退避或上限，ack 失败不能变成忙循环。“未知结果不重弹、不 ack，保留 pending，由再次提醒显式恢复”这条不变量不能破坏。
 4. 先写复现测试（用 recorder 和 URLProtocol 模拟“ack 后 pending 不变”），确认它在旧代码上表现为请求数无上限，再修。
 
-不做：界面改动。
+5. **推送移除后残留旧错误**（R8 的发现，[R8 总结](../sessions/2026-10-18-ui-r8.md)「交给协调者」第 4 条）：账号被服务端推送移除时（不是用户点“移除邮箱”），旧的 `errorMessage` 会留在未配置的表单里。让推送移除也清掉旧错误，同样先写测试。
+6. **会话顶部空页后一直转圈**（R9 的发现，[R9 总结](../sessions/2026-10-18-ui-r9.md)「交给协调者」第 3 条）：`loadOlder` 一次最多试 `Conversation.maxEmptyPages` 个空页，之后 `hasOlder` 仍为真，但不再请求。历史标题一直可见时，`task(id: historyIsVisible)` 不会再次触发，顶部就一直转圈；内容不满一屏时，用户也没法滚开再滚回来。先写测试复现，再让这种情况能继续加载，比如空页用完后历史标题显示“加载更早的消息”按钮，点了调 `loadOlder()`。只做恢复加载所需的最小视图接线，按钮样式参照 R9 在历史标题里加的失败重试。分页仍由历史标题的可见性触发，不能改回 `onAppear`。改了 `ConversationView` 就要跑 R5b 的 `repro2` 和 `minimal-sheet-resize`，各 50 轮。
 
-5. 顺带一项（R8 的发现，[R8 总结](../sessions/2026-10-18-ui-r8.md)「交给协调者」第 4 条）：账号被服务端推送移除时（不是用户点“移除邮箱”），旧的 `errorMessage` 会留在未配置的表单里。让推送移除也清掉旧错误，同样先写测试。
+不做：除第 6 项的最小视图接线外，不改界面。
 
-完成标准：根因说明；测试先红后绿；后端、Core、App 测试的数量和结果；Debug 构建通过；在隔离副本里用 R7 的 `ack_check.py` 复测，请求数有上限。
+完成标准：根因说明；测试先红后绿；后端、Core、App 测试的数量和结果；Debug 构建通过；在隔离副本里用 R7 的 `ack_check.py` 复测，请求数有上限；第 6 项如果改了视图，附压力结果。
 
 ### V1：独立复验
 
@@ -339,7 +343,14 @@ R10 签收后派发，协调者届时按 R5 至 R10 的实际产出补充这一�
    - 未知投递提示；通知点击路由。
 5. **新发现**：对比中看到的新问题，按审查的格式列出。
 
-已知要注意的（协调者补）：R8 让 e03 和 e02 变成了同一画面（附件常驻显示），复验 U1-36 看 e11、e11b；R7、R8 新增的对照状态有 e02b、e11b、e24b、e28b、w02b、w03b、w06b、w08b、w09b、m19b。深色 HTML 底色依赖 WebKit 的私有 setter `_setDrawsBackground:`，要用像素确认 U1-12。
+已知要注意的（协调者补）：
+
+- 合成数据用 `tmp/2026-10-18-ui-fixes/r9/tools/fixture.py`。R8 及以前的 fixture 里，会议邀请的类型是 `text`，看不到卡片。U1-40 看 `m03` 和 `c-media` 会话（`m40`、`m41`）。
+- 带 sheet 的截图用 `run.sheet_shot`（按主窗口 id 截图）。不要用 R8 `run.py` 里的 `region()`：它按屏幕区域截图，R9 用它时截进了桌面上其他 App 的窗口。
+- Probe 的 `detail-scroll` 触发不了历史翻页，要用真实滚轮。
+- R9 新增的对照状态：`m14b-older-failure`、`m14b-older-retried`、`m14c-chat-load-retried-still-failing`、`m40`、`m41`、`w05b`；修改前的对照在 `r9/baseline/` 和 `before-*` 文件里。
+- R9 为了加重试入口，改了两处模型：`Conversation.olderLoadError`（翻页错误和首屏错误分开存放）和 `MessagesState.retryConversation()`，都有测试。V1 要确认首屏失败、翻页失败、事件流重连后后台刷新失败这三种情况，错误各自显示在对的位置。
+- R8 让 e03 和 e02 变成了同一画面（附件常驻显示），复验 U1-36 看 e11、e11b；R7、R8 新增的对照状态有 e02b、e11b、e24b、e28b、w02b、w03b、w06b、w08b、w09b、m19b。深色 HTML 底色依赖 WebKit 的私有 setter `_setDrawsBackground:`，要用像素确认 U1-12。
 
 完成标准：每条都有结论和证据路径；发现的问题有最小复现，并判断属于界面还是功能问题。
 
@@ -386,7 +397,7 @@ R10 签收后派发，协调者届时按 R5 至 R10 的实际产出补充这一�
 
 ## 状态区（只有协调者改）
 
-审阅基线：`cbd58d4`（R8）。测试基线：后端 312、Core 97、App 112。
+审阅基线：`337b21e`（R9）。测试基线：后端 312、Core 103、App 115。
 
 | 任务 | 状态 | agent / tab | 结果提交 | 备注 |
 |---|---|---|---|---|
@@ -395,8 +406,8 @@ R10 签收后派发，协调者届时按 R5 至 R10 的实际产出补充这一�
 | R6 | 已签收 | `mailfin-r6` / tab `w3W:tC`，Codex | `3c22a97` | 聊天错误按 5 个场景和状态码给固定文案，原始状态码和 body 只写进 os.Logger；邮件正文有 10 种永久错误，提供 `MailState.canRetryBody`；`ImageMessageFailure` 区分永久和临时；`Message.meetingInvitation` 严格解析后端渲染的会议文本。没有改视图、wire 和 SQLite。R6 自己定的：`malformed_response` 仍然可以重试；会议主题允许多行 |
 | R7 | 已签收 | `mailfin-r7` / tab `w3W:tD`，Claude Code | `e803fb9` | 模块切换并入每个模块的侧栏顶部，用两段控件，badge 叠在图标上；没用三栏，理由是只有两个模块，扫码页等也没有列表。扫码页和邮箱能力页也放进分栏。共用 `SidebarHeader`、`NoticeBar`；邮件提醒提示条移到详情栏顶部；⌘1/⌘2/⌘R、`SidebarCommands`；侧栏收起时，异常状态露在工具栏。新增 2 个外壳布局测试，改写 2 个提示条布局测试（原测试断言的正是“推动分栏”）。卡死压力 6 类共 300 轮通过。自己发现并修好了一处 fixedSize 把分栏撑到 1790pt 的问题。发现的 ack 忙循环转给 R10 |
 | R8 | 已签收 | `mailfin-r8` / tab `w3W:tE`，Claude Code | `cbd58d4` | 14 条邮件条目全部修好。外壳 CSS 只给带 `th` 的表格画框；WKWebView 不画背景，深色正文和头部都是 rgb(46,47,46)；头部按内容定高，收件人折叠；排版常量放进 Core 的 `MailReaderLayout`（14pt、行高 1.5、边距 20、最大宽 720）。CSP、导航、delegate 和白名单都没动，CSP 测试原样通过；纯文本和 HTML 的位置恢复逐像素一致。R8 自己定的：阅读宽度 720pt，而不是审查建议的 70–80 个汉字；收件人和附件展开后，按个数定滚动上限；同一条错误在表单开着时只显示在表单里，否则只显示在侧栏。深色底色靠 WebKit 私有 setter，以后被去掉会退回原样但不崩溃。翻页卡住的观察，协调者决定不修；推送移除后残留错误的观察，转给 R10 |
-| R9 | 进行中 | `mailfin-r9` / tab `w3W:tF`，Claude Code | | 中途碰上 Claude 用量上限，空闲约 20 分钟后自动恢复；新监视器 bsmksj7bi（wait_commit.sh，空闲阈值 30 分钟） |
-| R10 | 计划中 | `mailfin-r10`，Codex | | 等 R9 签收 |
+| R9 | 已签收 | `mailfin-r9` / tab `w3W:tF`，Claude Code | `337b21e` | 10 条全部修好：输入框把高度计算推到下一轮主线程，发送后缩回一行；发送失败用 `NoticeBar`，带“重新发送”；首屏和翻页失败都能重试；图片尺寸由 Core 的 `ImageMessageLayout` 计算（最长边 260）；预览按窗口定尺寸（最小窗口下 533×400）；会议卡片；气泡最宽 `min(560, 70%)`。卡死压力 6×50 通过，最长停顿 0.448 秒。中途碰上一次 Claude 用量上限，空闲约 20 分钟后自动恢复。截图时 `region()` 截进了其他 App 的窗口，4 张图已立即删除，没有提交。空页一直转圈的观察转给 R10 |
+| R10 | 进行中 | `mailfin-r10`，Codex | | |
 | V1 | 计划中 | `mailfin-v1`，Codex | | 等 R10 签收，届时补 brief |
 
 上一轮留下的 tab：`mailfin-g2a`（`w3W:t5`）、`mailfin-g2b`（`w3W:t6`）、`mailfin-g1`（`w3W:t7`）、`mailfin-u1`（`w3W:t8`）都已完成，资源已清理，等用户决定是否关闭。
