@@ -64,12 +64,12 @@ private struct MailMessageHeader: View {
     @State private var expandsCc = false
 
     var body: some View {
-        VStack(alignment:.leading,spacing:8) {
+        TopDownStack(spacing:8) {
             Text(row.displaySubject)
                 .font(.system(size:CGFloat(MailReaderLayout.subjectFontSize),weight:.semibold))
                 .lineLimit(4)
                 .textSelection(.enabled)
-            VStack(alignment:.leading,spacing:4) {
+            TopDownStack(spacing:4) {
                 HStack(alignment:.firstTextBaseline,spacing:8) {
                     label("发件人")
                     sender.lineLimit(1).truncationMode(.middle).textSelection(.enabled)
@@ -257,4 +257,38 @@ private struct MailHTMLView: NSViewRepresentable {
     func makeNSView(context:Context) -> WKWebView { context.coordinator.start(); return context.coordinator.webView }
     func updateNSView(_ view:WKWebView,context:Context) {}
     static func dismantleNSView(_ view:WKWebView,coordinator:MailHTMLController) { coordinator.stop() }
+}
+
+/// 竖排、靠左，从上到下依次分高度：每一行拿到剩下的全部高度，取自己需要的，余下的给后面的行。
+/// VStack 按弹性从小到大、平分剩余高度。头部先按理想高度量好、再按这个高度摆放时，弹性小但本身高的
+/// 地址块只分到一半，展开的抄送被压回一行（V1a-01）。按顺序分，摆放时每行都拿到量尺寸时的高度；
+/// 零高度询问时每行仍取最小高度，分栏按窄宽度询问也不会被撑高（不是 fixedSize）。
+struct TopDownStack: Layout {
+    var spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let sizes = heights(width:proposal.width,height:proposal.height,subviews:subviews)
+        let width = proposal.width ?? sizes.map(\.width).max() ?? 0
+        return CGSize(width:width,height:sizes.map(\.height).reduce(0,+) + gaps(subviews))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for (subview, size) in zip(subviews,heights(width:bounds.width,height:bounds.height,subviews:subviews)) {
+            subview.place(at:CGPoint(x:bounds.minX,y:y),anchor:.topLeading,
+                          proposal:ProposedViewSize(width:bounds.width,height:size.height))
+            y += size.height + spacing
+        }
+    }
+
+    private func gaps(_ subviews: Subviews) -> CGFloat { spacing * CGFloat(max(subviews.count - 1,0)) }
+
+    private func heights(width: CGFloat?, height: CGFloat?, subviews: Subviews) -> [CGSize] {
+        var remaining = height.map { $0 - gaps(subviews) }
+        return subviews.map { subview in
+            let size = subview.sizeThatFits(ProposedViewSize(width:width,height:remaining.map { max($0,0) }))
+            remaining = remaining.map { $0 - size.height }
+            return size
+        }
+    }
 }
