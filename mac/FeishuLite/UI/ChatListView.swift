@@ -4,6 +4,7 @@ import SwiftUI
 struct ChatListView: View {
     @Bindable var messages: MessagesState
     let status: SidebarStatus
+    let switcher: ModuleSwitcher
     @State private var isManaging = false
     @State private var selectedIDs: Set<String> = []
     @State private var isRestoringScroll = true
@@ -19,6 +20,19 @@ struct ChatListView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
+            if messages.showsHiddenChats {
+                HStack(spacing: 6) {
+                    Button { messages.showChatList(hidden: false) } label: {
+                        Label("隐藏的会话", systemImage: "chevron.left")
+                    }
+                    .buttonStyle(.plain)
+                    .help("返回会话列表")
+                    Spacer(minLength: 0)
+                }
+                .font(.subheadline)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
+            }
             Divider()
             GeometryReader { viewport in
                 ScrollViewReader { proxy in
@@ -82,16 +96,7 @@ struct ChatListView: View {
 
     private var header: some View {
         SidebarHeader(status: status) {
-            HStack(spacing: 6) {
-                if messages.showsHiddenChats {
-                    Button { messages.showChatList(hidden: false) } label: {
-                        Image(systemName: "chevron.left")
-                    }
-                    .help("返回会话列表")
-                    .accessibilityLabel("返回")
-                }
-                Text(messages.showsHiddenChats ? "隐藏的会话" : "会话")
-            }
+            switcher
         } actions: {
             if isManaging {
                 Button(isAllSelected ? "取消全选" : "全选") {

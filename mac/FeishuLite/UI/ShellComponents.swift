@@ -35,14 +35,12 @@ struct SidebarStatus {
     var action: InlineAction?
 }
 
-/// 两个模块共用的侧栏：顶部是模块切换，下面是模块自己的头部和列表。
-struct ModuleSidebar<Switcher: View, Content: View>: View {
-    let switcher: Switcher
+/// 两个模块共用的侧栏容器；模块切换由内容的头部承载。
+struct ModuleSidebar<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
         VStack(spacing: 0) {
-            switcher
             content
         }
         .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 420)
@@ -122,79 +120,71 @@ struct SidebarStatusRow: View {
     }
 }
 
-/// 侧栏顶部的模块切换。badge 叠在图标角上，不改变按钮尺寸。
+/// 标题菜单与工具栏共用模块选择和未读快照。
 struct ModuleSwitcher: View {
     let activeModule: AppModule
     let counts: UnreadCounts
     let select: (AppModule) -> Void
 
+    private func title(_ module: AppModule) -> String { module == .messages ? "Messages" : "Email" }
+    private func count(_ module: AppModule) -> Int { module == .messages ? counts.messages : counts.email }
+    private func icon(_ module: AppModule) -> String {
+        module == .messages ? "bubble.left.and.bubble.right" : "envelope"
+    }
+
     var body: some View {
-        HStack(spacing: 4) {
-            button(.messages, title: "Messages", icon: "bubble.left.and.bubble.right", count: counts.messages,
-                   shortcut: "⌘1")
-            button(.email, title: "Email", icon: "envelope", count: counts.email, shortcut: "⌘2")
-        }
-        .padding(.horizontal, 10)
-        .padding(.bottom, 8)
-    }
-
-    private func button(_ module: AppModule, title: String, icon: String, count: Int, shortcut: String) -> some View {
-        let isSelected = activeModule == module
-        return Button { select(module) } label: {
-            VStack(spacing: 2) {
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .frame(width: 28, height: 20)
-                    .overlay(alignment: .topLeading) {
-                        // 叠在图标右上角，只压住图标的一角
-                        if count > 0 {
-                            UnreadBadge(count: count, muted: false)
-                                .fixedSize()
-                                .offset(x: 20, y: -7)
-                        }
-                    }
-                Text(title)
-                    .font(.system(size: 11, weight: .medium))
-                    .lineLimit(1)
+        Menu {
+            Picker("模块", selection: Binding(get: { activeModule }, set: select)) {
+                ForEach([AppModule.messages, .email], id: \.self) { module in
+                    Label(menuTitle(module), systemImage: icon(module)).tag(module)
+                }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 44)
-            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-            .contentShape(.rect)
+            .pickerStyle(.inline)
+        } label: {
+            HStack(spacing: 3) {
+                Text(title(activeModule))
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .combine)
         }
-        .buttonStyle(ModuleSwitchButtonStyle(isSelected: isSelected))
-        .help("\(title)（\(shortcut)）")
-        .accessibilityLabel(title)
-        .accessibilityValue(count > 0 ? "\(count) 条未读" : "没有未读")
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-    }
-}
-
-/// 选中态用强调色底，悬停和按下各有一层浅底。
-private struct ModuleSwitchButtonStyle: ButtonStyle {
-    let isSelected: Bool
-
-    func makeBody(configuration: Configuration) -> some View {
-        StyledLabel(configuration: configuration, isSelected: isSelected)
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize(horizontal: true, vertical: false)
+        .help("切换模块（Messages ⌘1，Email ⌘2）")
+        .accessibilityLabel("切换模块，当前为 \(title(activeModule))")
+        .accessibilityValue("\(count(activeModule)) 条未读")
     }
 
-    private struct StyledLabel: View {
-        let configuration: Configuration
-        let isSelected: Bool
-        @State private var isHovering = false
-
-        var body: some View {
-            configuration.label
-                .background(fill, in: .rect(cornerRadius: 8))
-                .onHover { isHovering = $0 }
-                .animation(.easeOut(duration: 0.12), value: isHovering)
+    func toolbarButton(_ module: AppModule) -> some View {
+        Button { select(module) } label: {
+            Image(systemName: icon(module))
+                .font(.system(size: 15))
+                .frame(width: 28, height: 24)
+                .foregroundStyle(activeModule == module ? Color.accentColor : Color.secondary)
+                .background(activeModule == module ? Color.accentColor.opacity(0.12) : .clear,
+                            in: RoundedRectangle(cornerRadius: 5))
+                .overlay(alignment: .topTrailing) {
+                    if count(module) > 0 {
+                        UnreadBadge(count: count(module), muted: false)
+                            .scaleEffect(0.8, anchor: .topTrailing)
+                            .offset(x: 5, y: -5)
+                            .allowsHitTesting(false)
+                    }
+                }
         }
+        .buttonStyle(.plain)
+        .help("\(title(module))（\(module == .messages ? "⌘1" : "⌘2")）")
+        .accessibilityLabel("切换到 \(title(module))")
+        .accessibilityValue("\(count(module)) 条未读")
+        .accessibilityAddTraits(activeModule == module ? [.isSelected] : [])
+    }
 
-        private var fill: Color {
-            if isSelected { return Color.accentColor.opacity(configuration.isPressed ? 0.24 : 0.14) }
-            if configuration.isPressed { return Color.primary.opacity(0.12) }
-            return isHovering ? Color.primary.opacity(0.06) : .clear
-        }
+    private func menuTitle(_ module: AppModule) -> String {
+        let unread = count(module)
+        return title(module) + (unread > 0 ? "（\(unread > 99 ? "99+" : String(unread)) 条未读）" : "")
     }
 }
 

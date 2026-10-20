@@ -35,6 +35,7 @@ FeishuLite 的 SwiftUI 客户端：拉起并守护 `../backend` 的 Python 后�
 - 分栏（NavigationSplitView）里的长文字不要用 `fixedSize(horizontal: false, vertical: true)`：分栏会按很窄的宽度询问最小高度，固定高度的文字会把整栏撑出窗口（`ShellLayoutTests` 钉住）。消息详情必须保持普通 `VStack`，改回 `LazyVStack` 会让可变高度消息行的布局不收敛、主线程卡死；分页靠历史标题的实际可见性触发（见 `../kb/sessions/2026-10-18-ui-r5b.md`）。
 - 显示"今天/昨天"这类相对时间的视图，"现在"要从环境值 `\.today` 取（`AppState.today`，跨天、改时区、唤醒时更新），不要在视图里直接用 `Date()`，否则过了零点标签不会变。
 - 输入框是包了一层的 `NSTextView`（`UI/ComposerView`），为的是拿到输入法的组字状态：候选词没上屏时回车不能发送。不要换回 `TextField` / `TextEditor`。外部写入内容（发送清空、恢复草稿）后，高度计算要用 `scheduleHeightUpdate` 推到下一轮主线程；在 `updateNSView` 里直接改高度绑定，这次修改会被 SwiftUI 丢掉。聊天图片的显示尺寸由 Core 的 `ImageMessageLayout` 计算，图片视图只负责 `scaledToFill` 加裁切。
+- 模块图标的 toolbar 必须挂在 `NavigationSplitView` 的 sidebar 内容上，使用 `.automatic`，才能留在左栏分隔线内；挂在整个分栏上或用 `.navigation` 会排到详情区。模块标题菜单与 Email 文件夹菜单保持独立且同行，交互约定见 `../kb/docs/module-shell.md`。
 - 主窗口是单例 `Window`，关掉窗口 App 不退出；窗口关掉之后要用 `WindowManager.show()` 重新打开。
 
 ### 调试用的环境变量

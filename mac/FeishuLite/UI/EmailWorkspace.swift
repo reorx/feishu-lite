@@ -2,28 +2,32 @@ import FeishuLiteCore
 import SwiftUI
 
 /// Email 工作区。检测能力和需要更新后端时也保留分栏，窗口结构和收件箱一致。
-struct EmailWorkspace<Switcher: View>: View {
+struct EmailWorkspace: View {
     let mail: MailState
     let notifications: MailNotificationCoordinator
     let redetect: () -> Void
     @Binding var sidebarVisibility: NavigationSplitViewVisibility
-    let switcher: Switcher
+    let switcher: ModuleSwitcher
 
     @Environment(\.today) private var today
 
     var body: some View {
         let status = mail.sidebarStatus(now: today)
         NavigationSplitView(columnVisibility: $sidebarVisibility) {
-            ModuleSidebar(switcher: switcher) {
+            ModuleSidebar {
                 if mail.capability == .supported {
-                    MailInboxList(mail: mail, status: status)
+                    MailInboxList(mail: mail, status: status, switcher: switcher)
                 } else {
                     VStack(spacing: 0) {
-                        SidebarHeader(status: status) { Text("收件箱") }
+                        SidebarHeader(status: status) { switcher }
                         Divider()
                         Spacer(minLength: 0)
                     }
                 }
+            }
+            .toolbar {
+                ToolbarItem(id: "module.messages", placement: .automatic) { switcher.toolbarButton(.messages) }
+                ToolbarItem(id: "module.email", placement: .automatic) { switcher.toolbarButton(.email) }
             }
         } detail: {
             switch mail.capability {
@@ -54,7 +58,9 @@ struct EmailWorkspace<Switcher: View>: View {
                 }
             }
         }
-        .toolbar { CollapsedSidebarStatus(status: status, visibility: $sidebarVisibility) }
+        .toolbar {
+            CollapsedSidebarStatus(status: status, visibility: $sidebarVisibility)
+        }
     }
 
     @ViewBuilder private var supportedDetail: some View {

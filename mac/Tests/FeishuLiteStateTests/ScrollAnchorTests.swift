@@ -230,7 +230,7 @@ private func scrollMessage(_ position: Int, chatID: String = "chat-a") -> Messag
                                               unread: 0, muted: false, lastMessagePreview: "摘要",
                                               lastMessageTime: 1000 - i, lastPosition: 1)))
         }
-        try await verifyListRestoration({ AnyView(ChatListView(messages: messages, status: SidebarStatus(tone: .healthy, text: "在线"))) },
+        try await verifyListRestoration({ AnyView(ChatListView(messages: messages, status: SidebarStatus(tone: .healthy, text: "在线"), switcher: ModuleSwitcher(activeModule: .messages, counts: UnreadCounts(messages: 0, email: 0), select: { _ in }))) },
                                         anchor: { messages.listScrollAnchors[false] })
     }
 
@@ -248,6 +248,6 @@ private func scrollMessage(_ position: Int, chatID: String = "chat-a") -> Messag
              "body_part": NSNull(), "error": NSNull()]
         }
         mail.items = try BackendJSON.decoder.decode([MailSummary].self, from: JSONSerialization.data(withJSONObject: rows))
-        try await verifyListRestoration({ AnyView(MailInboxList(mail: mail, status: mail.sidebarStatus(now: Date()))) }, anchor: { mail.listScrollAnchor })
+        try await verifyListRestoration({ AnyView(MailInboxList(mail: mail, status: mail.sidebarStatus(now: Date()), switcher: ModuleSwitcher(activeModule: .email, counts: UnreadCounts(messages: 0, email: 0), select: { _ in }))) }, anchor: { mail.listScrollAnchor })
     }
 }

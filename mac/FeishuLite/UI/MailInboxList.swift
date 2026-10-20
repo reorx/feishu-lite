@@ -4,10 +4,12 @@ import SwiftUI
 struct MailInboxList: View {
     let mail: MailState
     let status: SidebarStatus
+    let switcher: ModuleSwitcher
     @State private var restoring = true
     var body: some View {
         VStack(spacing: 0) {
             SidebarHeader(status: status) {
+                switcher
                 Menu {
                     folderMenu
                 } label: {
@@ -19,7 +21,8 @@ struct MailInboxList: View {
                 .menuStyle(.button)
                 .buttonStyle(.plain)
                 .menuIndicator(.hidden)
-                .fixedSize()
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
                 .help("本期仅读取收件箱，其他文件夹暂不支持读取")
             } actions: {
                 Button { mail.refreshInbox() } label: { Image(systemName:"arrow.clockwise") }

@@ -2,24 +2,28 @@ import FeishuLiteCore
 import SwiftUI
 
 /// Messages 工作区。未登录时侧栏只留头部，详情区是扫码页，窗口结构和已登录时一致。
-struct MainView<Switcher: View>: View {
+struct MainView: View {
     let appState: AppState
     @Binding var sidebarVisibility: NavigationSplitViewVisibility
-    let switcher: Switcher
+    let switcher: ModuleSwitcher
 
     private var isLoggedOut: Bool { appState.messages.status?.state == .loggedOut }
 
     var body: some View {
         NavigationSplitView(columnVisibility: $sidebarVisibility) {
-            ModuleSidebar(switcher: switcher) {
+            ModuleSidebar {
                 if isLoggedOut {
-                    LoggedOutSidebar(status: status)
+                    LoggedOutSidebar(status: status, switcher: switcher)
                 } else {
-                    ChatListView(messages: appState.messages, status: status)
+                    ChatListView(messages: appState.messages, status: status, switcher: switcher)
                         .safeAreaInset(edge: .bottom, spacing: 0) {
                             NotificationPermissionBar(notifications: appState.notifications)
                         }
                 }
+            }
+            .toolbar {
+                ToolbarItem(id: "module.messages", placement: .automatic) { switcher.toolbarButton(.messages) }
+                ToolbarItem(id: "module.email", placement: .automatic) { switcher.toolbarButton(.email) }
             }
         } detail: {
             if let status = appState.messages.status, status.state == .loggedOut {
@@ -35,7 +39,9 @@ struct MainView<Switcher: View>: View {
                     .navigationTitle("Messages")
             }
         }
-        .toolbar { CollapsedSidebarStatus(status: status, visibility: $sidebarVisibility) }
+        .toolbar {
+            CollapsedSidebarStatus(status: status, visibility: $sidebarVisibility)
+        }
     }
 
     private var status: SidebarStatus {
@@ -46,10 +52,11 @@ struct MainView<Switcher: View>: View {
 /// 未登录时的侧栏：保留头部和状态，列表位置说明登录后才有会话。
 private struct LoggedOutSidebar: View {
     let status: SidebarStatus
+    let switcher: ModuleSwitcher
 
     var body: some View {
         VStack(spacing: 0) {
-            SidebarHeader(status: status) { Text("会话") }
+            SidebarHeader(status: status) { switcher }
             Divider()
             ListEmptyState(systemImage: "qrcode", title: "扫码登录后显示会话")
                 .frame(maxHeight: .infinity)

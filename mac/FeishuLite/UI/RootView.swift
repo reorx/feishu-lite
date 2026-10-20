@@ -18,6 +18,12 @@ struct RootView: View {
             .modifier(LogoutConfirmation(messages: appState.messages))
     }
 
+    private var moduleSwitcher: ModuleSwitcher {
+        ModuleSwitcher(activeModule: appState.activeModule, counts: appState.unreadCounts) {
+            appState.activeModule = $0
+        }
+    }
+
     @ViewBuilder
     private var content: some View {
         if appState.status != nil {
@@ -27,28 +33,17 @@ struct RootView: View {
                 switch appState.activeModule {
                 case .messages:
                     MainView(appState: appState, sidebarVisibility: $sidebarVisibility,
-                             switcher: AppModuleSwitcher(appState: appState))
+                             switcher: moduleSwitcher)
                 case .email:
                     EmailWorkspace(mail: appState.mail, notifications: appState.mailNotifications,
                                    redetect: appState.retryBackendInstallation,
                                    sidebarVisibility: $sidebarVisibility,
-                                   switcher: AppModuleSwitcher(appState: appState))
+                                   switcher: moduleSwitcher)
                 }
             }
             .onAppear { appState.reevaluateViewing() }
         } else {
             BackendStartupView(state: appState.backendState, retry: appState.retryBackendInstallation)
-        }
-    }
-}
-
-/// 单独读未读数，badge 变化只刷新切换控件
-private struct AppModuleSwitcher: View {
-    let appState: AppState
-
-    var body: some View {
-        ModuleSwitcher(activeModule: appState.activeModule, counts: appState.unreadCounts) {
-            appState.activeModule = $0
         }
     }
 }
