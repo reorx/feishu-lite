@@ -1,6 +1,6 @@
 ---
 created: 2026-10-16
-updated: 2026-10-18
+updated: 2026-10-20
 tags: [release, homebrew, macos]
 ---
 # 发布 FeishuLite
@@ -13,7 +13,7 @@ tags: [release, homebrew, macos]
 
 1. 运行 Swift、Python 和 Cask 行为测试，验证独立 wheel 安装。
 2. 导入临时钥匙串中的 Developer ID Application 证书，构建 arm64 + x86_64 Universal App，开启 hardened runtime 和签名时间戳。
-3. 签名 App 与 DMG，将 DMG 提交 Apple 公证；staple、验证票据和 Gatekeeper 后才计算 SHA256。
+3. 先将 App 打成 zip 提交 Apple 公证，把票据 staple 到 App，再制作、签名和公证 DMG。挂载 DMG 检查内部 App 的票据和 Gatekeeper 后才计算 SHA256。stapler 网络错误自动退避重试。
 4. 上传 artifact，并将 DMG、SHA256SUMS 发布到当前仓库 GitHub Release。
 5. 独立 Homebrew job 下载已发布的 DMG，核验 SHA256SUMS，生成 `Casks/feishu-lite.rb`，提交并推送到 `reorx/homebrew-tap`。
 
@@ -56,11 +56,11 @@ gh workflow run release.yml --ref master
 gh run list --workflow release.yml
 ```
 
-确认测试、签名、公证、Gatekeeper 与 artifact 上传均成功后，发布下一个版本（以下以 0.1.3 为例，0.1.2 已发布）：
+确认测试、签名、App 与 DMG 两次公证、Gatekeeper 与 artifact 上传均成功后，发布下一个版本（以下以 minor 0.2.0 为例，0.1.2 已发布）：
 
 ```sh
-git tag v0.1.3
-git push origin v0.1.3
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
 等待 Release 和 Homebrew 两个 job 均成功，在干净用户环境验证安装、Finder 启动、后端就绪和升级。不要用正式聊天会话做点击验收。
@@ -82,9 +82,12 @@ Cask 使用第三方 tap 仍兼容的 Ruby `postflight`，用于调用需要联�
 - `scripts/tests/`：元数据与安装/升级钩子的隔离行为验证。
 - `scripts/release-notes.sh`：Cask 和 DMG 安装说明。
 - `mac/scripts/make-dmg.sh`：DMG 内容和文件名。
+- `mac/scripts/notarize.sh`：App / DMG 共用公证、stapler 重试与内部 App 票据终验。
 - `mac/Config/Release.xcconfig`：禁用基础调试权限注入；`get-task-allow` 会导致 Apple 拒绝公证，不能删除这项配置。
 
 本地检查：`actionlint`、`bash -n scripts/render-cask.sh scripts/release-notes.sh mac/scripts/make-dmg.sh`、`uv run --no-project python -m unittest discover -s scripts/tests -v`。
+
+本地完整发布验证走 `make -C mac release-local`，凭据从环境传入：`APPLE_TEAM_ID`、`ASC_PRIVATE_KEY_PATH`、`ASC_KEY_ID` 和 `ASC_ISSUER_ID` 通过 `envops read-value ~/Sync/apple-developer/secrets.env -K <变量名> --unsafe` 赋值并 export，不能把值打印到日志。版本通过 `RELEASE_XCARGS='MARKETING_VERSION=0.2.0 CURRENT_PROJECT_VERSION=1'` 指定。该目标按顺序构建 Universal App、给 App 公证并钉票据、打 DMG、给 DMG 签名公证；不上传到 GitHub。Debug 不使用这些凭据。手动 Actions 试运行的版本为 0.0.0，正式版只取 tag。
 
 ## 从 FeishuChat 升级
 

@@ -34,7 +34,7 @@ jobs:
       - name: Resolve version
         id: version
         run: |
-          version=0.1.1
+          version=0.0.0
           if [[ "$GITHUB_REF_TYPE" == tag ]]; then
             version=${GITHUB_REF_NAME#v}
           fi
@@ -58,7 +58,7 @@ jobs:
           printf '%s' "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
           security import "$RUNNER_TEMP/cert.p12" -k "$keychain" -P "$CERT_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain" >/dev/null
-      - name: Build and package universal app
+      - name: Build universal app
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           VERSION: ${{ steps.version.outputs.marketing }}
@@ -71,10 +71,7 @@ jobs:
           fi
           architectures=$(lipo -archs mac/.build/DerivedData/Build/Products/Release/FeishuLite.app/Contents/MacOS/FeishuLite)
           [[ " $architectures " == *" arm64 "* && " $architectures " == *" x86_64 "* ]]
-          make -C mac dmg
-          codesign --sign 'Developer ID Application' --timestamp mac/dist/*.dmg
-          codesign --verify --strict mac/dist/*.dmg
-      - name: Notarize and staple
+      - name: Notarize app, package DMG, and notarize DMG
         env:
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -82,15 +79,10 @@ jobs:
         run: |
           : "${ASC_PRIVATE_KEY:?Missing ASC_PRIVATE_KEY}" "${ASC_KEY_ID:?Missing ASC_KEY_ID}" "${ASC_ISSUER_ID:?Missing ASC_ISSUER_ID}"
           printf '%s' "$ASC_PRIVATE_KEY" | base64 --decode > "$RUNNER_TEMP/notary-key.p8"
-          xcrun notarytool submit mac/dist/*.dmg --key "$RUNNER_TEMP/notary-key.p8" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID" --wait --timeout 20m --output-format json > "$RUNNER_TEMP/notary-result.json"
-          if ! jq -e '.status == "Accepted"' "$RUNNER_TEMP/notary-result.json"; then
-            submission=$(jq -r '.id' "$RUNNER_TEMP/notary-result.json")
-            xcrun notarytool log "$submission" --key "$RUNNER_TEMP/notary-key.p8" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID"
-            exit 1
-          fi
-          xcrun stapler staple mac/dist/*.dmg
-          xcrun stapler validate mac/dist/*.dmg
-          spctl --assess --type open --context context:primary-signature --verbose mac/dist/*.dmg
+          export ASC_PRIVATE_KEY_PATH="$RUNNER_TEMP/notary-key.p8"
+          make -C mac notarize-app
+          make -C mac dmg
+          make -C mac notarize
           (cd mac/dist && shasum -a 256 ./*.dmg > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:

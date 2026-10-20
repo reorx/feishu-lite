@@ -6,7 +6,7 @@ BACKEND_REVISION ?= $(shell git rev-parse HEAD)
 XCODEBUILD := xcodebuild -project FeishuLite.xcodeproj -scheme FeishuLite \
 	-destination 'platform=macOS' -derivedDataPath $(DERIVED_DATA)
 
-.PHONY: gen build build-release dmg test run dev clean
+.PHONY: gen build build-release notarize-app dmg notarize release-local test run dev clean
 
 # 从 project.yml 重新生成 FeishuLite.xcodeproj（xcodeproj 不入库）
 gen:
@@ -18,8 +18,23 @@ build: gen
 build-release: gen
 	set -o pipefail && $(XCODEBUILD) -configuration Release build ARCHS='arm64 x86_64' ONLY_ACTIVE_ARCH=NO FEISHU_BACKEND_REVISION=$(BACKEND_REVISION) $(RELEASE_XCARGS) | xcbeautify
 
+notarize-app:
+	bash scripts/notarize.sh "$(RELEASE_APP)"
+
 dmg:
 	bash scripts/make-dmg.sh "$(RELEASE_APP)" dist
+
+notarize:
+	version=$$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$(RELEASE_APP)/Contents/Info.plist"); \
+		bash scripts/notarize.sh "dist/FeishuLite-$$version.dmg"
+
+# 凭据通过环境传入；本地用 envops 从 Apple 凭据目录加载，不在日志中输出。
+release-local:
+	@: "$${APPLE_TEAM_ID:?Missing APPLE_TEAM_ID}"
+	$(MAKE) build-release RELEASE_XCARGS="$(RELEASE_XCARGS) DEVELOPMENT_TEAM=$$APPLE_TEAM_ID"
+	$(MAKE) notarize-app
+	$(MAKE) dmg
+	$(MAKE) notarize
 
 # Core 纯逻辑 + App 原始 Model/Services 的隔离调用测试
 test:

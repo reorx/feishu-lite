@@ -43,7 +43,7 @@ Messages / Email 双模块和单邮箱阅读器已实现并完成验收：列出
 
 ## 运行和测试
 
-- CI 与发布：`.github/workflows/ci.yml` 验证测试、独立后端安装和 App 构建；`release.yml` 在推送 `vMAJOR.MINOR.PATCH` 时构建、签名、公证 Universal DMG，发布到当前仓库并更新 `reorx/homebrew-tap` 的 `feishu-lite` Cask。Release 不内置 Python/larkx；Cask 安装/升级时通过 uv 安装构建对应 commit 的后端。Secrets、首次发布和失败重试见 `kb/docs/releases.md`。
+- CI 与发布：`.github/workflows/ci.yml` 验证测试、独立后端安装和 App 构建；`release.yml` 在推送 `vMAJOR.MINOR.PATCH` 时构建 Universal App，先公证并给 App 钉票据，再制作、签名和公证 DMG，发布到当前仓库并更新 `reorx/homebrew-tap` 的 `feishu-lite` Cask。Release 不内置 Python/larkx；Cask 安装/升级时通过 uv 安装构建对应 commit 的后端。本地验证走 `make -C mac release-local`；凭据、发布和失败重试见 `kb/docs/releases.md`。
 
 - 后端测试：`cd backend && uv run pytest`。App：`cd mac && make test && make build && make run`。
 - App 自己拉起后端，不需要单独启动。正式数据在 `~/Library/Application Support/FeishuChat/`，后端日志在 `~/Library/Logs/FeishuLite/backend.log`。
