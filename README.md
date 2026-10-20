@@ -67,9 +67,9 @@ FeishuLite 不是飞书官方产品，它使用和飞书网页版相同的方式
 
 普通 push / PR 会运行后端测试、独立 Python 工具安装验证、Swift 测试，以及 Debug / Universal Release 构建。发布配置见 [.github/workflows/release.yml](.github/workflows/release.yml)。
 
-推送 `vMAJOR.MINOR.PATCH` 标签会构建 Universal DMG、签名、公证，上传到**当前仓库**的 GitHub Releases，然后自动创建或更新 `reorx/homebrew-tap` 的 `Casks/feishu-lite.rb`。手动运行 Release 工作流只生成可下载 artifact（即使选择 tag 也不发布）。
+推送 `vMAJOR.MINOR.PATCH` 标签会构建 Universal App，先公证并给 App 钉票据，再制作、签名和公证 DMG，上传到**当前仓库**的 GitHub Releases，然后自动创建或更新 `reorx/homebrew-tap` 的 `Casks/feishu-lite.rb`。手动运行 Release 工作流只生成可下载 artifact（即使选择 tag 也不发布）。
 
-签名使用 `CERT_P12`、`CERT_P12_PASSWORD`、`APPLE_TEAM_ID`、`ASC_PRIVATE_KEY`、`ASC_KEY_ID`、`ASC_ISSUER_ID` 六个仓库 Secrets；证书和私钥使用 base64 编码。Cask 发布另使用 `TAP_DEPLOY_KEY`，它是本 App 专用、仅对 `reorx/homebrew-tap` 可写的 SSH deploy key 私钥。七项均已配置，`v0.1.2` 已通过完整发布流程，包括 deploy key 实际推送 tap。缺少 key 时 Cask job 明确失败，可补齐后仅重跑失败 job。重新生成或轮换使用以下命令，凭据来源和完整步骤见 [发布指南](kb/docs/releases.md)。
+签名使用 `CERT_P12`、`CERT_P12_PASSWORD`、`APPLE_TEAM_ID`、`ASC_PRIVATE_KEY`、`ASC_KEY_ID`、`ASC_ISSUER_ID` 六个仓库 Secrets；证书和私钥使用 base64 编码。Cask 发布另使用 `TAP_DEPLOY_KEY`，它是本 App 专用、仅对 `reorx/homebrew-tap` 可写的 SSH deploy key 私钥。七项均已配置，`v0.2.0` 已通过完整发布流程，包括两轮公证和 deploy key 实际推送 tap。缺少 key 时 Cask job 明确失败，可补齐后仅重跑失败 job。重新生成或轮换使用以下命令，凭据来源和完整步骤见 [发布指南](kb/docs/releases.md)。
 
 ```sh
 bash ~/Code/devblocks/macos-app-release/scripts/setup-secrets.sh --repo reorx/feishu-lite --skip-apple
