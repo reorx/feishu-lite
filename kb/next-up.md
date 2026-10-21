@@ -6,8 +6,3 @@
 
 - **补齐 Cask 全安装验收**：v0.2.0 已正式发布，两轮公证、tap 更新、brew 下载校验及下载后 App 票据、Gatekeeper、分发预检通过；干净用户环境仍需验证完整 `brew install --cask reorx/tap/feishu-lite`、Finder 启动及从 v0.1.0 升级。改名升级需验证旧 app 被替换、偏好继承、邮件钥匙串 ACL、通知重新授权及登录项切换；保持 v0.1.0 原产物不变。
   → 操作见 `kb/docs/releases.md`，结果记到 `kb/sessions/2026-10-20-v0.2.0-release.md`。
-
-## 下次 push 到 GitHub 之后
-
-- **README 截图深浅切换**：在 GitHub 仓库首页分别用浅色和深色主题看 README，Messages / Email 两列表格并排、无横向滚动，两张截图各自显示对应外观的版本。本地用 gh-markdown-preview（走 GitHub Markdown API）验证过，用户已确认本地效果，线上没看过。
-  → 有问题记到 `kb/sessions/2026-10-21-mock-data-t3.md`，没问题删掉本条即可。

@@ -31,6 +31,8 @@ tags:
 | README 截图返修（T3） | 窗口调窄、高度略降，顶部和底部不切半个气泡；保留系统窗口阴影（和 ⌘⇧4 + 空格一样）；两张图在 README 里并排，用表格加两个表头 | 用户，2026-10-21 |
 | T3 表头文字 | `Messages`、`Email`，和 App 侧栏里的模块名一致 | 协调者 |
 | README 预览工具 | 用开源的本地 GitHub README 预览工具给用户看效果，用户确认后才算验收。优先走 GitHub Markdown API 渲染、能切深浅页面主题的工具 | 用户要求，工具由 T3 选 |
+| README 精简 | README 只写给用户；开发信息核对后留在 `AGENTS.md` 和 `kb/docs/`，并在根 `AGENTS.md` 加了规则。协调者自己改的（`efc4ad6`、`3be6ce4`） | 用户，2026-10-21 |
+| App 图标白边 | 用户在 GitHub 深色模式下发现 README 顶部 logo 四周是白底。源图 `mac/Artwork/AppIcon.png` 没有透明通道，App 图标资源也从它生成。修源图，App 图标一起修（T4） | 用户，2026-10-21 |
 | 共享文件 | 根 `AGENTS.md`、`mac/AGENTS.md`、`kb/known-issues.md`、`kb/next-up.md`、plan 的勾选、本文，都由协调者在签收后更新。`kb/docs/mock-data.md` 归 T1，T2 只在格式说明或外观开关需要补充时改它，T1b 不改它。README 归 T2，只加截图区 | 协调者 |
 
 ## 必读
@@ -53,6 +55,7 @@ tags:
 | T2 展示数据、截图、README | `mockdata-t2` | Astra | T1 签收 | 截图由协调者审；README 的 `<picture>` 结构和图片路径可用 |
 | T2b 截图、入库、README（接续 T2） | `mockdata-t2b` | Astra | T1b 签收 | 同 T2 |
 | T3 重截带阴影的窄窗口截图、README 并排、本地预览 | `mockdata-t3`（`mockdata-t2b` context 39%，换新 agent） | Astra | T2b 签收 | 协调者审截图；用户在预览工具里确认 |
+| T4 App 图标透明边缘 | `mockdata-t4` | Astra | 无 | 透明度检查脚本；系统渲染的图标对比图；README 本地预览深浅两版，用户确认 |
 
 ### T1 模拟数据机制
 
@@ -195,6 +198,38 @@ T1 已在 `421c7a3` + `2deb879` 签收，本节按 T1 的实际数据格式和�
 - `kb/docs/mock-data.md` 的「自动截图」改成带阴影的做法（`-o` 改为可选，说明两者的区别）。
 - 总结写到 `kb/sessions/2026-10-21-mock-data-t3.md`，证据放 `tmp/2026-10-21-mock-data/t3/`。写清：窗口尺寸和滚动位置怎么定的、阴影截图的做法和文件大小、README 表格的宽度做法、选了哪个预览工具和理由、预览服务的 pid/端口/URL/深浅切换方法。
 
+### T4 App 图标透明边缘
+
+用户在 GitHub 深色模式下看 README，发现顶部 logo 四周是一圈白底，很难看。原因：`mac/Artwork/AppIcon.png`（1254×1254）是 RGB、没有透明通道，圆角方块外面是画上去的白底和阴影。`mac/scripts/generate-app-icon.py` 用 `sips` 从它缩出 `mac/FeishuLite/Assets.xcassets/AppIcon.appiconset/` 的全部尺寸，所以 App 在 Dock、Finder、DMG 里的图标也带白边。用户选择修源图，App 图标一起修。
+
+额外必读：`~/.claude/docs/GITHUB_README.md`（README 图片和本地预览的做法）、`mac/scripts/generate-app-icon.py`、`mac/project.yml` 里的图标设置、Apple 的 macOS App 图标规范（图标网格、圆角方块尺寸、阴影）。
+
+范围：
+
+1. **重做源图。** 覆盖 `mac/Artwork/AppIcon.png`：
+   - 1024×1024 RGBA，按 Apple macOS 图标网格放置圆角方块（约 824×824 居中，Apple 的连续圆角），方块外完全透明，再加一层透明的柔和投影（参数参照 Apple 模板，写进总结）。
+   - 方块内的图案（鸟和 `lite` 字样）、底色和质感保持现在的样子，不重新设计。可以从旧图抠出方块内容，也可以照原样重画底板再把图案合上去，你定，写进总结。
+   - 方块边缘不能有白边或白色光晕：放在深色背景上看（比如 `#0d1117`，GitHub 深色背景），边缘要干净。
+2. **重新生成图标资源。** 在 `mac/` 下运行 `uv run scripts/generate-app-icon.py`，确认生成的每个 PNG 都有透明通道、角落透明。可以在脚本里加一个检查：源图没有透明通道就报错退出，防止以后再换回不透明的图。
+3. **看系统实际显示的样子。** macOS 26 对不合规的旧式图标可能会放进一个灰色底板里显示（推测，需要你确认）。
+   - 用隔离的 DerivedData 构建 Debug App（`make build DERIVED_DATA=<你的证据目录>/DerivedData`），用 `NSWorkspace.shared.icon(forFile:)` 把新旧两个构建的 App 图标各渲染成 PNG（旧构建可以用 `tmp/2026-10-21-mock-data/t2/DerivedData` 里已有的那份），并排放在深色和浅色背景上对比。
+   - 不碰 Dock，不打开或替换用户正在用的 App。
+4. **README 预览。** README 引用的路径不变。按 `~/.claude/docs/GITHUB_README.md` 第 4 节用 gh-markdown-preview 预览，深色和浅色各截一张页面截图确认 logo 边缘透明。验证完让预览服务继续运行（固定端口，如 6419），记下 pid、URL，等用户确认后由协调者关闭。
+
+不做：
+
+- 不重新设计图标，不改颜色和图案。
+- 不改 README 内容，不发布、不打 tag、不 push。
+- 不改 `mac/FeishuChat/` 下的旧资源。
+
+完成标准：
+
+- `mac/Artwork/AppIcon.png` 和 appiconset 的 10 个 PNG 都有透明通道，四角 alpha 为 0。用一个脚本检查并保存输出。
+- 新旧图标放在深色、浅色背景上的对比图；系统渲染的新旧 App 图标对比图，并说明 macOS 26 有没有给它加底板。
+- README 本地预览深浅两张截图，logo 边缘没有白底。
+- `cd mac && make test` 通过（图标资源变了，确认构建和测试不受影响），记录数量；`make build` 用隔离 DerivedData 通过。
+- 总结写到 `kb/sessions/2026-10-21-app-icon-transparency.md`，证据放 `tmp/2026-10-21-mock-data/t4/`。写清：网格和阴影参数、抠图或重画的做法、macOS 26 的显示结论、预览服务的 pid 和 URL。
+
 ## 共同约束
 
 - 只做自己的任务，做完就停，不开始下一个任务，不改本文件。原因：协调者要按上一个任务的实际产出，定下一个任务的 brief。
@@ -243,8 +278,9 @@ T1 已在 `421c7a3` + `2deb879` 签收，本节按 T1 的实际数据格式和�
 | T2 | 已签收（数据与外观开关；截图和 README 由 T2b 接续完成） | `mockdata-t2` / tab `w47:t3` | `16c5d9c`、`a2812bc` | 已结束 |
 | T2b | 已签收 | `mockdata-t2b` / tab `w47:t5` | `dc8a4e9` | 已结束 |
 | T3 | 已签收（用户在本地预览确认，预览服务已关闭） | `mockdata-t3` / tab `w47:t6`（pane `w47:p7`） | `fc61c7f` | 已结束 |
+| T4 | 进行中 | `mockdata-t4` / tab 待开 | | |
 
-审阅基线：`8042dbe`（T1–T3 全部签收）。
+审阅基线：`3be6ce4`（T1–T3 全部签收，README 精简已 push）。T1–T3 的 tab 已由用户关闭。
 
 T3 之后协调者按用户要求改 README：删掉「从 FeishuChat 升级」（升级说明仍在 `kb/docs/releases.md`）和「构建和发布」（内容已在根 `AGENTS.md`「运行和测试」、`mac/AGENTS.md` 命令表和 `kb/docs/releases.md`，只把 `build-release` 需要的 `DEVELOPMENT_TEAM` 补进 `mac/AGENTS.md`），然后 push。
 
