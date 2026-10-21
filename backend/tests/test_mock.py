@@ -127,3 +127,60 @@ def test_cli_rejects_invalid_fixture_without_real_storage(tmp_path):
     assert result.returncode == 2
     assert 'directory does not exist' in result.stderr
     assert not (tmp_path / 'real-home').exists()
+
+
+@pytest.mark.parametrize('exit_path', ['sigterm', 'parent_gone', 'startup_failure'])
+def test_mock_process_removes_storage_on_exit(tmp_path, exit_path):
+    import os
+    import re
+    import socket
+    import subprocess
+    import sys
+    import time
+
+    root = fixture(tmp_path / 'data')
+    log_path = tmp_path / 'server.log'
+    env = dict(os.environ, FEISHU_LITE_TOKEN='test')
+    env.pop('FEISHU_LITE_PARENT_PID', None)
+    parent = None
+    if exit_path == 'parent_gone':
+        parent = subprocess.Popen(['sleep', '30'])
+        env['FEISHU_LITE_PARENT_PID'] = str(parent.pid)
+    with socket.socket() as port_owner:
+        port_owner.bind(('127.0.0.1', 0))
+        port = port_owner.getsockname()[1]
+        if exit_path == 'startup_failure':
+            port_owner.listen()
+        else:
+            port_owner.close()
+        with log_path.open('w') as log:
+            process = subprocess.Popen([str(Path(sys.executable).with_name('feishu-lite-backend')),
+                '--mock-data', str(root), '--port', str(port)], env=env, stdout=log, stderr=log)
+            try:
+                deadline = time.monotonic() + 10
+                while time.monotonic() < deadline:
+                    output = log_path.read_text()
+                    if 'Uvicorn running' in output or process.poll() is not None:
+                        break
+                    time.sleep(.05)
+                assert 'mock storage:' in output, output
+                directory = Path(re.search(r'mock storage: ([^;]+);', output).group(1))
+                if exit_path == 'sigterm':
+                    assert process.poll() is None, output
+                    process.terminate()
+                elif parent:
+                    parent.terminate()
+                    parent.wait(timeout=3)
+                process.wait(timeout=10)
+                assert not directory.exists(), log_path.read_text()
+            finally:
+                if process.poll() is None:
+                    process.kill()
+                    process.wait()
+                if parent and parent.poll() is None:
+                    parent.terminate()
+                    parent.wait()
+                # Failed reproduction must not leave its test database behind.
+                import shutil
+                for path in re.findall(r'mock storage: ([^;]+);', log_path.read_text()):
+                    shutil.rmtree(path, ignore_errors=True)

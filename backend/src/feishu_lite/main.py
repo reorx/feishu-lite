@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import logging
 import os
+import signal
 import sys
 from tempfile import TemporaryDirectory
 from pathlib import Path
@@ -113,6 +114,12 @@ def run_login() -> int:
     return 0 if asyncio.run(flow()) == 'success' else 1
 
 
+def _exit_mock_on_signal(signum, frame):
+    # Uvicorn replays SIGTERM after graceful shutdown. SystemExit unwinds the
+    # TemporaryDirectory context instead of letting SIG_DFL skip Python cleanup.
+    raise SystemExit(128 + signum)
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog='feishu-lite-backend', description='FeishuLite local backend (127.0.0.1 REST + SSE)'
@@ -128,6 +135,7 @@ def main():
         if args.command:
             parser.error('--mock-data cannot be combined with login')
         from .mock import Dataset
+        previous_sigterm = signal.signal(signal.SIGTERM, _exit_mock_on_signal)
         try:
             data = Dataset.load(args.mock_data)
             with TemporaryDirectory(prefix='feishu-lite-mock-') as directory:
@@ -136,6 +144,8 @@ def main():
         except (ValueError, OSError) as error:
             log.error('mock data startup failed: %s', error)
             sys.exit(2)
+        finally:
+            signal.signal(signal.SIGTERM, previous_sigterm)
         sys.exit(result)
     home = prepare_home()
     if args.command == 'login':

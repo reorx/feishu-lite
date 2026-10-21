@@ -22,6 +22,24 @@ import FeishuLiteCore
         #expect(BackendConfig.resolveMockPath("mock-data/showcase", backendDir: "/repo/backend") == "/repo/mock-data/showcase")
     }
 
+    @Test func preferencesNeverPersistEvenWithoutCleanup() throws {
+        let runtime = MockRuntime()
+        runtime.preferences.set("email", forKey: "active-module")
+        runtime.preferences.set(["chat"], forKey: "hidden")
+        runtime.preferences.set(Data([1, 2]), forKey: "receipt")
+        #expect(runtime.preferences.string(forKey: "active-module") == "email")
+        #expect(runtime.preferences.stringArray(forKey: "hidden") == ["chat"])
+        #expect(runtime.preferences.data(forKey: "receipt") == Data([1, 2]))
+        runtime.preferences.synchronize()
+        #expect(runtime.preferences.persistentDomain(forName: runtime.domain)?.isEmpty != false)
+        let fresh = MockRuntime()
+        #expect(fresh.preferences.string(forKey: "active-module") == nil)
+        runtime.preferences.removeObject(forKey: "hidden")
+        #expect(runtime.preferences.stringArray(forKey: "hidden") == nil)
+        runtime.cleanup()
+        fresh.cleanup()
+    }
+
     @Test func assemblyIsIsolatedAndFresh() async throws {
         let first = MockRuntime()
         let second = MockRuntime()
