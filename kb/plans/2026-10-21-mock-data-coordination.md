@@ -242,7 +242,7 @@ T1 已在 `421c7a3` + `2deb879` 签收，本节按 T1 的实际数据格式和�
 | T1b | 已签收 | `mockdata-t1b` / tab 标签 mockdata-t1b（pane `w47:p4`） | `8be3af8` | 已结束 |
 | T2 | 已签收（数据与外观开关；截图和 README 由 T2b 接续完成） | `mockdata-t2` / tab `w47:t3` | `16c5d9c`、`a2812bc` | 已结束 |
 | T2b | 已签收 | `mockdata-t2b` / tab `w47:t5` | `dc8a4e9` | 已结束 |
-| T3 | 进行中 | `mockdata-t3` / tab 待开 | | |
+| T3 | 进行中 | `mockdata-t3` / tab `w47:t6`（pane `w47:p7`） | | wait-settled 后台任务 b95we9b3f |
 
 审阅基线：`272edfe`（T1–T2b 全部签收）。
 
