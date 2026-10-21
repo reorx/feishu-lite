@@ -48,6 +48,7 @@ tags:
 | T1 模拟数据机制 | `mockdata-t1` | Astra | 无 | 后端和 App 测试先红后绿；隔离构建的 App 实机启动，逐条验收 plan 的标准 1–4 |
 | T1b 会议邀请格式修复 | `mockdata-t1b`（`mockdata-t1` context 超 40%，换新 agent） | Astra | 无（和 T2 并行，文件不重叠） | 测试先红后绿；实机截一张会议卡片 |
 | T2 展示数据、截图、README | `mockdata-t2` | Astra | T1 签收 | 截图由协调者审；README 的 `<picture>` 结构和图片路径可用 |
+| T2b 截图、入库、README（接续 T2） | `mockdata-t2b` | Astra | T1b 签收 | 同 T2 |
 
 ### T1 模拟数据机制
 
@@ -142,6 +143,16 @@ T1 已在 `421c7a3` + `2deb879` 签收，本节按 T1 的实际数据格式和�
 - **激活截图**：用户同意截图时把模拟实例短暂切到前台。用户日常的 FeishuLite 和模拟实例是同一个 bundle id，必须按 pid 激活（比如 System Events 里按 `unix id` 找进程设 `frontmost`，或 `NSRunningApplication(processIdentifier:)`），不要按 App 名字激活。截图前确认窗口是激活外观（红绿灯有颜色）。
 - **会议卡片**：T1b 正在修会议邀请的显示。Messages 主角会话的成品图要等协调者通知 T1b 已修好再截。没收到通知时，先做外观开关和 Email 的截图；能做的都做完了还没收到，就停下回复协调者。
 
+#### T2b 接续（2026-10-21）
+
+`mockdata-t2` 在 context 45% 时停下。展示数据（`16c5d9c`）和外观开关（`a2812bc`）协调者已审过，不用重做。T1b 已在 `8be3af8` 签收，会议邀请现在显示成卡片，Messages 主角会话可以直接截。
+
+做 T2 剩下的部分：先读 `kb/sessions/2026-10-21-mock-data-t2.md` 末尾的「交给协调者：接续清单」，照它做截图、挑选入库、README、核对和总结。完成标准仍是上面 T2 一节的那些。另外注意：
+
+- 用 `FEISHU_LITE_APPEARANCE=light|dark` 切外观，按 pid 激活窗口，截图前确认窗口是激活外观（红绿灯有颜色、侧栏文字不发暗）。旧候选是非激活外观，全部重截。
+- Messages 主角会话的成品要能看到完整的会议卡片和图片消息，必要时滚动或调整主角会话的消息顺序（只改 JSON）。
+- 总结追加到 `kb/sessions/2026-10-21-mock-data-t2.md`，加一节「T2b」，把开头「T2 不可签收」之类过时的结论改成最终状态。
+
 ## 共同约束
 
 - 只做自己的任务，做完就停，不开始下一个任务，不改本文件。原因：协调者要按上一个任务的实际产出，定下一个任务的 brief。
@@ -186,8 +197,8 @@ T1 已在 `421c7a3` + `2deb879` 签收，本节按 T1 的实际数据格式和�
 | 任务 | 状态 | agent / tab | 结果提交 | 监视器 |
 |---|---|---|---|---|
 | T1 | 已签收 | `mockdata-t1` / tab `w47:t2`（pane `w47:p2`） | `421c7a3`、`2deb879` | 已结束 |
-| T1b | 进行中（`mockdata-t1` 只留了接续记录 `9cfb1d4`，换 `mockdata-t1b` 接手） | `mockdata-t1b` / tab 标签 mockdata-t1b（pane `w47:p4`） | — | Claude Code 后台任务 `bc78oddvw` |
+| T1b | 已签收 | `mockdata-t1b` / tab 标签 mockdata-t1b（pane `w47:p4`） | `8be3af8` | 已结束 |
 | T2 | 部分完成：展示数据 `16c5d9c`、外观开关 `a2812bc` 已审；`mockdata-t2` context 45% 停下。截图、入库、README 交给 T2b，等 T1b 签收后派 | `mockdata-t2` / tab `w47:t3` | `16c5d9c`、`a2812bc` | 已结束 |
-| T2b | 计划中（等 T1b） | `mockdata-t2b`（Astra） | — | — |
+| T2b | 进行中（2026-10-21 派发） | `mockdata-t2b`（Astra） | — | 待起 |
 
 审阅基线：`2deb879`（T1 签收）。
