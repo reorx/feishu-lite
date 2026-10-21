@@ -8,6 +8,18 @@
 
 飞书官方客户端里装着文档、日历、会议和工作台。如果你在电脑上用飞书主要是为了收发消息，可以试试 FeishuLite。用手机飞书扫码登录后，就能在电脑上查看会话、回复消息，有新消息时收到系统通知。
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="mac/Artwork/screenshots/messages-dark.png">
+  <img src="mac/Artwork/screenshots/messages-light.png" alt="Messages：团队群聊、图片消息与视频会议邀请">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="mac/Artwork/screenshots/email-dark.png">
+  <img src="mac/Artwork/screenshots/email-light.png" alt="Email：收件箱与包含表格、列表和附件信息的 HTML 周报">
+</picture>
+
+截图中的人物、团队及内容均为虚构展示数据。
+
 ## 功能
 
 - 查看单聊和群聊，往上翻可以看到更早的消息
