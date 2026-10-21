@@ -1,0 +1,17 @@
+{
+  "me": {"id": "self", "name": "林舟"},
+  "users": [{"id": "alice", "name": "陈夏"}],
+  "chats": [
+    {"id": "design", "name": "星河设计小组", "unread": 2, "messages": [
+      {"id": "s0", "sender_id": "alice", "type": "system", "time": {"day": -1, "time": "09:00"}, "text": "陈夏创建了群聊"},
+      {"id": "s1", "sender_id": "alice", "time": {"day": 0, "time": "09:30"}, "text": "早上好！\n今天一起讨论新的阅读界面。"},
+      {"id": "s2", "sender_id": "self", "time": {"day": 0, "time": "09:32"}, "text": "收到，我已经整理好了。"},
+      {"id": "s3", "sender_id": "alice", "type": "post", "time": {"day": 0, "time": "09:35"}, "text": "设计要点\n• 让内容更易读\n• 留出充足的间距"},
+      {"id": "s4", "sender_id": "alice", "type": "image", "image": "images/sample.png", "time": {"day": 0, "time": "09:36"}, "text": "[图片]"},
+      {"id": "s5", "sender_id": "alice", "type": "video_chat", "meeting": {"topic": "阅读界面讨论", "number": "123456789"}, "time": {"day": 0, "time": "09:40"}}
+    ]},
+    {"id": "direct", "name": "陈夏", "type": "p2p", "muted": true, "unread": 1, "messages": [
+      {"id": "d1", "sender_id": "alice", "time": {"day": -1, "time": "18:05"}, "text": "明天见！"}
+    ]}
+  ]
+}

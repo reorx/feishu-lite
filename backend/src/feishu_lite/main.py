@@ -5,6 +5,7 @@ import asyncio
 import logging
 import os
 import sys
+from tempfile import TemporaryDirectory
 from pathlib import Path
 
 import uvicorn
@@ -43,18 +44,22 @@ def prepare_home() -> Path:
     return home
 
 
-def run_server(home: Path, port: int) -> int:
+def run_server(home: Path, port: int, mock_data=None) -> int:
     token = os.environ.get('FEISHU_LITE_TOKEN')
     if not token:
         print('FEISHU_LITE_TOKEN is required', file=sys.stderr)
         return 2
     from .api import create_app
     from .service import Service
-    from .source import LarkxSource
     from .store import Store
 
-    service = Service(LarkxSource(), Store(home / 'cache.db'))
-    app = create_app(service, token, mail_path=home / 'mail.db')
+    if mock_data is not None:
+        from .mock import create_mock_app
+        app = create_mock_app(mock_data, home, token)
+    else:
+        from .source import LarkxSource
+        service = Service(LarkxSource(), Store(home / 'cache.db'))
+        app = create_app(service, token, mail_path=home / 'mail.db')
     server = BackendServer(uvicorn.Config(app, host='127.0.0.1', port=port, log_level='info', access_log=False,
                                           timeout_graceful_shutdown=.2))
     parent_pid = os.environ.get('FEISHU_LITE_PARENT_PID')
@@ -113,11 +118,25 @@ def main():
         prog='feishu-lite-backend', description='FeishuLite local backend (127.0.0.1 REST + SSE)'
     )
     parser.add_argument('--port', type=int, default=18765)
+    parser.add_argument('--mock-data', type=Path, help='local JSON dataset; uses disposable storage, no network')
     sub = parser.add_subparsers(dest='command')
     sub.add_parser('login', help='log in by scanning a QR code printed in the terminal')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
+    if args.mock_data is not None:
+        if args.command:
+            parser.error('--mock-data cannot be combined with login')
+        from .mock import Dataset
+        try:
+            data = Dataset.load(args.mock_data)
+            with TemporaryDirectory(prefix='feishu-lite-mock-') as directory:
+                log.info('mock storage: %s; dataset: %s', directory, data.root)
+                result = run_server(Path(directory), args.port, data)
+        except (ValueError, OSError) as error:
+            log.error('mock data startup failed: %s', error)
+            sys.exit(2)
+        sys.exit(result)
     home = prepare_home()
     if args.command == 'login':
         sys.exit(run_login())

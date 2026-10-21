@@ -16,6 +16,8 @@ struct BackendConfig {
     /// 透传给后端的数据目录（FEISHU_LITE_HOME），不设就用后端的默认目录
     var homeOverride: String?
 
+    var mockDataDir: String? = nil
+
     var usesInstalledBackend: Bool { backendDir.isEmpty }
 
     var executablePath: String? {
@@ -33,12 +35,33 @@ struct BackendConfig {
 
     static func load(bundle: Bundle = .main,
                      environment: [String: String] = ProcessInfo.processInfo.environment) -> BackendConfig {
-        BackendConfig(
+        let backendDir = path(bundle.object(forInfoDictionaryKey: "FeishuBackendDir"))
+        var mock: String?
+        #if DEBUG
+        if let raw = environment["FEISHU_LITE_MOCK_DATA"], !raw.isEmpty {
+            mock = resolveMockPath(raw, backendDir: backendDir)
+        }
+        #endif
+        return BackendConfig(
             uvPath: path(bundle.object(forInfoDictionaryKey: "FeishuUVPath")),
             backendDir: path(bundle.object(forInfoDictionaryKey: "FeishuBackendDir")),
-            externalEndpoint: externalEndpoint(environment),
-            homeOverride: environment["FEISHU_LITE_HOME"].flatMap { $0.isEmpty ? nil : $0 }
+            externalEndpoint: mock == nil ? externalEndpoint(environment) : nil,
+            homeOverride: mock == nil ? environment["FEISHU_LITE_HOME"].flatMap { $0.isEmpty ? nil : $0 } : nil,
+            mockDataDir: mock
         )
+    }
+
+    static func resolveMockPath(_ raw: String, backendDir: String) -> String {
+        let expanded = (raw as NSString).expandingTildeInPath
+        let root = URL(fileURLWithPath: backendDir).deletingLastPathComponent()
+        return URL(fileURLWithPath: expanded, relativeTo: root).standardizedFileURL.path
+    }
+
+    func backendArguments(port: Int) -> [String] {
+        var arguments = usesInstalledBackend ? ["--port", String(port)]
+            : ["run", "--project", backendDir, "feishu-lite-backend", "--port", String(port)]
+        if let mockDataDir { arguments += ["--mock-data", mockDataDir] }
+        return arguments
     }
 
     private static func path(_ value: Any?) -> String {

@@ -49,12 +49,13 @@ final class MessagesState {
         }
     }
     @ObservationIgnored private var drafts: [String: String] = [:]
-    @ObservationIgnored private let hiddenPreferences = HiddenChatPreferences()
+    @ObservationIgnored private let hiddenPreferences: HiddenChatPreferences
     @ObservationIgnored private let connection: BackendConnection
     @ObservationIgnored private let notifications: any MessageNotifications
     @ObservationIgnored private let log = Logger(subsystem: "com.reorx.FeishuLite", category: "messages")
 
-    init(connection: BackendConnection, notifications: any MessageNotifications) {
+    init(connection: BackendConnection, notifications: any MessageNotifications, preferences: UserDefaults = .standard) {
+        hiddenPreferences = HiddenChatPreferences(defaults: preferences)
         self.connection = connection
         self.notifications = notifications
         login = LoginModel(connection: connection)

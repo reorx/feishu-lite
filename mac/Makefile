@@ -54,3 +54,9 @@ dev: build run
 
 clean:
 	rm -rf $(DERIVED_DATA) FeishuLiteCore/.build FeishuLite.xcodeproj
+
+# Separate build tree; never terminates another instance. Quit each mock instance normally.
+MOCK_DATA ?= $(abspath ../mock-data/showcase)
+run-mock: DERIVED_DATA = $(abspath ../tmp/mock-build/DerivedData)
+run-mock: build
+	open -n --env FEISHU_LITE_MOCK_DATA="$(MOCK_DATA)" "$(APP)"

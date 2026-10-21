@@ -68,8 +68,8 @@ final class AppState {
         self.preferences = preferences
         self.makeClient = makeClient
         activeModule = preferences.string(forKey: Self.modulePreferenceKey).flatMap(AppModule.init(rawValue:)) ?? .messages
-        messages = MessagesState(connection: connection, notifications: notifications)
-        mail = MailState(connection: connection, credentials: credentials ?? MailKeychain(), externalBackend: supervisor.isExternalBackend,
+        messages = MessagesState(connection: connection, notifications: notifications, preferences: preferences)
+        mail = MailState(connection: connection, credentials: credentials ?? MailKeychain(), externalBackend: supervisor.managesMailCredentials,
                          preferences: preferences)
         mailNotifications = MailNotificationCoordinator(mail:mail,notifications:notifications,preferences:preferences)
         messages.viewingContext = { [weak self] in

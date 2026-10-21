@@ -39,6 +39,7 @@ final class BackendSupervisor {
     }
 
     var isExternalBackend: Bool { config.externalEndpoint != nil }
+    var managesMailCredentials: Bool { isExternalBackend || config.mockDataDir != nil }
 
     func start() {
         guard loop == nil else { return }
@@ -105,13 +106,11 @@ final class BackendSupervisor {
         }
         let port = try Self.freePort()
         let token = Self.randomToken()
-        let logHandle = try Self.openLogFile()
+        let logHandle = try Self.openLogFile(mock: config.mockDataDir != nil)
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executablePath)
-        process.arguments = config.usesInstalledBackend
-            ? ["--port", String(port)]
-            : ["run", "--project", config.backendDir, "feishu-lite-backend", "--port", String(port)]
+        process.arguments = config.backendArguments(port: port)
         if !config.usesInstalledBackend {
             process.currentDirectoryURL = URL(fileURLWithPath: config.backendDir)
         }
@@ -177,8 +176,8 @@ final class BackendSupervisor {
             .appending(path: "Logs/FeishuLite/backend.log")
     }
 
-    private static func openLogFile() throws -> FileHandle {
-        let url = logFileURL
+    private static func openLogFile(mock: Bool) throws -> FileHandle {
+        let url = mock ? FileManager.default.temporaryDirectory.appending(path: "feishu-lite-mock-\(ProcessInfo.processInfo.processIdentifier).log") : logFileURL
         let manager = FileManager.default
         try manager.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         let size = (try? manager.attributesOfItem(atPath: url.path)[.size] as? Int) ?? 0

@@ -25,13 +25,17 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate, Mes
     @ObservationIgnored let localCenter: any LocalNotificationCenter
     @ObservationIgnored var onAuthorizationChange: (() -> Void)?
 
-    init(badgeWriter: ((Int) -> Void)? = nil, notificationCenter: (any LocalNotificationCenter)? = nil) {
+    let isSilent: Bool
+
+    init(silent: Bool = false, badgeWriter: ((Int) -> Void)? = nil, notificationCenter: (any LocalNotificationCenter)? = nil) {
+        self.isSilent = silent
         self.badgeWriter = badgeWriter
         localCenter = notificationCenter ?? SystemNotificationCenter()
         super.init()
     }
 
     func activate() {
+        guard !isSilent else { return }
         center.delegate = self
         Task {
             do {
@@ -95,6 +99,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate, Mes
     }
 
     func setBadge(_ count: Int) {
+        guard !isSilent else { return }
         if let badgeWriter { badgeWriter(count); return }
         let label = UnreadCounts.label(for: count)
         if NSApp.dockTile.badgeLabel != label {

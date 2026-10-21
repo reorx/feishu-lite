@@ -1,0 +1,8 @@
+{
+  "address": "lin@example.com",
+  "folders": [{"id": "INBOX", "name": "收件箱", "supported": true}, {"id": "Archive", "name": "归档"}],
+  "messages": [
+    {"uid": 2, "subject": "阅读界面设计评审", "sender": [{"name": "陈夏", "address": "xia@example.com"}], "to": [{"name": "林舟", "address": "lin@example.com"}], "cc": [{"name": "周远", "address": "yuan@example.com"}, {"name": "许青", "address": "qing@example.com"}], "time": {"day": 0, "time": "10:00"}, "body": {"kind": "html", "source": "<h2>阅读界面设计评审</h2><p>大家好，</p><p>这次评审将重点讨论排版、间距和阅读体验。</p><ul><li>统一标题层级</li><li>优化正文可读性</li></ul><p>期待你们的意见。<br>陈夏</p>"}, "attachments": [{"section": "2", "filename": "设计说明.pdf", "media_type": "application/pdf", "encoded_size": 24000}]},
+    {"uid": 1, "subject": "本周安排", "sender": [{"name": "周远", "address": "yuan@example.com"}], "time": {"day": -1, "time": "16:30"}, "unread": false, "body": {"kind": "plain", "source": "本周安排\n\n周三：设计评审\n周五：整理反馈\n\n谢谢大家。"}}
+  ]
+}

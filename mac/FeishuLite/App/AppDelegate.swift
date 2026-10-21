@@ -3,13 +3,20 @@ import AppKit
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let windows = WindowManager()
-    let loginItem = LoginItem()
+    let loginItem: LoginItem
+    private let mockRuntime: MockRuntime?
     let appState: AppState
 
     override init() {
-        IdentityMigration.migrateStandardPreferences()
-        let supervisor = BackendSupervisor(config: .load())
-        appState = AppState(supervisor: supervisor, notifications: NotificationService(), windows: windows)
+        let config = BackendConfig.load()
+        let mock = config.mockDataDir == nil ? nil : MockRuntime()
+        mockRuntime = mock
+        if mock == nil { IdentityMigration.migrateStandardPreferences() }
+        loginItem = LoginItem(disabled: mock != nil)
+        let supervisor = BackendSupervisor(config: config)
+        appState = AppState(supervisor: supervisor, notifications: mock?.notifications ?? NotificationService(),
+                            windows: windows, preferences: mock?.preferences ?? .standard,
+                            credentials: mock?.credentials)
         super.init()
     }
 
@@ -31,5 +38,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         appState.shutdown()
+        mockRuntime?.cleanup()
     }
 }
