@@ -46,7 +46,7 @@ tags:
 | 任务 | agent 名 | 类型 | 依赖 | 验证方式 |
 |---|---|---|---|---|
 | T1 模拟数据机制 | `mockdata-t1` | Astra | 无 | 后端和 App 测试先红后绿；隔离构建的 App 实机启动，逐条验收 plan 的标准 1–4 |
-| T1b 会议邀请格式修复 | `mockdata-t1` | Astra | 无（和 T2 并行，文件不重叠） | 测试先红后绿；实机截一张会议卡片 |
+| T1b 会议邀请格式修复 | `mockdata-t1b`（`mockdata-t1` context 超 40%，换新 agent） | Astra | 无（和 T2 并行，文件不重叠） | 测试先红后绿；实机截一张会议卡片 |
 | T2 展示数据、截图、README | `mockdata-t2` | Astra | T1 签收 | 截图由协调者审；README 的 `<picture>` 结构和图片路径可用 |
 
 ### T1 模拟数据机制
@@ -186,7 +186,7 @@ T1 已在 `421c7a3` + `2deb879` 签收，本节按 T1 的实际数据格式和�
 | 任务 | 状态 | agent / tab | 结果提交 | 监视器 |
 |---|---|---|---|---|
 | T1 | 已签收 | `mockdata-t1` / tab `w47:t2`（pane `w47:p2`） | `421c7a3`、`2deb879` | 已结束 |
-| T1b | 进行中（2026-10-21 派发） | `mockdata-t1` / tab `w47:t2` | — | Claude Code 后台任务 `bgz0p2em0` |
+| T1b | 进行中（`mockdata-t1` 只留了接续记录 `9cfb1d4`，换 `mockdata-t1b` 接手） | `mockdata-t1b` | — | 待起 |
 | T2 | 进行中（恢复：先做外观开关和 Email 截图，Messages 成品等 T1b；展示数据已在 `16c5d9c` 提交） | `mockdata-t2` / tab `w47:t3`（pane `w47:p3`） | `16c5d9c`（数据） | Claude Code 后台任务 `bzo5wzde7` |
 
 审阅基线：`2deb879`（T1 签收）。
