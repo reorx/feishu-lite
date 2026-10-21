@@ -70,7 +70,47 @@ tags:
 
 ### T2 展示数据、截图、README
 
-T1 签收后由协调者补全本节（依据 T1 的实际数据格式和启动方式）。
+（草稿：协调者按 T1 检查点 `421c7a3` 的数据格式写成，T1 签收时定稿。）
+
+额外必读：`kb/docs/mock-data.md`（数据格式、启动、截图方法）、`kb/sessions/2026-10-21-mock-data-t1.md`、`backend/src/feishu_lite/mock.py` 里的数据模型、`README.md`、现有的 `mock-data/showcase/`。T1 的截图在 `tmp/2026-10-21-mock-data/t1/`，可以先看一眼现在的样子。
+
+范围：
+
+1. **重写 `mock-data/showcase/` 为展示数据。** 只改 JSON 和图片，不改代码。数据格式不够用时，停下来写进「交给协调者」，不要自己改 `mock.py`。
+   - 一个虚构公司里的一个产品团队，中文内容，读起来像真实的工作沟通，但不涉及敏感话题。人名、公司、项目名全部虚构，不出现真实品牌、真实同事。邮件地址用 `example.com` 这类保留域名。
+   - 聊天：会话列表要有十个左右，单聊和群聊都有，一两个免打扰，未读数有多有少，最后一条消息的时间分布在今天、昨天和这周早些时候。要截图的那个会话（主角会话）要多人参与，消息多到能填满详情区（T1 的截图里会话太短，顶部空了一大块），并且包含：多行文本、本人发的消息、一张图片、一个视频会议邀请，可以再加一条富文本。
+   - 图片自己生成（比如用 PIL 画一张产品数据图表或界面草图），要好看，不要灰色占位块；不用网上下载的、来源不明的图。
+   - 邮件：收件箱十五封左右，发件人各不相同，几封未读，几封带附件；文件夹列出收件箱、已发送、草稿、归档、垃圾邮件这类常见项。要截图的那封（主角邮件）是 HTML，不依赖远程图片也好看（标题层级、表格、列表），比如一份周报或版本发布说明；再有一封纯文本邮件。
+2. **截候选图。** 用 `make -C mac run-mock DERIVED_DATA=<你的证据目录>/DerivedData`（或已构建的 App 加 `open -n --env`）启动。
+   - 四张成品图用同一个窗口尺寸，宽度要能同时放下侧栏、列表和详情，正文清晰可读。尺寸由你定，写进总结。
+   - 深浅两版：只改模拟实例自己的外观，**不要改系统外观**，那会影响用户整个桌面。先试 `open -n --env ... <App> --args -AppleInterfaceStyle Dark`（浅色用 `Light`），确认两种都生效。都不生效时停下来报告协调者。
+   - 至少截这几个候选，深浅各一版：Messages 主角会话；Email 主角 HTML 邮件；Email 纯文本邮件；另外一两个你觉得能代表 App 的画面（比如图片预览、侧栏收起）。放在 `tmp/2026-10-21-mock-data/t2/candidates/`，配一个索引文件说明每张图是什么。这些图以后做官网会用到。
+   - 窗口阴影要不要保留由你定，四张成品保持一致。
+3. **挑选并入库。** 从候选里选 Messages、Email 各一张，深浅两版共四个 PNG，放到 `mac/Artwork/screenshots/`，文件名形如 `messages-light.png`、`messages-dark.png`、`email-light.png`、`email-dark.png`。单个文件尽量不超过 1 MB：可以用 `sips` 缩小尺寸，或者用本机已经装好的 PNG 压缩工具，不要另装新工具。
+4. **README。** 在标题和一句话介绍之后、「功能」之前加截图区。每张图用：
+
+   ```html
+   <picture>
+     <source media="(prefers-color-scheme: dark)" srcset="mac/Artwork/screenshots/messages-dark.png">
+     <img src="mac/Artwork/screenshots/messages-light.png" alt="……">
+   </picture>
+   ```
+
+   两张图横排还是竖排、要不要配一行说明，由你定。README 其他部分不改。
+
+不做：
+
+- 不改 App 界面和任何代码。截图时发现的界面问题（比如布局、截断、颜色），截图存证，写进「交给协调者」。
+- 不做官网。
+
+完成标准：
+
+- `mock-data/showcase/` 能加载：`cd backend && uv run pytest` 全部通过（其中有 showcase 的加载检查），记录总数。
+- 候选图和索引都在 `tmp/2026-10-21-mock-data/t2/candidates/`，深浅两版都有。
+- 四个 PNG 在 `mac/Artwork/screenshots/`，尺寸一致，记录每个文件的像素尺寸和大小。
+- README 的截图区在本地 Markdown 预览里显示正常（GitHub 的深浅切换没法在本地验证，确认 HTML 结构和路径正确即可）。
+- 逐张检查截图内容，不出现真实人名、公司、邮件地址，也没有截到用户的 App 或桌面上的其他内容。
+- 总结 `kb/sessions/2026-10-21-mock-data-t2.md`，写清：选了哪两张、为什么；窗口尺寸和外观切换的做法；数据集的构成；截图里发现的界面问题。
 
 ## 共同约束
 
