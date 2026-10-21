@@ -47,6 +47,7 @@ FeishuLite 的 SwiftUI 客户端：拉起并守护 `../backend` 的 Python 后�
 | `FEISHU_LITE_HOME` | 后端的数据目录（凭证和缓存），不设就是 `~/Library/Application Support/FeishuChat` |
 | `FEISHU_LITE_BACKEND_URL` + `FEISHU_LITE_TOKEN` | 直连一个已经在跑的后端，不拉子进程 |
 | `HTTPS_PROXY` / `HTTP_PROXY` | 后端访问飞书走的代理，验收"断网"场景时用 |
+| `FEISHU_LITE_MOCK_DATA` | 仅 Debug：模拟场景目录，相对路径基于仓库根；优先于外部后端和 `FEISHU_LITE_HOME`，每次启动从 JSON 初始状态开始。见 `../kb/docs/mock-data.md` |
 
 ## 命令
 
@@ -58,6 +59,7 @@ make dmg         # 将 Release App 打包到 dist/
 make test        # Core 单测 + App Model/Services 隔离调用测试（无 UI）
 make run         # kill 旧实例并启动已构建的 app（不触发构建）
 make dev         # build + run
+make run-mock    # 构建到 tmp/mock-build 并新开一个模拟实例（默认 mock-data/showcase，可覆盖 MOCK_DATA、DERIVED_DATA），不结束已有实例
 make gen         # 仅重新生成 xcodeproj
 make clean       # 清理构建产物与生成的 xcodeproj
 ```

@@ -140,15 +140,15 @@ App（`mac/FeishuLite/`）：
 
 ### 实施步骤
 
-- [ ] T1 后端：先写行为测试（数据集解析与校验、相对时间、MockSource 各方法、模拟邮箱的列表/正文/已读、启动时自动配置邮箱且不产生待提醒、错误数据报错），再实现模拟模块和 `--mock-data`
-- [ ] T1 App：先写 `BackendConfig` 解析和模拟模式装配的测试，再实现环境变量、参数传递、偏好/凭证/通知隔离
-- [ ] T1 提交最小的 `mock-data/showcase/`，覆盖所有支持的消息和邮件类型；加 `make run-mock`
-- [ ] T1 写 `kb/docs/mock-data.md`
-- [ ] T1 实机验证：隔离构建，模拟模式启动，两个模块都有数据，验收标准 1–4 逐条留证据
+- [x] T1 后端：先写行为测试（数据集解析与校验、相对时间、MockSource 各方法、模拟邮箱的列表/正文/已读、启动时自动配置邮箱且不产生待提醒、错误数据报错），再实现模拟模块和 `--mock-data`
+- [x] T1 App：先写 `BackendConfig` 解析和模拟模式装配的测试，再实现环境变量、参数传递、偏好/凭证/通知隔离
+- [x] T1 提交最小的 `mock-data/showcase/`，覆盖所有支持的消息和邮件类型；加 `make run-mock`
+- [x] T1 写 `kb/docs/mock-data.md`
+- [x] T1 实机验证：隔离构建，模拟模式启动，两个模块都有数据，验收标准 1–4 逐条留证据
 - [ ] T2 把 `mock-data/showcase/` 扩充成像样的展示数据
 - [ ] T2 截候选图（深浅色），挑出聊天和邮件各一张，提交到 `mac/Artwork/screenshots/`
 - [ ] T2 README 加截图区，用 `<picture>` 按主题切换
-- [ ] 协调者：更新根 `AGENTS.md`、`mac/AGENTS.md`
+- [x] 协调者：更新根 `AGENTS.md`、`mac/AGENTS.md`
 
 ### 测试与验证
 

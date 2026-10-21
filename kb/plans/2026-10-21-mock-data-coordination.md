@@ -70,7 +70,7 @@ tags:
 
 ### T2 展示数据、截图、README
 
-（草稿：协调者按 T1 检查点 `421c7a3` 的数据格式写成，T1 签收时定稿。）
+T1 已在 `421c7a3` + `2deb879` 签收，本节按 T1 的实际数据格式和启动方式定稿。模拟实例的偏好只在内存里，退出后后端临时目录自动删除；你只需要按 pid 结束自己启动的实例。
 
 额外必读：`kb/docs/mock-data.md`（数据格式、启动、截图方法）、`kb/sessions/2026-10-21-mock-data-t1.md`、`backend/src/feishu_lite/mock.py` 里的数据模型、`README.md`、现有的 `mock-data/showcase/`。T1 的截图在 `tmp/2026-10-21-mock-data/t1/`，可以先看一眼现在的样子。
 
@@ -155,7 +155,7 @@ tags:
 
 | 任务 | 状态 | agent / tab | 结果提交 | 监视器 |
 |---|---|---|---|---|
-| T1 | 返工（检查点 `421c7a3`：退出后临时目录残留；随机偏好域的 plist 累积，`~/Library/Preferences` 里已有 5 个 `com.reorx.FeishuLite.mock.*`）。交回原 agent，允许超过 40% | `mockdata-t1` / tab `w47:t2`（pane `w47:p2`） | `421c7a3`（检查点） | Claude Code 后台任务 `bh0d6i2t2`（返工） |
-| T2 | 计划中 | — | — | — |
+| T1 | 已签收 | `mockdata-t1` / tab `w47:t2`（pane `w47:p2`） | `421c7a3`、`2deb879` | 已结束 |
+| T2 | 进行中（2026-10-21 派发） | `mockdata-t2` | — | 见派发后更新 |
 
-审阅基线：`a0535d7`（开工前的 HEAD）。
+审阅基线：`2deb879`（T1 签收）。

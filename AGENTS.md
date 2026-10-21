@@ -40,12 +40,14 @@ Messages / Email 双模块和单邮箱阅读器已实现并完成验收：列出
 - `kb/docs/releases.md` — 签名、公证、GitHub Releases 与 Homebrew Cask（含专用 deploy key）；修改发布工作流或执行发布前读。
 - `kb/docs/module-shell.md` — 双模块的切换、已读、通知与 badge 规则；修改模块外壳或跨模块行为前读。
 - `kb/docs/email-foundation.md` — 邮件账号、同步/提醒、独立缓存和正文安全边界；修改邮件服务、存储、解析或展示前读。
+- `kb/docs/mock-data.md` — 模拟模式的场景格式、启动、隔离边界和脚本截图；改模拟数据机制、做界面调整测试或自动化验收前读。
 
 ## 运行和测试
 
 - CI 与发布：`.github/workflows/ci.yml` 验证测试、独立后端安装和 App 构建；`release.yml` 在推送 `vMAJOR.MINOR.PATCH` 时构建 Universal App，先公证并给 App 钉票据，再制作、签名和公证 DMG，发布到当前仓库并更新 `reorx/homebrew-tap` 的 `feishu-lite` Cask。Release 不内置 Python/larkx；Cask 安装/升级时通过 uv 安装构建对应 commit 的后端。本地验证走 `make -C mac release-local`；凭据、发布和失败重试见 `kb/docs/releases.md`。
 
 - 后端测试：`cd backend && uv run pytest`。App：`cd mac && make test && make build && make run`。
+- 模拟模式：Debug App 设 `FEISHU_LITE_MOCK_DATA=<场景目录>` 启动（或 `make -C mac run-mock`，默认 `mock-data/showcase`），用 JSON 场景代替飞书和 IMAP，其余后端代码照常运行；后端用临时目录，App 用内存偏好、空凭证和静默通知，不连也不碰真实账号。界面调整后的测试和自动化验收优先走这条路径，不要再复制源码打钩子；场景入库在 `mock-data/`，个人变体放 `tmp/`。
 - App 自己拉起后端，不需要单独启动。正式数据在 `~/Library/Application Support/FeishuChat/`，后端日志在 `~/Library/Logs/FeishuLite/backend.log`。
 - 聊天接口以 `backend/src/feishu_lite/api.py` 和 `types.py` 为准；邮件接口/共享模型在 `mail/api.py`、`mail/types.py`。App 聊天模型在 `mac/FeishuLiteCore/Sources/FeishuLiteCore/Models.swift`，邮件模型在同目录 `MailModels.swift`，合成 wire 样本由 Core 测试交叉验证；改已接入接口时两边要一起改。
 
