@@ -156,6 +156,6 @@ T1 已在 `421c7a3` + `2deb879` 签收，本节按 T1 的实际数据格式和�
 | 任务 | 状态 | agent / tab | 结果提交 | 监视器 |
 |---|---|---|---|---|
 | T1 | 已签收 | `mockdata-t1` / tab `w47:t2`（pane `w47:p2`） | `421c7a3`、`2deb879` | 已结束 |
-| T2 | 进行中（2026-10-21 派发） | `mockdata-t2` | — | 见派发后更新 |
+| T2 | 进行中（2026-10-21 派发） | `mockdata-t2` / tab `w47:t3`（pane `w47:p3`） | — | Claude Code 后台任务（`wait-settled.sh mockdata-t2 480`） |
 
 审阅基线：`2deb879`（T1 签收）。
