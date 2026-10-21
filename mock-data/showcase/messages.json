@@ -1,17 +1,357 @@
 {
-  "me": {"id": "self", "name": "林舟"},
-  "users": [{"id": "alice", "name": "陈夏"}],
+  "me": {
+    "id": "self",
+    "name": "林屿舟"
+  },
+  "users": [
+    {
+      "id": "u0",
+      "name": "沈知遥"
+    },
+    {
+      "id": "u1",
+      "name": "陶予安"
+    },
+    {
+      "id": "u2",
+      "name": "许映川"
+    },
+    {
+      "id": "u3",
+      "name": "苏禾宁"
+    },
+    {
+      "id": "u4",
+      "name": "陆清屿"
+    },
+    {
+      "id": "u5",
+      "name": "程见微"
+    },
+    {
+      "id": "u6",
+      "name": "叶书澄"
+    },
+    {
+      "id": "u7",
+      "name": "顾望舒"
+    },
+    {
+      "id": "u8",
+      "name": "温予白"
+    },
+    {
+      "id": "u9",
+      "name": "宋南初"
+    },
+    {
+      "id": "u10",
+      "name": "余星岚"
+    },
+    {
+      "id": "u11",
+      "name": "方听澜"
+    },
+    {
+      "id": "u12",
+      "name": "江亦朔"
+    },
+    {
+      "id": "u13",
+      "name": "孟溪亭"
+    },
+    {
+      "id": "u14",
+      "name": "季闻溪"
+    }
+  ],
   "chats": [
-    {"id": "design", "name": "星河设计小组", "unread": 2, "messages": [
-      {"id": "s0", "sender_id": "alice", "type": "system", "time": {"day": -1, "time": "09:00"}, "text": "陈夏创建了群聊"},
-      {"id": "s1", "sender_id": "alice", "time": {"day": 0, "time": "09:30"}, "text": "早上好！\n今天一起讨论新的阅读界面。"},
-      {"id": "s2", "sender_id": "self", "time": {"day": 0, "time": "09:32"}, "text": "收到，我已经整理好了。"},
-      {"id": "s3", "sender_id": "alice", "type": "post", "time": {"day": 0, "time": "09:35"}, "text": "设计要点\n• 让内容更易读\n• 留出充足的间距"},
-      {"id": "s4", "sender_id": "alice", "type": "image", "image": "images/sample.png", "time": {"day": 0, "time": "09:36"}, "text": "[图片]"},
-      {"id": "s5", "sender_id": "alice", "type": "video_chat", "meeting": {"topic": "阅读界面讨论", "number": "123456789"}, "time": {"day": 0, "time": "09:40"}}
-    ]},
-    {"id": "direct", "name": "陈夏", "type": "p2p", "muted": true, "unread": 1, "messages": [
-      {"id": "d1", "sender_id": "alice", "time": {"day": -1, "time": "18:05"}, "text": "明天见！"}
-    ]}
+    {
+      "id": "shiguang",
+      "name": "拾光 · 产品小组",
+      "type": "group",
+      "unread": 4,
+      "messages": [
+        {
+          "id": "s0",
+          "sender_id": "u0",
+          "time": {
+            "day": 0,
+            "time": "09:00"
+          },
+          "text": "沈知遥更新了群公告：拾光 1.4，本周一起把细节做好。",
+          "type": "system"
+        },
+        {
+          "id": "s1",
+          "sender_id": "u0",
+          "time": {
+            "day": 0,
+            "time": "09:05"
+          },
+          "text": "早上好，昨天的试用反馈已经整理完了。大家方便时看一下收件箱里的周报。"
+        },
+        {
+          "id": "s2",
+          "sender_id": "u1",
+          "time": {
+            "day": 0,
+            "time": "09:08"
+          },
+          "text": "我看了，收藏入口的反馈最集中。今天先把新方案走一遍？"
+        },
+        {
+          "id": "s3",
+          "sender_id": "self",
+          "time": {
+            "day": 0,
+            "time": "09:10"
+          },
+          "text": "可以，交互稿已更新，列表和详情页的入口现在一致了。"
+        },
+        {
+          "id": "s4",
+          "sender_id": "u2",
+          "time": {
+            "day": 0,
+            "time": "09:12"
+          },
+          "text": "补充一个观察：大家会反复打开最近读过的内容，“继续阅读”比推荐更有用。"
+        },
+        {
+          "id": "s5",
+          "sender_id": "u0",
+          "time": {
+            "day": 0,
+            "time": "09:15"
+          },
+          "text": "今天先对齐这三件事：\n• 首页保留“继续阅读”\n• 收藏入口统一到右上角\n• 空状态文案再读一遍",
+          "type": "post"
+        },
+        {
+          "id": "s6",
+          "sender_id": "u1",
+          "time": {
+            "day": 0,
+            "time": "09:18"
+          },
+          "text": "把两轮试用的结果放在一起了，找内容这一步明显顺了。"
+        },
+        {
+          "id": "s7",
+          "sender_id": "u1",
+          "time": {
+            "day": 0,
+            "time": "09:19"
+          },
+          "text": "[图片]",
+          "type": "image",
+          "image": "images/reading-study.png"
+        },
+        {
+          "id": "s8",
+          "sender_id": "self",
+          "time": {
+            "day": 0,
+            "time": "09:22"
+          },
+          "text": "这个方向可以。\n我下午补齐空状态，明早给大家一个能点的版本。"
+        },
+        {
+          "id": "s9",
+          "sender_id": "u2",
+          "time": {
+            "day": 0,
+            "time": "09:24"
+          },
+          "text": "我来补回归清单，重点看长标题和深色模式。"
+        },
+        {
+          "id": "s10",
+          "sender_id": "u0",
+          "time": {
+            "day": 0,
+            "time": "09:26"
+          },
+          "text": "",
+          "type": "video_chat",
+          "meeting": {
+            "topic": "拾光 1.4 · 设计走查",
+            "number": "123456789"
+          }
+        },
+        {
+          "id": "s11",
+          "sender_id": "u0",
+          "time": {
+            "day": 0,
+            "time": "09:28"
+          },
+          "text": "十点一起过一遍，十五分钟就好 ☕"
+        }
+      ]
+    },
+    {
+      "id": "chat0",
+      "name": "沈知遥",
+      "type": "p2p",
+      "unread": 2,
+      "muted": false,
+      "messages": [
+        {
+          "id": "c0-1",
+          "sender_id": "u0",
+          "time": {
+            "day": 0,
+            "time": "09:16"
+          },
+          "text": "周报发你了，指标口径也写在里面。"
+        }
+      ]
+    },
+    {
+      "id": "chat1",
+      "name": "体验设计",
+      "type": "group",
+      "unread": 6,
+      "muted": false,
+      "messages": [
+        {
+          "id": "c1-1",
+          "sender_id": "u1",
+          "time": {
+            "day": 0,
+            "time": "09:02"
+          },
+          "text": "新版图标已整理好，欢迎挑毛病。"
+        }
+      ]
+    },
+    {
+      "id": "chat2",
+      "name": "许映川",
+      "type": "p2p",
+      "unread": 1,
+      "muted": false,
+      "messages": [
+        {
+          "id": "c2-1",
+          "sender_id": "u2",
+          "time": {
+            "day": 0,
+            "time": "08:45"
+          },
+          "text": "回归清单我补好了，下午一起看。"
+        }
+      ]
+    },
+    {
+      "id": "chat3",
+      "name": "栖禾 · 全员",
+      "type": "group",
+      "unread": 12,
+      "muted": true,
+      "messages": [
+        {
+          "id": "c3-1",
+          "sender_id": "u3",
+          "time": {
+            "day": -1,
+            "time": "18:10"
+          },
+          "text": "周五分享会，欢迎带上最近的小发现。"
+        }
+      ]
+    },
+    {
+      "id": "chat4",
+      "name": "苏禾宁",
+      "type": "p2p",
+      "unread": 0,
+      "muted": false,
+      "messages": [
+        {
+          "id": "c4-1",
+          "sender_id": "u3",
+          "time": {
+            "day": -1,
+            "time": "17:40"
+          },
+          "text": "访谈纪要已归档，谢谢帮忙核对。"
+        }
+      ]
+    },
+    {
+      "id": "chat5",
+      "name": "拾光 · 开发协作",
+      "type": "group",
+      "unread": 3,
+      "muted": false,
+      "messages": [
+        {
+          "id": "c5-1",
+          "sender_id": "u4",
+          "time": {
+            "day": -1,
+            "time": "16:20"
+          },
+          "text": "预览版已就绪，明天开始回归。"
+        }
+      ]
+    },
+    {
+      "id": "chat6",
+      "name": "灵感收集站",
+      "type": "group",
+      "unread": 8,
+      "muted": true,
+      "messages": [
+        {
+          "id": "c6-1",
+          "sender_id": "u5",
+          "time": {
+            "day": -1,
+            "time": "12:05"
+          },
+          "text": "看到一组很舒服的留白，存下来慢慢看。"
+        }
+      ]
+    },
+    {
+      "id": "chat7",
+      "name": "程见微",
+      "type": "p2p",
+      "unread": 0,
+      "muted": false,
+      "messages": [
+        {
+          "id": "c7-1",
+          "sender_id": "u5",
+          "time": {
+            "day": -2,
+            "time": "15:30"
+          },
+          "text": "收到，周三前给你第一版文案。"
+        }
+      ]
+    },
+    {
+      "id": "chat8",
+      "name": "每周一页",
+      "type": "group",
+      "unread": 0,
+      "muted": false,
+      "messages": [
+        {
+          "id": "c8-1",
+          "sender_id": "u6",
+          "time": {
+            "day": -2,
+            "time": "10:15"
+          },
+          "text": "本周主题：让日常的小工具更顺手。"
+        }
+      ]
+    }
   ]
 }

@@ -1,8 +1,449 @@
 {
-  "address": "lin@example.com",
-  "folders": [{"id": "INBOX", "name": "收件箱", "supported": true}, {"id": "Archive", "name": "归档"}],
+  "address": "lin.yuzhou@example.com",
+  "folders": [
+    {
+      "id": "INBOX",
+      "name": "收件箱",
+      "supported": true
+    },
+    {
+      "id": "Sent",
+      "name": "已发送"
+    },
+    {
+      "id": "Drafts",
+      "name": "草稿"
+    },
+    {
+      "id": "Archive",
+      "name": "归档"
+    },
+    {
+      "id": "Junk",
+      "name": "垃圾邮件"
+    },
+    {
+      "id": "Trash",
+      "name": "已删除"
+    }
+  ],
   "messages": [
-    {"uid": 2, "subject": "阅读界面设计评审", "sender": [{"name": "陈夏", "address": "xia@example.com"}], "to": [{"name": "林舟", "address": "lin@example.com"}], "cc": [{"name": "周远", "address": "yuan@example.com"}, {"name": "许青", "address": "qing@example.com"}], "time": {"day": 0, "time": "10:00"}, "body": {"kind": "html", "source": "<h2>阅读界面设计评审</h2><p>大家好，</p><p>这次评审将重点讨论排版、间距和阅读体验。</p><ul><li>统一标题层级</li><li>优化正文可读性</li></ul><p>期待你们的意见。<br>陈夏</p>"}, "attachments": [{"section": "2", "filename": "设计说明.pdf", "media_type": "application/pdf", "encoded_size": 24000}]},
-    {"uid": 1, "subject": "本周安排", "sender": [{"name": "周远", "address": "yuan@example.com"}], "time": {"day": -1, "time": "16:30"}, "unread": false, "body": {"kind": "plain", "source": "本周安排\n\n周三：设计评审\n周五：整理反馈\n\n谢谢大家。"}}
+    {
+      "uid": 115,
+      "subject": "拾光周报 · 让每一次阅读更顺手",
+      "sender": [
+        {
+          "name": "沈知遥",
+          "address": "member1@example.com"
+        }
+      ],
+      "to": [
+        {
+          "name": "林屿舟",
+          "address": "lin.yuzhou@example.com"
+        }
+      ],
+      "time": {
+        "day": 0,
+        "time": "09:35"
+      },
+      "unread": true,
+      "body": {
+        "kind": "html",
+        "source": "<p>栖禾工作室 · 产品与体验</p><h1>拾光，本周向前一小步</h1><p>大家好，第二轮试用结束了。找内容更快了，阅读也更连贯；下面是本周的结果和下一步安排。</p><h2>01 · 这周看到了什么</h2><table><thead><tr><th>观察指标</th><th>上轮</th><th>本轮</th></tr></thead><tbody><tr><td>找到收藏的内容</td><td>68%</td><td><strong>91%</strong></td></tr><tr><td>完成一次连续阅读</td><td>74%</td><td><strong>89%</strong></td></tr><tr><td>首次操作用时</td><td>42 秒</td><td><strong>26 秒</strong></td></tr></tbody></table><p>两轮各 24 位体验者，任务和统计口径一致；小样本用于发现方向，不代表全部用户。</p><h2>02 · 下个版本的三件小事</h2><ul><li><strong>继续阅读：</strong>回到首页，就能接着上次的位置读。</li><li><strong>收藏更好找：</strong>统一列表与详情的入口。</li><li><strong>空状态更清楚：</strong>告诉读者从哪里开始。</li></ul><h2>03 · 接下来的节奏</h2><p>周三设计走查，周四回归，周五向体验组开放。发现问题直接回到产品小组讨论，不必等下一次周会。</p><p>谢谢每一位认真提建议的伙伴。<br>沈知遥 · 拾光产品组</p>"
+      },
+      "cc": [
+        {
+          "name": "陶予安",
+          "address": "member2@example.com"
+        },
+        {
+          "name": "许映川",
+          "address": "member3@example.com"
+        }
+      ],
+      "attachments": [
+        {
+          "section": "2",
+          "filename": "拾光体验周报.pdf",
+          "media_type": "application/pdf",
+          "encoded_size": 186400
+        }
+      ]
+    },
+    {
+      "uid": 114,
+      "subject": "周四访谈安排与观察重点",
+      "sender": [
+        {
+          "name": "陶予安",
+          "address": "member2@example.com"
+        }
+      ],
+      "to": [
+        {
+          "name": "林屿舟",
+          "address": "lin.yuzhou@example.com"
+        }
+      ],
+      "time": {
+        "day": 0,
+        "time": "09:20"
+      },
+      "unread": false,
+      "body": {
+        "kind": "plain",
+        "source": "屿舟，早上好：\n\n周四的阅读体验访谈已排好，想请你一起旁听。\n\n10:00—10:30  第一次使用：从首页找到一篇想读的内容\n11:00—11:30  继续阅读：找回昨天读到的位置\n14:00—14:30  整理收藏：给保存的内容分组\n\n这次先看大家怎么做，不提前解释按钮的用途。遇到卡住的地方，记下原话和操作顺序就好。\n\n结束后我们留十五分钟，把观察写成三列：\n「发生了什么 / 为什么值得关注 / 下次怎么验证」。\n\n我会准备记录模板，你带上交互稿就行。\n\n陶予安\n栖禾工作室 · 体验设计"
+      }
+    },
+    {
+      "uid": 113,
+      "subject": "1.4 回归清单，请补充边界场景",
+      "sender": [
+        {
+          "name": "许映川",
+          "address": "member3@example.com"
+        }
+      ],
+      "to": [
+        {
+          "name": "林屿舟",
+          "address": "lin.yuzhou@example.com"
+        }
+      ],
+      "time": {
+        "day": 0,
+        "time": "09:10"
+      },
+      "unread": true,
+      "body": {
+        "kind": "plain",
+        "source": "请优先看长标题、空列表和连续翻页。补充项直接回复这封邮件即可。"
+      },
+      "attachments": [
+        {
+          "section": "2",
+          "filename": "回归清单.pdf",
+          "media_type": "application/pdf",
+          "encoded_size": 210400
+        }
+      ]
+    },
+    {
+      "uid": 112,
+      "subject": "第二轮试用纪要与原始记录",
+      "sender": [
+        {
+          "name": "苏禾宁",
+          "address": "member4@example.com"
+        }
+      ],
+      "to": [
+        {
+          "name": "林屿舟",
+          "address": "lin.yuzhou@example.com"
+        }
+      ],
+      "time": {
+        "day": 0,
+        "time": "08:50"
+      },
+      "unread": true,
+      "body": {
+        "kind": "plain",
+        "source": "访谈记录已按任务归类，附件是整理后的纪要。"
+      },
+      "attachments": [
+        {
+          "section": "2",
+          "filename": "访谈纪要.pdf",
+          "media_type": "application/pdf",
+          "encoded_size": 222400
+        }
+      ]
+    },
+    {
+      "uid": 111,
+      "subject": "预览版已就绪，可以开始体验",
+      "sender": [
+        {
+          "name": "陆清屿",
+          "address": "member5@example.com"
+        }
+      ],
+      "to": [
+        {
+          "name": "林屿舟",
+          "address": "lin.yuzhou@example.com"
+        }
+      ],
+      "time": {
+        "day": -1,
+        "time": "18:30"
+      },
+      "unread": false,
+      "body": {
+        "kind": "plain",
+        "source": "本轮包含继续阅读和收藏入口调整，请按清单体验。"
+      }
+    },
+    {
+      "uid": 110,
+      "subject": "空状态文案 · 第一轮修改",
+      "sender": [
+        {
+          "name": "程见微",
+          "address": "member6@example.com"
+        }
+      ],
+      "to": [
+        {
+          "name": "林屿舟",
+          "address": "lin.yuzhou@example.com"
+        }
+      ],
+      "time": {
+        "day": -1,
+        "time": "17:45"
+      },
+      "unread": true,
+      "body": {
+        "kind": "plain",
+        "source": "删掉了几处不必要的解释，保留下一步操作提示。"
+      }
+    },
+    {
+      "uid": 109,
+      "subject": "本周分享：设计里的轻与重",
+      "sender": [
+        {
+          "name": "叶书澄",
+          "address": "member7@example.com"
+        }
+      ],
+      "to": [
+        {
+          "name": "林屿舟",
+          "address": "lin.yuzhou@example.com"
+        }
+      ],
+      "time": {
+        "day": -1,
+        "time": "16:20"
+      },
+      "unread": false,
+      "body": {
+        "kind": "plain",
+        "source": "本周聊聊信息密度与留白，带一个自己喜欢的例子就好。"
+      }
+    },
+    {
+      "uid": 108,
+      "subject": "收藏入口的三个小建议",
+      "sender": [
+        {
+          "name": "顾望舒",
+          "address": "member8@example.com"
+        }
+      ],
+      "to": [
+        {
+          "name": "林屿舟",
+          "address": "lin.yuzhou@example.com"
+        }
+      ],
+      "time": {
+        "day": -1,
+        "time": "15:10"
+      },
+      "unread": true,
+      "body": {
+        "kind": "plain",
+        "source": "三个方案都走了一遍，建议继续保留一致的位置。"
+      }
+    },
+    {
+      "uid": 107,
+      "subject": "阅读体验问卷结果",
+      "sender": [
+        {
+          "name": "温予白",
+          "address": "member9@example.com"
+        }
+      ],
+      "to": [
+        {
+          "name": "林屿舟",
+          "address": "lin.yuzhou@example.com"
+        }
+      ],
+      "time": {
+        "day": -1,
+        "time": "11:30"
+      },
+      "unread": false,
+      "body": {
+        "kind": "plain",
+        "source": "问卷整理完成，附上匿名汇总，供下次讨论参考。"
+      },
+      "attachments": [
+        {
+          "section": "2",
+          "filename": "问卷汇总.pdf",
+          "media_type": "application/pdf",
+          "encoded_size": 282400
+        }
+      ]
+    },
+    {
+      "uid": 106,
+      "subject": "下周排期与协作安排",
+      "sender": [
+        {
+          "name": "宋南初",
+          "address": "member10@example.com"
+        }
+      ],
+      "to": [
+        {
+          "name": "林屿舟",
+          "address": "lin.yuzhou@example.com"
+        }
+      ],
+      "time": {
+        "day": -2,
+        "time": "17:30"
+      },
+      "unread": false,
+      "body": {
+        "kind": "plain",
+        "source": "先完成当前版本的收尾，再开始下一轮探索。"
+      }
+    },
+    {
+      "uid": 105,
+      "subject": "组件整理：按钮与提示信息",
+      "sender": [
+        {
+          "name": "余星岚",
+          "address": "member11@example.com"
+        }
+      ],
+      "to": [
+        {
+          "name": "林屿舟",
+          "address": "lin.yuzhou@example.com"
+        }
+      ],
+      "time": {
+        "day": -2,
+        "time": "16:00"
+      },
+      "unread": true,
+      "body": {
+        "kind": "plain",
+        "source": "按钮、提示和空状态已放到同一份清单中。"
+      }
+    },
+    {
+      "uid": 104,
+      "subject": "十月体验组招募进度",
+      "sender": [
+        {
+          "name": "方听澜",
+          "address": "member12@example.com"
+        }
+      ],
+      "to": [
+        {
+          "name": "林屿舟",
+          "address": "lin.yuzhou@example.com"
+        }
+      ],
+      "time": {
+        "day": -2,
+        "time": "14:30"
+      },
+      "unread": false,
+      "body": {
+        "kind": "plain",
+        "source": "这轮体验者已确认，具体时段明天同步。"
+      }
+    },
+    {
+      "uid": 103,
+      "subject": "周五分享会 · 场地安排",
+      "sender": [
+        {
+          "name": "江亦朔",
+          "address": "member13@example.com"
+        }
+      ],
+      "to": [
+        {
+          "name": "林屿舟",
+          "address": "lin.yuzhou@example.com"
+        }
+      ],
+      "time": {
+        "day": -2,
+        "time": "12:00"
+      },
+      "unread": false,
+      "body": {
+        "kind": "plain",
+        "source": "分享会安排在周五下午三点，大家轻松交流。"
+      }
+    },
+    {
+      "uid": 102,
+      "subject": "设计资料归档完成",
+      "sender": [
+        {
+          "name": "孟溪亭",
+          "address": "member14@example.com"
+        }
+      ],
+      "to": [
+        {
+          "name": "林屿舟",
+          "address": "lin.yuzhou@example.com"
+        }
+      ],
+      "time": {
+        "day": -2,
+        "time": "10:30"
+      },
+      "unread": false,
+      "body": {
+        "kind": "plain",
+        "source": "本周交互稿和讨论记录都已归档，按版本即可找到。"
+      }
+    },
+    {
+      "uid": 101,
+      "subject": "拾光 1.3 复盘记录",
+      "sender": [
+        {
+          "name": "季闻溪",
+          "address": "member15@example.com"
+        }
+      ],
+      "to": [
+        {
+          "name": "林屿舟",
+          "address": "lin.yuzhou@example.com"
+        }
+      ],
+      "time": {
+        "day": -2,
+        "time": "09:00"
+      },
+      "unread": false,
+      "body": {
+        "kind": "plain",
+        "source": "把做得好的地方留下来，也给下一轮少留几个坑。"
+      }
+    }
   ]
 }
