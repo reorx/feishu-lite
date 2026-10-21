@@ -36,6 +36,7 @@ Messages / Email 双模块和单邮箱阅读器已实现并完成验收：列出
 
 ## 文档
 
+- `README.md` 面向用户，只写功能、安装和使用。实现细节、验收状态、构建和发布写进本文件或 `kb/docs/`，不要加回 README；改了用户能感知的行为（新功能、快捷键、限制）时同步 README。
 - 改名兼容：数据目录和邮件 Keychain service 保留 FeishuChat 存储标识；UserDefaults 在模型创建前一次性迁移。新 bundle 的通知/登录项须重新授权，详见发布指南的升级说明。
 - `kb/docs/releases.md` — 签名、公证、GitHub Releases 与 Homebrew Cask（含专用 deploy key）；修改发布工作流或执行发布前读。
 - `kb/docs/module-shell.md` — 双模块的切换、已读、通知与 badge 规则；修改模块外壳或跨模块行为前读。
