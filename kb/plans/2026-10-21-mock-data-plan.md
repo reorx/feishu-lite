@@ -146,8 +146,8 @@ App（`mac/FeishuLite/`）：
 - [x] T1 写 `kb/docs/mock-data.md`
 - [x] T1 实机验证：隔离构建，模拟模式启动，两个模块都有数据，验收标准 1–4 逐条留证据
 - [x] T2 把 `mock-data/showcase/` 扩充成像样的展示数据
-- [ ] T2 截候选图（深浅色），挑出聊天和邮件各一张，提交到 `mac/Artwork/screenshots/`
-- [ ] T2 README 加截图区，用 `<picture>` 按主题切换
+- [x] T2 截候选图（深浅色），挑出聊天和邮件各一张，提交到 `mac/Artwork/screenshots/`
+- [x] T2 README 加截图区，用 `<picture>` 按主题切换
 - [x] 协调者：更新根 `AGENTS.md`、`mac/AGENTS.md`
 
 ### 测试与验证
