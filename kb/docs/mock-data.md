@@ -76,7 +76,7 @@ open -n --env FEISHU_LITE_MOCK_DATA="$PWD/mock-data/showcase" \
 
 此开关启动时设置 `NSApp.appearance`，只影响本实例，不改系统外观或偏好；不限于模拟模式。只接受小写 `light` / `dark`，未设置、空值或其他值跟随系统。Release 忽略这个变量。不要依赖 `-AppleInterfaceStyle` 启动参数，本机实测不能据此切换本 App 的外观。
 
-先记录本次 App PID，核对可执行文件在自己的构建目录。先运行 `wake-screen`，再用 CGWindowList 按该 PID 找 layer 0 的窗口 id，运行 `screencapture -x -o -l <窗口id> <文件.png>`。只截自己窗口，不截整个桌面。长轮次使用 `caffeinate -d`，结束后清理自己的进程。AX 选择行可用；输入消息应使用真实键入，不能仅用 AX 设置文本值。
+先记录本次 App PID，核对可执行文件在自己的构建目录。先运行 `wake-screen`，再用 CGWindowList 按该 PID 找 layer 0 的窗口 id，运行 `screencapture -x -l <窗口id> <文件.png>`（保留系统窗口阴影，阴影外透明，与 ⌘⇧4 后按空格选窗口一致）。需要无阴影的紧裁切截图时才加可选的 `-o`。只截自己窗口，不截整个桌面。长轮次使用 `caffeinate -d`，结束后清理自己的进程。AX 选择行可用；输入消息应使用真实键入，不能仅用 AX 设置文本值。
 
 需要激活外观的截图时，在获准短暂切到前台后，用 `NSRunningApplication(processIdentifier:)` 或按 unix id 的 AX 操作激活指定模拟进程，不按 App 名字激活。截图前检查红绿灯有颜色，防止同 bundle id 的日常实例与模拟实例混淆。
 
