@@ -199,6 +199,6 @@ T1 已在 `421c7a3` + `2deb879` 签收，本节按 T1 的实际数据格式和�
 | T1 | 已签收 | `mockdata-t1` / tab `w47:t2`（pane `w47:p2`） | `421c7a3`、`2deb879` | 已结束 |
 | T1b | 已签收 | `mockdata-t1b` / tab 标签 mockdata-t1b（pane `w47:p4`） | `8be3af8` | 已结束 |
 | T2 | 部分完成：展示数据 `16c5d9c`、外观开关 `a2812bc` 已审；`mockdata-t2` context 45% 停下。截图、入库、README 交给 T2b，等 T1b 签收后派 | `mockdata-t2` / tab `w47:t3` | `16c5d9c`、`a2812bc` | 已结束 |
-| T2b | 进行中（2026-10-21 派发） | `mockdata-t2b`（Astra） | — | 待起 |
+| T2b | 进行中（2026-10-21 派发） | `mockdata-t2b` / pane `w47:p5` | — | Claude Code 后台任务 `bj9cjto45` |
 
 审阅基线：`2deb879`（T1 签收）。
