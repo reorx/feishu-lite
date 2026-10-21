@@ -1,4 +1,5 @@
 """Local dataset adapters. No protocol clients, network calls or persistent fixture edits."""
+
 import asyncio
 import json
 import time
@@ -12,9 +13,21 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 from .api import create_app
 from .mail.html import render_body
 from .mail.service import MailService
-from .mail.types import (Attachment, BodyPart, FetchedBody, ImapIdentity, ImapResult,
-                         MailBody, MailFolder, MailHeaders, MailKey, MailSummary,
-                         RawBody, SelectedMailbox)
+from .mail.types import (
+    Attachment,
+    BodyPart,
+    FetchedBody,
+    ImapIdentity,
+    ImapResult,
+    MailBody,
+    MailFolder,
+    MailHeaders,
+    MailKey,
+    MailSummary,
+    RawBody,
+    SelectedMailbox,
+)
+from .meeting import meeting_text
 from .service import Service
 from .store import Store
 from .types import Chat, FeedItem, Message, User
@@ -30,8 +43,9 @@ class RelativeTime(FixtureModel):
 
     def resolve(self, now: datetime) -> int:
         hour, minute = map(int, self.time.split(':'))
-        return int((now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-                    + timedelta(days=self.day)).timestamp())
+        return int(
+            (now.replace(hour=hour, minute=minute, second=0, microsecond=0) + timedelta(days=self.day)).timestamp()
+        )
 
 
 def timestamp(value, now):
@@ -40,11 +54,10 @@ def timestamp(value, now):
 
 class Meeting(FixtureModel):
     topic: str
-    number: str = Field(pattern=r'^\d{9}$')
+    number: str = Field(pattern=r'^[0-9]{9}$')
 
     def text(self):
-        n = self.number
-        return f'{self.topic}\n会议号：{n[:3]} {n[3:6]} {n[6:]}\n入会入口：https://vc.feishu.cn/w/{n}'
+        return meeting_text(self.topic, self.number)
 
 
 class ChatMessage(FixtureModel):
@@ -65,6 +78,13 @@ class ChatMessage(FixtureModel):
         if self.type == 'video_chat' and not self.meeting:
             raise ValueError('video_chat requires meeting')
         return self
+
+    def display_text(self):
+        if self.type == 'video_chat':
+            return self.meeting.text()
+        if self.type == 'image':
+            return '[图片]'
+        return self.text
 
 
 class ChatFixture(FixtureModel):
@@ -170,25 +190,42 @@ class MockSource:
         for item in data.chat.chats:
             history = {}
             for position, row in enumerate(item.messages):
-                history[position] = Message(id=row.id, chat_id=item.id, position=position,
-                    sender_id=row.sender_id, sender_name=self.names[row.sender_id], is_self=row.sender_id == self.me.id,
-                    create_time=timestamp(row.time, data.now), type=row.type,
-                    text=row.meeting.text() if row.meeting else row.text,
-                    badged=row.badged and row.type != 'system', at_me=row.at_me)
+                history[position] = Message(
+                    id=row.id,
+                    chat_id=item.id,
+                    position=position,
+                    sender_id=row.sender_id,
+                    sender_name=self.names[row.sender_id],
+                    is_self=row.sender_id == self.me.id,
+                    create_time=timestamp(row.time, data.now),
+                    type=row.type,
+                    text=row.display_text(),
+                    badged=row.badged and row.type != 'system',
+                    at_me=row.at_me,
+                )
                 if row.image:
                     self.images[row.id] = data.image_path(row.image)
             latest = history.get(len(history) - 1)
             self.history[item.id] = history
-            self.chats[item.id] = Chat(id=item.id, name=item.name, type=item.type, unread=item.unread,
-                muted=item.muted, last_position=len(history) - 1,
-                rank_time=latest.create_time if latest else 0, last_message_time=latest.create_time if latest else 0)
+            self.chats[item.id] = Chat(
+                id=item.id,
+                name=item.name,
+                type=item.type,
+                unread=item.unread,
+                muted=item.muted,
+                last_position=len(history) - 1,
+                rank_time=latest.create_time if latest else 0,
+                last_message_time=latest.create_time if latest else 0,
+            )
 
     async def restore(self):
         return self.me.model_copy()
 
     async def list_feed(self, limit):
-        return [FeedItem(chat=c.model_copy(), last_message=self.history[c.id].get(c.last_position))
-                for c in sorted(self.chats.values(), key=lambda c: c.rank_time, reverse=True)[:limit]]
+        return [
+            FeedItem(chat=c.model_copy(), last_message=self.history[c.id].get(c.last_position))
+            for c in sorted(self.chats.values(), key=lambda c: c.rank_time, reverse=True)[:limit]
+        ]
 
     async def get_chat(self, chat_id):
         chat = self.chats.get(chat_id)
@@ -200,9 +237,17 @@ class MockSource:
 
     async def send_text(self, chat_id, text):
         chat = self.chats[chat_id]
-        message = Message(id=f'mock-{uuid.uuid4().hex}', chat_id=chat_id, position=chat.last_position + 1,
-                          sender_id=self.me.id, sender_name=self.me.name, is_self=True,
-                          create_time=int(time.time()), type='text', text=text)
+        message = Message(
+            id=f'mock-{uuid.uuid4().hex}',
+            chat_id=chat_id,
+            position=chat.last_position + 1,
+            sender_id=self.me.id,
+            sender_name=self.me.name,
+            is_self=True,
+            create_time=int(time.time()),
+            type='text',
+            text=text,
+        )
         self.history[chat_id][message.position] = message
         chat.last_position = message.position
         chat.rank_time = chat.last_message_time = message.create_time
@@ -247,8 +292,9 @@ class MockMailbox:
 class MockImap:
     def __init__(self, box, config):
         self.box = box
-        self.identity = ImapIdentity(account_id=config.account_id, generation=config.generation,
-                                     connection_id=uuid.uuid4().hex)
+        self.identity = ImapIdentity(
+            account_id=config.account_id, generation=config.generation, connection_id=uuid.uuid4().hex
+        )
         self.reconcile_needed = asyncio.Event()
         self.closed = asyncio.Event()
         self.failure = None
@@ -264,8 +310,15 @@ class MockImap:
         return self.result(self.box.data.mail.folders if self.box.data.mail else [])
 
     async def select_inbox(self, **kwargs):
-        return self.result(SelectedMailbox(uidvalidity=1, uidnext=max(self.box.rows, default=0) + 1,
-                          flags=['\\Seen'], permanent_flags=['\\Seen'], readonly=False))
+        return self.result(
+            SelectedMailbox(
+                uidvalidity=1,
+                uidnext=max(self.box.rows, default=0) + 1,
+                flags=['\\Seen'],
+                permanent_flags=['\\Seen'],
+                readonly=False,
+            )
+        )
 
     async def all_uids(self):
         return self.result(sorted(self.box.rows, reverse=True))
@@ -285,10 +338,15 @@ class MockImap:
     def summary(self, uid):
         row = self.box.rows[uid]
         fields = row.model_dump(include=set(MailHeaders.model_fields))
-        return MailSummary(**fields, key=MailKey(account_id=self.identity.account_id, folder_id='INBOX', uidvalidity=1, uid=uid),
-                           received_at=timestamp(row.time, self.box.data.now), unread=uid in self.box.unread,
-                           attachments=row.attachments, flags=[] if uid in self.box.unread else ['\\Seen'],
-                           body_part=BodyPart(section='1', media_type=f'text/{row.body.kind}'))
+        return MailSummary(
+            **fields,
+            key=MailKey(account_id=self.identity.account_id, folder_id='INBOX', uidvalidity=1, uid=uid),
+            received_at=timestamp(row.time, self.box.data.now),
+            unread=uid in self.box.unread,
+            attachments=row.attachments,
+            flags=[] if uid in self.box.unread else ['\\Seen'],
+            body_part=BodyPart(section='1', media_type=f'text/{row.body.kind}'),
+        )
 
     async def body(self, key, part):
         raw = self.box.rows[key.uid].body
@@ -321,5 +379,9 @@ class MockMailService(MailService):
 def create_mock_app(data: Dataset, home: Path, token: str):
     home.mkdir(parents=True, exist_ok=True)
     service = Service(MockSource(data), Store(home / 'cache.db'))
-    return create_app(service, token, mail_path=home / 'mail.db',
-                      mail_factory=lambda store, emit: MockMailService(store, data=data, emit=emit))
+    return create_app(
+        service,
+        token,
+        mail_path=home / 'mail.db',
+        mail_factory=lambda store, emit: MockMailService(store, data=data, emit=emit),
+    )

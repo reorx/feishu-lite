@@ -10,6 +10,8 @@ import re
 from larkx.proto import lark_all_pb2 as L
 from larkx.proto import proto_pb2 as P
 
+from .meeting import meeting_text
+
 RTE = L.entities.RichTextElement
 
 TYPE_NAMES = {
@@ -123,19 +125,7 @@ def _meeting_text(content: bytes) -> str:
     if not vc.HasField('meetingCard') and vc.type != 1:
         return '[视频会议]'
     card = vc.meetingCard
-    title = f'[视频会议] {card.topic}'.strip()
-    number = card.meetNumber.strip()
-    valid_number = number if re.fullmatch(r'[0-9]{9}', number) else ''
-    if valid_number:
-        number = ' '.join(valid_number[i:i + 3] for i in range(0, 9, 3))
-    lines = [title]
-    if number:
-        lines.append(f'会议号：{number}')
-    # The meeting card has no join-URL field. The web client accepts the public
-    # meeting number in the path; meetingId is a different, internal identifier.
-    entry = f'https://vc.feishu.cn/w/{valid_number}'
-    lines.append(f'入会入口：{entry}')
-    return '\n'.join(lines)
+    return meeting_text(card.topic, card.meetNumber)
 
 
 def _system_text(content: bytes) -> str:
