@@ -24,7 +24,11 @@ tags:
 | 拆分 | T1 机制（后端 + App + 最小数据集 + 文档）→ T2 展示数据 + 截图 + README。T2 依赖 T1 的数据格式和启动方式，串行 | 协调者 |
 | T1 的测试和数据集的关系 | 后端和 App 的测试用自己的测试数据；对 `mock-data/showcase/` 只做"能加载、校验通过"的检查，不断言具体内容。原因：T2 要改写 showcase 的内容，测试不能因此变红 | 协调者 |
 | 截图存放 | 选中的 4 个 PNG 放 `mac/Artwork/screenshots/`（和 README 已经引用的 App 图标放一起）；候选图留在 `tmp/2026-10-21-mock-data/t2/` 给以后做官网用 | 协调者 |
-| 共享文件 | 根 `AGENTS.md`、`mac/AGENTS.md`、`kb/known-issues.md`、`kb/next-up.md`、plan 的勾选、本文，都由协调者在签收后更新。`kb/docs/mock-data.md` 归 T1，T2 只在格式说明需要补充时改它。README 归 T2，只加截图区 | 协调者 |
+| 会议邀请显示成普通气泡 | T1 的缺陷：`mock.py` 生成的会议文本缺 `[视频会议] ` 前缀，App 的 `MeetingInvitation` 解析失败、退回原文。追加 T1b，由 `mockdata-t1` 修：render 和 mock 共用同一个会议文本函数。协调者审 T1 截图时漏看了 | 用户发现并同意修法，2026-10-21 |
+| 深色截图 | `-AppleInterfaceStyle` 启动参数对本 App 无效。T2 加一个 Debug 专用的外观开关（环境变量，启动时设 `NSApp.appearance`），不改系统外观。这是 T2 范围内唯一的代码改动 | 协调者 |
+| 截图时抢焦点 | 用户同意截图时把模拟实例短暂切到前台，以截到激活状态的窗口 | 用户，2026-10-21 |
+| T2 中断 | 用户手误，按原计划继续 | 用户，2026-10-21 |
+| 共享文件 | 根 `AGENTS.md`、`mac/AGENTS.md`、`kb/known-issues.md`、`kb/next-up.md`、plan 的勾选、本文，都由协调者在签收后更新。`kb/docs/mock-data.md` 归 T1，T2 只在格式说明或外观开关需要补充时改它，T1b 不改它。README 归 T2，只加截图区 | 协调者 |
 
 ## 必读
 
@@ -42,6 +46,7 @@ tags:
 | 任务 | agent 名 | 类型 | 依赖 | 验证方式 |
 |---|---|---|---|---|
 | T1 模拟数据机制 | `mockdata-t1` | Astra | 无 | 后端和 App 测试先红后绿；隔离构建的 App 实机启动，逐条验收 plan 的标准 1–4 |
+| T1b 会议邀请格式修复 | `mockdata-t1` | Astra | 无（和 T2 并行，文件不重叠） | 测试先红后绿；实机截一张会议卡片 |
 | T2 展示数据、截图、README | `mockdata-t2` | Astra | T1 签收 | 截图由协调者审；README 的 `<picture>` 结构和图片路径可用 |
 
 ### T1 模拟数据机制
@@ -67,6 +72,24 @@ tags:
 - `make run-mock` 能用（用 `DERIVED_DATA` 指向你的目录来验证），且不会结束非模拟的 FeishuLite 进程。
 - `kb/docs/mock-data.md` 写好：读者是以后要做界面测试或自动化验收的开发者和 agent，说明用途、启动、数据格式、隔离保证和已知的隔离缺口、怎么加新场景、怎么在脚本里截图。按 kb 技能的 docs 写法，写现状不写经过。
 - 总结写到 `kb/sessions/2026-10-21-mock-data-t1.md`，证据放 `tmp/2026-10-21-mock-data/t1/`。总结的「交给协调者」里写好要加进根 `AGENTS.md` 和 `mac/AGENTS.md`（调试环境变量表、命令列表）的文字。
+
+### T1b 会议邀请格式修复
+
+问题：`backend/src/feishu_lite/mock.py` 第 47 行拼会议文本时，第一行只有主题，缺 `render.py` 的 `_meeting_text` 生成的 `[视频会议] ` 前缀。App 的 `MeetingInvitation`（`mac/FeishuLiteCore/Sources/FeishuLiteCore/MeetingInvitation.swift`）要求这个前缀，解析失败就退回显示原文，所以模拟模式里会议邀请不是卡片。真实使用不受影响。
+
+范围：
+
+- 先写失败测试：模拟出的 `video_chat` 消息文本，和真实渲染对同一主题、会议号的输出一字不差。
+- 把 `_meeting_text` 里由主题和会议号拼文本的部分抽成一个公共函数，`render.py` 和 `mock.py` 都调它。真实渲染的输出不能变，现有 render 和会议缓存测试保持通过。
+- 顺带审一遍 `mock.py` 里其他自己生成的文本或字段，有没有偏离真实后端的契约。有就修，修不了的写进「交给协调者」。
+
+不做：不改 `mock-data/showcase/`（T2 正在改，工作区里有它没提交的改动）；不改 `kb/docs/mock-data.md`、App 和 `api.py`。
+
+完成标准：
+
+- `cd backend && uv run pytest` 全部通过，记录总数。
+- 实机：用你自己的场景副本（放在 `tmp/2026-10-21-mock-data/t1b/` 下，不要依赖 showcase 的工作区状态）和已有的隔离构建启动，截一张会议邀请显示成卡片的窗口图。只改了后端，Debug App 跑的是源码后端，不用重新构建 App。不需要激活窗口，不要抢焦点。
+- 在 `kb/sessions/2026-10-21-mock-data-t1.md` 末尾加一节「T1b 会议邀请格式」，证据放 `tmp/2026-10-21-mock-data/t1b/`。只提交自己的文件。
 
 ### T2 展示数据、截图、README
 
@@ -112,6 +135,13 @@ T1 已在 `421c7a3` + `2deb879` 签收，本节按 T1 的实际数据格式和�
 - 逐张检查截图内容，不出现真实人名、公司、邮件地址，也没有截到用户的 App 或桌面上的其他内容。
 - 总结 `kb/sessions/2026-10-21-mock-data-t2.md`，写清：选了哪两张、为什么；窗口尺寸和外观切换的做法；数据集的构成；截图里发现的界面问题。
 
+#### T2 追加（2026-10-21，T2 中断后恢复时）
+
+- **先清理**：结束你自己留下的模拟实例（pid 81661）和它的后端，按 pid 结束，确认没有别的模拟实例在跑。已有的候选图里，「深色」版其实是浅色，窗口也都是非激活外观，需要重截。
+- **外观开关**：`-AppleInterfaceStyle` 启动参数对本 App 无效。在 Debug 里加一个环境变量（建议 `FEISHU_LITE_APPEARANCE=light|dark`，不限于模拟模式），App 启动时据此设置 `NSApp.appearance`，不设就跟随系统。Release 不认这个变量。先写测试（解析和装配），再实现；用法写进 `kb/docs/mock-data.md` 的截图部分；要加进 `mac/AGENTS.md` 调试变量表的文字写进「交给协调者」。这是 T2 唯一允许的代码改动。
+- **激活截图**：用户同意截图时把模拟实例短暂切到前台。用户日常的 FeishuLite 和模拟实例是同一个 bundle id，必须按 pid 激活（比如 System Events 里按 `unix id` 找进程设 `frontmost`，或 `NSRunningApplication(processIdentifier:)`），不要按 App 名字激活。截图前确认窗口是激活外观（红绿灯有颜色）。
+- **会议卡片**：T1b 正在修会议邀请的显示。Messages 主角会话的成品图要等协调者通知 T1b 已修好再截。没收到通知时，先做外观开关和 Email 的截图；能做的都做完了还没收到，就停下回复协调者。
+
 ## 共同约束
 
 - 只做自己的任务，做完就停，不开始下一个任务，不改本文件。原因：协调者要按上一个任务的实际产出，定下一个任务的 brief。
@@ -156,6 +186,7 @@ T1 已在 `421c7a3` + `2deb879` 签收，本节按 T1 的实际数据格式和�
 | 任务 | 状态 | agent / tab | 结果提交 | 监视器 |
 |---|---|---|---|---|
 | T1 | 已签收 | `mockdata-t1` / tab `w47:t2`（pane `w47:p2`） | `421c7a3`、`2deb879` | 已结束 |
-| T2 | 进行中（2026-10-21 派发） | `mockdata-t2` / tab `w47:t3`（pane `w47:p3`） | — | Claude Code 后台任务（`wait-settled.sh mockdata-t2 480`） |
+| T1b | 进行中（2026-10-21 派发） | `mockdata-t1` / tab `w47:t2` | — | 待起 |
+| T2 | 进行中（恢复：先做外观开关和 Email 截图，Messages 成品等 T1b） | `mockdata-t2` / tab `w47:t3`（pane `w47:p3`） | — | 待起 |
 
 审阅基线：`2deb879`（T1 签收）。
