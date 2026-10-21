@@ -28,6 +28,9 @@ tags:
 | 深色截图 | `-AppleInterfaceStyle` 启动参数对本 App 无效。T2 加一个 Debug 专用的外观开关（环境变量，启动时设 `NSApp.appearance`），不改系统外观。这是 T2 范围内唯一的代码改动 | 协调者 |
 | 截图时抢焦点 | 用户同意截图时把模拟实例短暂切到前台，以截到激活状态的窗口 | 用户，2026-10-21 |
 | T2 中断 | 用户手误，按原计划继续 | 用户，2026-10-21 |
+| README 截图返修（T3） | 窗口调窄、高度略降，顶部和底部不切半个气泡；保留系统窗口阴影（和 ⌘⇧4 + 空格一样）；两张图在 README 里并排，用表格加两个表头 | 用户，2026-10-21 |
+| T3 表头文字 | `Messages`、`Email`，和 App 侧栏里的模块名一致 | 协调者 |
+| README 预览工具 | 用开源的本地 GitHub README 预览工具给用户看效果，用户确认后才算验收。优先走 GitHub Markdown API 渲染、能切深浅页面主题的工具 | 用户要求，工具由 T3 选 |
 | 共享文件 | 根 `AGENTS.md`、`mac/AGENTS.md`、`kb/known-issues.md`、`kb/next-up.md`、plan 的勾选、本文，都由协调者在签收后更新。`kb/docs/mock-data.md` 归 T1，T2 只在格式说明或外观开关需要补充时改它，T1b 不改它。README 归 T2，只加截图区 | 协调者 |
 
 ## 必读
@@ -49,6 +52,7 @@ tags:
 | T1b 会议邀请格式修复 | `mockdata-t1b`（`mockdata-t1` context 超 40%，换新 agent） | Astra | 无（和 T2 并行，文件不重叠） | 测试先红后绿；实机截一张会议卡片 |
 | T2 展示数据、截图、README | `mockdata-t2` | Astra | T1 签收 | 截图由协调者审；README 的 `<picture>` 结构和图片路径可用 |
 | T2b 截图、入库、README（接续 T2） | `mockdata-t2b` | Astra | T1b 签收 | 同 T2 |
+| T3 重截带阴影的窄窗口截图、README 并排、本地预览 | `mockdata-t3`（`mockdata-t2b` context 39%，换新 agent） | Astra | T2b 签收 | 协调者审截图；用户在预览工具里确认 |
 
 ### T1 模拟数据机制
 
@@ -153,6 +157,44 @@ T1 已在 `421c7a3` + `2deb879` 签收，本节按 T1 的实际数据格式和�
 - Messages 主角会话的成品要能看到完整的会议卡片和图片消息，必要时滚动或调整主角会话的消息顺序（只改 JSON）。
 - 总结追加到 `kb/sessions/2026-10-21-mock-data-t2.md`，加一节「T2b」，把开头「T2 不可签收」之类过时的结论改成最终状态。
 
+### T3 重截带阴影的窄窗口截图、README 并排、本地预览
+
+用户看了 T2b 的 README 效果，要求三处改动，并要在本地预览里确认后才算验收。
+
+额外必读：`kb/sessions/2026-10-21-mock-data-t2.md`（尤其 T2b 一节：窗口尺寸、激活和截图做法、选图理由）、`kb/docs/mock-data.md` 的「自动截图」、`README.md` 现在的截图区。T2b 的截图工具和候选在 `tmp/2026-10-21-mock-data/t2/`，可以复用。
+
+范围：
+
+1. **调窗口尺寸重截。** 现在是 1280×860 pt。
+   - 宽度调窄。README 里两张图并排后，每张只有约 400 px 宽，窗口越宽，缩下来字越小。宽度要能同时放下侧栏、列表和详情，且不出现截断、换行错乱。
+   - 高度略降，并配合滚动位置，让 Messages 主角会话的消息区上下边缘都落在两条消息之间，**不能切掉半个气泡**（现在顶部露出半条消息）。Email 的列表也尽量不切半行。必要时可以调主角会话的消息顺序或条数（只改 JSON），但会议卡片和图片消息仍要完整可见。
+   - 四张图（Messages、Email 各深浅两版）用同一个窗口尺寸，具体数值由你定，写进总结。
+2. **保留窗口阴影。** 效果要和 macOS 的 ⌘⇧4 再按空格点窗口一样：窗口四周带系统阴影，阴影外是透明的。用 `screencapture -x -l <窗口id>`，**不加 `-o`**。仍要激活外观（红绿灯有颜色），按 pid 激活。深色版的阴影在深色背景上也要看得出来，检查一下。
+3. **README 并排。** 把现在两个竖排的 `<picture>` 换成一个两列表格，表头是 `Messages` 和 `Email`，每个单元格里放一个 `<picture>`（深色 `<source>` + 浅色 `<img>`，路径不变，`alt` 保留）。表格下面那行「截图中的人物……均为虚构展示数据」保留。README 其他部分不改。
+   - 已知坑：GitHub 的表格是 `width: max-content`，单元格里放原始尺寸 2000 多像素的图，表格会被撑宽、出现横向滚动条。给图片显式宽度（或其他办法），保证在 GitHub 仓库首页的 README 宽度下两张图并排、等宽、没有横向滚动。
+4. **本地预览给用户看。** 找一个开源的本地 GitHub README 预览工具，要求：
+   - 渲染尽量接近 GitHub：最好走 GitHub Markdown API（和 GitHub 用同一个 HTML 过滤，`<picture>`、表格、`width` 属性的效果才可信），样式用 GitHub 的 CSS。
+   - 能看浅色和深色两种页面主题，`<picture>` 能跟着切换。
+   - 候选：`grip`（joeyespo/grip，最常见，走 GitHub API）、`gh markdown-preview`（yusukebe/gh-markdown-preview，gh 扩展，有深浅模式）、`gh gfm-preview`（thiagokokada/gh-gfm-preview，前者的分支，走 GitHub API，有 `--light-mode`/`--dark-mode`）。可以装其中一个或几个比较，选定后在总结里写理由。可用 `gh` 已登录的 token，不要把 token 写进任何文件。
+   - 自己先用浏览器（`agent-browser` 或 playwright）在约 1280 px 宽的视口里截预览页的浅色和深色两版，确认并排、无横向滚动、深浅图片对应正确，截图放证据目录。
+   - 验证完后**让预览服务继续运行**，用固定的空闲端口（如 6419 或 18821–18829），用 `nohup` 之类放到后台，不随你的 tab 结束。记下 pid、端口、URL 和切换深浅的方法（URL 参数、启动参数，或开两个端口分别跑浅色和深色），写进总结并在最后一条回复里给出。协调者会把 URL 给用户看，用户确认后由协调者通知你或直接按 pid 关掉。
+   - 浏览器会话截完就关；预览服务不算要清理的资源。
+
+不做：
+
+- 不改 App 代码。截图时发现的界面问题写进「交给协调者」。
+- 不改 README 截图区以外的内容，不改 `mock-data/showcase/` 以外的数据。
+- 不 push。GitHub 线上效果留给 push 后检查（已记在 `kb/next-up.md`）。
+
+完成标准：
+
+- 四个 PNG 覆盖 `mac/Artwork/screenshots/` 下的同名文件：带阴影、透明背景、激活外观、尺寸一致；单个尽量不超过 1 MB。记录每张的像素尺寸、大小，以及窗口尺寸（pt）。
+- 逐张检查：Messages 顶部和底部没有被切开的气泡；会议卡片和图片消息完整；没有截到用户的 App 或桌面其他内容；没有真实人名、公司、地址。
+- `cd backend && uv run pytest` 全部通过（改了 showcase 时必须跑），记录总数。
+- 预览页浅色、深色截图各一张，证明并排、等宽、无横向滚动、深浅图对应正确。
+- `kb/docs/mock-data.md` 的「自动截图」改成带阴影的做法（`-o` 改为可选，说明两者的区别）。
+- 总结写到 `kb/sessions/2026-10-21-mock-data-t3.md`，证据放 `tmp/2026-10-21-mock-data/t3/`。写清：窗口尺寸和滚动位置怎么定的、阴影截图的做法和文件大小、README 表格的宽度做法、选了哪个预览工具和理由、预览服务的 pid/端口/URL/深浅切换方法。
+
 ## 共同约束
 
 - 只做自己的任务，做完就停，不开始下一个任务，不改本文件。原因：协调者要按上一个任务的实际产出，定下一个任务的 brief。
@@ -200,7 +242,8 @@ T1 已在 `421c7a3` + `2deb879` 签收，本节按 T1 的实际数据格式和�
 | T1b | 已签收 | `mockdata-t1b` / tab 标签 mockdata-t1b（pane `w47:p4`） | `8be3af8` | 已结束 |
 | T2 | 已签收（数据与外观开关；截图和 README 由 T2b 接续完成） | `mockdata-t2` / tab `w47:t3` | `16c5d9c`、`a2812bc` | 已结束 |
 | T2b | 已签收 | `mockdata-t2b` / tab `w47:t5` | `dc8a4e9` | 已结束 |
+| T3 | 进行中 | `mockdata-t3` / tab 待开 | | |
 
-审阅基线：`dc8a4e9`（全部签收）。
+审阅基线：`272edfe`（T1–T2b 全部签收）。
 
-收尾：全部任务已签收。模拟实例、后端、临时目录、mock 偏好、浏览器会话均已确认释放；用户日常的 Debug 实例（pid 21719）全程未受影响。GitHub 线上 README 的深浅切换要 push 后才能看，记在 `kb/next-up.md`。
+T1–T2b 收尾：已签收。模拟实例、后端、临时目录、mock 偏好、浏览器会话均已确认释放；用户日常的 Debug 实例（pid 21719）全程未受影响。GitHub 线上 README 的深浅切换要 push 后才能看，记在 `kb/next-up.md`。
