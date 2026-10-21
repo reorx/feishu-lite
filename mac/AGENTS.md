@@ -48,6 +48,7 @@ FeishuLite 的 SwiftUI 客户端：拉起并守护 `../backend` 的 Python 后�
 | `FEISHU_LITE_BACKEND_URL` + `FEISHU_LITE_TOKEN` | 直连一个已经在跑的后端，不拉子进程 |
 | `HTTPS_PROXY` / `HTTP_PROXY` | 后端访问飞书走的代理，验收"断网"场景时用 |
 | `FEISHU_LITE_MOCK_DATA` | 仅 Debug：模拟场景目录，相对路径基于仓库根；优先于外部后端和 `FEISHU_LITE_HOME`，每次启动从 JSON 初始状态开始。见 `../kb/docs/mock-data.md` |
+| `FEISHU_LITE_APPEARANCE` | 仅 Debug：`light` / `dark` 固定本实例外观，不改系统外观和偏好；不设或非法值跟随系统。截图出深浅两版时用 |
 
 ## 命令
 
