@@ -79,27 +79,7 @@ Email 列出全部文件夹，首版仅读取收件箱。正文成功显示且 A
 
 FeishuLite 不是飞书官方产品，它使用和飞书网页版相同的方式连接飞书，飞书更新后可能会暂时无法使用。登录信息和消息缓存只保存在你自己的电脑上，不经过任何第三方服务器。
 
-## 构建和发布
-
-普通 push / PR 会运行后端测试、独立 Python 工具安装验证、Swift 测试，以及 Debug / Universal Release 构建。发布配置见 [.github/workflows/release.yml](.github/workflows/release.yml)。
-
-推送 `vMAJOR.MINOR.PATCH` 标签会构建 Universal App，先公证并给 App 钉票据，再制作、签名和公证 DMG，上传到**当前仓库**的 GitHub Releases，然后自动创建或更新 `reorx/homebrew-tap` 的 `Casks/feishu-lite.rb`。手动运行 Release 工作流只生成可下载 artifact（即使选择 tag 也不发布）。
-
-签名使用 `CERT_P12`、`CERT_P12_PASSWORD`、`APPLE_TEAM_ID`、`ASC_PRIVATE_KEY`、`ASC_KEY_ID`、`ASC_ISSUER_ID` 六个仓库 Secrets；证书和私钥使用 base64 编码。Cask 发布另使用 `TAP_DEPLOY_KEY`，它是本 App 专用、仅对 `reorx/homebrew-tap` 可写的 SSH deploy key 私钥。七项均已配置，`v0.2.0` 已通过完整发布流程，包括两轮公证和 deploy key 实际推送 tap。缺少 key 时 Cask job 明确失败，可补齐后仅重跑失败 job。重新生成或轮换使用以下命令，凭据来源和完整步骤见 [发布指南](kb/docs/releases.md)。
-
-```sh
-bash ~/Code/devblocks/macos-app-release/scripts/setup-secrets.sh --repo reorx/feishu-lite --skip-apple
-```
-
-本地使用 `make -C mac test`、`make -C mac build-release`、`make -C mac dmg`；签名需要本机 Developer ID 证书和 `RELEASE_XCARGS='DEVELOPMENT_TEAM=你的TeamID'`。开发调试仍使用 `make -C mac build` 和源码后端。
-
 ## Reference
 
 - [cv-cat/LarkAgentX](https://github.com/cv-cat/LarkAgentX)：逆向实现的飞书网页版协议。FeishuLite 的扫码登录和消息收发都基于它的 larkx 库。
 - [EthanQC/feishu-user-plugin](https://github.com/EthanQC/feishu-user-plugin)：FeishuLite 定时刷新登录状态的做法参考了它。
-
-### 从 FeishuChat 升级
-
-v0.1.1 已发布并改名为 **FeishuLite**（bundle ID `com.reorx.FeishuLite`）；历史 v0.1.0 仍叫 FeishuChat。安装命令不变，已有用户执行 `brew update && brew upgrade --cask reorx/tap/feishu-lite` 升级。
-
-升级前先取消旧 App 的开机启动并退出旧 App；新 App 需要重新允许通知、开启登录项，邮件钥匙串可能要求授权。原登录和聊天/邮箱缓存继续保存在 `~/Library/Application Support/FeishuChat/`，不会清空。手动安装用户可在退出后将旧 FeishuChat.app 移到废纸篓。详见[升级说明](kb/docs/releases.md#从-feishuchat-升级)。

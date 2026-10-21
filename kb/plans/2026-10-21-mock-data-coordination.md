@@ -242,8 +242,10 @@ T1 已在 `421c7a3` + `2deb879` 签收，本节按 T1 的实际数据格式和�
 | T1b | 已签收 | `mockdata-t1b` / tab 标签 mockdata-t1b（pane `w47:p4`） | `8be3af8` | 已结束 |
 | T2 | 已签收（数据与外观开关；截图和 README 由 T2b 接续完成） | `mockdata-t2` / tab `w47:t3` | `16c5d9c`、`a2812bc` | 已结束 |
 | T2b | 已签收 | `mockdata-t2b` / tab `w47:t5` | `dc8a4e9` | 已结束 |
-| T3 | 等用户（协调者已审图；预览服务 pid 11464 在 http://127.0.0.1:6419/，用户确认后关闭） | `mockdata-t3` / tab `w47:t6`（pane `w47:p7`） | `fc61c7f` | 已结束 |
+| T3 | 已签收（用户在本地预览确认，预览服务已关闭） | `mockdata-t3` / tab `w47:t6`（pane `w47:p7`） | `fc61c7f` | 已结束 |
 
-审阅基线：`272edfe`（T1–T2b 全部签收）。
+审阅基线：`8042dbe`（T1–T3 全部签收）。
+
+T3 之后协调者按用户要求改 README：删掉「从 FeishuChat 升级」（升级说明仍在 `kb/docs/releases.md`）和「构建和发布」（内容已在根 `AGENTS.md`「运行和测试」、`mac/AGENTS.md` 命令表和 `kb/docs/releases.md`，只把 `build-release` 需要的 `DEVELOPMENT_TEAM` 补进 `mac/AGENTS.md`），然后 push。
 
 T1–T2b 收尾：已签收。模拟实例、后端、临时目录、mock 偏好、浏览器会话均已确认释放；用户日常的 Debug 实例（pid 21719）全程未受影响。GitHub 线上 README 的深浅切换要 push 后才能看，记在 `kb/next-up.md`。

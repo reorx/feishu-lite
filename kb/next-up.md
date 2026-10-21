@@ -9,5 +9,5 @@
 
 ## 下次 push 到 GitHub 之后
 
-- **README 截图深浅切换**：在 GitHub 仓库首页分别用浅色和深色主题看 README，两张截图（Messages、Email）应各自显示对应外观的版本，图片能加载。本地预览已验证 `<picture>` 结构和路径，线上没看过。
-  → 有问题记到 `kb/sessions/2026-10-21-mock-data-t2.md`，没问题删掉本条即可。
+- **README 截图深浅切换**：在 GitHub 仓库首页分别用浅色和深色主题看 README，Messages / Email 两列表格并排、无横向滚动，两张截图各自显示对应外观的版本。本地用 gh-markdown-preview（走 GitHub Markdown API）验证过，用户已确认本地效果，线上没看过。
+  → 有问题记到 `kb/sessions/2026-10-21-mock-data-t3.md`，没问题删掉本条即可。

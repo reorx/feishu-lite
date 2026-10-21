@@ -54,7 +54,7 @@ FeishuLite 的 SwiftUI 客户端：拉起并守护 `../backend` 的 Python 后�
 
 ```
 make build       # xcodegen + xcodebuild Debug 构建（xcbeautify 美化输出）
-make build-release # Universal Release；默认 Developer ID 签名
+make build-release # Universal Release；默认 Developer ID 签名，需本机证书，Team 用 RELEASE_XCARGS='DEVELOPMENT_TEAM=<TeamID>' 传入
 make release-local # Universal 构建 → App 公证与票据 → DMG 签名公证（凭据见发布指南）
 make dmg         # 将 Release App 打包到 dist/
 make test        # Core 单测 + App Model/Services 隔离调用测试（无 UI）
