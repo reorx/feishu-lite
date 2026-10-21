@@ -115,7 +115,7 @@ T1 签收后由协调者补全本节（依据 T1 的实际数据格式和启动�
 
 | 任务 | 状态 | agent / tab | 结果提交 | 监视器 |
 |---|---|---|---|---|
-| T1 | 进行中（2026-10-21 派发） | `mockdata-t1` / tab `w47:t2`（pane `w47:p2`） | — | Claude Code 后台任务 `bud00y97f`（`wait-settled.sh mockdata-t1 480`） |
+| T1 | 返工（检查点 `421c7a3`：退出后临时目录残留；随机偏好域的 plist 累积，`~/Library/Preferences` 里已有 5 个 `com.reorx.FeishuLite.mock.*`）。交回原 agent，允许超过 40% | `mockdata-t1` / tab `w47:t2`（pane `w47:p2`） | `421c7a3`（检查点） | Claude Code 后台任务 `bh0d6i2t2`（返工） |
 | T2 | 计划中 | — | — | — |
 
 审阅基线：`a0535d7`（开工前的 HEAD）。
